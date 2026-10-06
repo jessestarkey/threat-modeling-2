@@ -1,0 +1,398 @@
+data_assets:
+
+  # ============================================================================
+  # 1. MISSION PAYLOAD DATA
+  # Data assets containing business or mission content processed by applications.
+  # Source library: 04-data-assets-lib/01-mission-payload-data.yml
+  # ============================================================================
+
+  Structured Confluence Data:
+    id: structured-confluence-data
+    description: >
+      Authoritative wiki pages, collaborative workspaces, comments, user profiles,
+      system configuration metadata, and granular Space/Page RBAC permissions
+      stored within the Confluence relational database.
+    usage: business
+    tags:
+      - data:payload
+      - storage:persistent
+      - auth:human
+    origin: Internal mission users, administrators, and automated API integrations
+    owner: Platform Team # Or the specific Business Owner of the Wiki
+    quantity: very-many
+    confidentiality: restricted
+    integrity: critical
+    availability: important
+    justification_cia_rating: >
+      Confidentiality (Restricted): The Confluence instance hosts Controlled Unclassified
+      Information (CUI), proprietary architectural designs, and internal operational
+      procedures. While access is broadly granted to authorized internal personnel
+      (via Entra ID MFA), the data requires strict encryption at rest and in transit
+      to prevent unauthorized exfiltration, satisfying DoD IL5 mandates.
+
+      Integrity (Critical): The organization relies on this structured content as the
+      authoritative single source of truth for technical documentation and policy.
+      Unauthorized modification, malicious defacement, or tampering with the underlying
+      Space permissions would result in severe operational disruption, unauthorized
+      access to restricted spaces, and a loss of trust in the platform.
+
+      Availability (Important): Confluence serves as the primary asynchronous
+      collaboration hub for cross-functional engineering and mission teams. A prolonged
+      database outage would significantly degrade daily productivity and delay deployment
+      workflows, though it would not result in immediate, catastrophic failure of primary
+      kinetic or operational missions.
+
+  Unstructured Confluence Data:
+    id: unstructured-confluence-data
+    description: >
+      User-uploaded binary artifacts, including PDF mission briefings, Excel spreadsheets,
+      architectural diagrams, Word documents, media files, and compressed archives attached
+      to collaborative workspaces and wiki pages.
+    usage: business
+    tags:
+      - data:payload
+      - storage:persistent
+      - auth:human
+      - risk:malware-vector
+    origin: Internal mission users, administrators, and automated API integrations
+    owner: Platform Team # Or the specific Business Owner of the Wiki
+    quantity: very-many
+    confidentiality: restricted
+    integrity: critical
+    availability: important
+    justification_cia_rating: >
+      Confidentiality (Restricted): Unstructured attachments frequently contain
+      Controlled Unclassified Information (CUI), proprietary designs, and internal
+      operational procedures. Unauthorized disclosure to external entities—or unauthorized
+      access by users lacking explicit Space permissions—constitutes a severe breach
+      of DoD IL5 data protection mandates and compromises operational security.
+
+      Integrity (Critical): As a primary collaboration vector, the integrity of uploaded
+      files is paramount. Malicious tampering, unauthorized substitution, or the injection
+      of weaponized payloads (e.g., macro-enabled Office documents or Zip bombs) into
+      the backend file store could lead to widespread malware distribution among internal
+      mission users and a complete loss of trust in the platform's shared assets.
+
+      Availability (Important): Access to these files is a critical dependency for
+      cross-functional engineering and mission planning. While the temporary loss of
+      historical attachments would not immediately halt all operations (mission-critical),
+      a prolonged outage or ransomware encryption of the Azure File Share would severely
+      degrade productivity and mandate a complex disaster recovery (DR) response.
+
+  # ============================================================================
+  # 2. CREDENTIALS AND SECRETS
+  # Authentication material and cryptographic secrets used by the platform.
+  # Source library: 04-data-assets-lib/02-credentials-and-secrets.yml
+  # ============================================================================
+
+  Database Credentials:
+    id: database-credentials
+    description: Credentials used by applications to authenticate to a database
+    usage: devops
+    tags:
+      - data:credential
+      - storage:vault
+      - auth:npe
+    origin: IaC (Crossplane)
+    owner: Platform Team
+    quantity: very-few
+    confidentiality: strictly-confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): These credentials (e.g., connection strings,
+      passwords, or Managed Identity tokens) provide direct, privileged access to the backend
+      datastore. Exposure of these secrets to an unauthorized entity, log file, or developer
+      workstation would result in a catastrophic, unmitigated breach of all underlying mission
+      data (CUI/PII), bypassing all application-layer identity and access management (IAM) controls.
+
+      Integrity (Critical): The connection strings and credentials must remain immutable
+      and cryptographically secure. Unauthorized modification or tampering with these values
+      via the Infrastructure-as-Code (IaC) pipeline or within the Secrets Vault would allow
+      an attacker to maliciously redirect application traffic to a rogue, attacker-controlled
+      database for credential harvesting or transparent data interception.
+
+      Availability (Critical): The application possesses a hard boot-time dependency on
+      these credentials. If the credentials are lost, corrupted, or the vault becomes
+      unreachable, the application pods will enter a persistent 'CrashLoopBackOff' state,
+      resulting in an immediate, total loss of service availability for the entire mission application.
+
+  Blob Storage Credentials:
+    id: blob-storage-credentials
+    description: Authentication material (e.g., Storage Account Keys, SAS tokens, or Managed Identity bindings) required by workloads to read, write, or delete data within object/blob storage services
+    usage: devops
+    tags:
+      - data:credential
+      - storage:vault
+      - auth:npe
+    origin: Managed Identity service
+    owner: Platform Team
+    quantity: very-few
+    confidentiality: strictly-confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): These credentials grant high-privilege
+      read/write access to the Azure storage account hosting all mission attachments
+      and search indexes. Unauthorized disclosure would allow for the mass exfiltration
+      of unstructured CUI and proprietary files, rendering any application-layer
+      encryption or RBAC policies ineffective.
+
+      Integrity (Critical): Unauthorized tampering with these credentials, or the
+      Managed Identity permissions, could allow an attacker to delete, replace, or
+      maliciously encrypt the entire file store (Ransomware). Ensuring the integrity
+      of the credential supply chain (originating from the Managed Identity service)
+      is vital to preventing the injection of backdoored binaries or malicious scripts
+      into the wiki's persistent storage.
+
+      Availability (Critical): The file store is a mission-critical component of the
+      application stack. If these credentials become invalid, expire, or are deleted
+      from the vault, the application will lose its ability to mount Persistent Volumes (PVs)
+      or render attachments, causing a state of total functional failure for the
+      knowledge management platform.
+
+  Cryptographic Key Material:
+    id: crypto-key-material
+    description: TLS/mTLS private keys, signing certificates, and HSM-backed root keys
+    usage: devops
+    tags:
+      - data:credential
+      - storage:vault
+      - auth:npe
+    origin: Enterprise PKI / Azure Key Vault
+    owner: Platform Team
+    quantity: few
+    confidentiality: strictly-confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): Compromise of private key material enables
+      an attacker to perform Man-in-the-Middle (MitM) attacks, decrypting all historical
+      and real-time CUI/mission data traversing the network.
+
+      Integrity (Critical): Unauthorized modification or replacement of trust anchors
+      (e.g., injecting a rogue Root CA) allows attackers to seamlessly spoof legitimate
+      services and intercept authentication flows.
+
+      Availability (Critical): Loss of access to key material (e.g., Key Vault outage)
+      prevents the establishment of secure TLS tunnels, resulting in an immediate,
+      widespread Denial of Service (DoS) for all encrypted endpoints.
+
+  # ============================================================================
+  # 3. IDENTITY AND SESSION DATA
+  # Tokens and credentials representing authenticated human and NPE identities.
+  # Source library: 04-data-assets-lib/03-identity-and-session-data.yml
+  # ============================================================================
+
+  Human Session Credentials:
+    id: human-session-credentials
+    description: >
+      Browser cookies (e.g., JSESSIONID) and Bearer tokens (SAML/OIDC assertions, JWTs)
+      issued by the Identity Provider to maintain the active, authenticated state of a
+      human user interacting with a web frontend or client application.
+    usage: business
+    tags:
+      - data:credential
+      - storage:ephemeral
+      - auth:human
+    origin: Identity Provider (e.g., Entra ID / Keycloak)
+    owner: Application Team
+    quantity: very-many
+    confidentiality: confidential
+    integrity: critical
+    availability: important
+    justification_cia_rating: >
+      Confidentiality (Confidential): These ephemeral tokens represent the authenticated
+      session of a human mission user. Unauthorized interception, leakage (e.g., via
+      Cross-Site Scripting [XSS]), or improper storage (e.g., lacking HttpOnly flags)
+      would permit an attacker to hijack the active session, completely bypassing
+      Multi-Factor Authentication (MFA) and perimeter conditional access controls.
+
+      Integrity (Critical): The cryptographic signature and internal claims (e.g., user
+      roles, expiration, issuer) of the session token or cookie must remain pristine and
+      be strictly validated by the backend application on every request. Forged assertions
+      would allow an attacker to impersonate administrators or execute Horizontal/Vertical
+      Privilege Escalation (IDOR).
+
+      Availability (Important): If the frontend application is unable to validate or
+      issue new session credentials (e.g., due to an IdP outage or clock-skew issue),
+      active human users will experience immediate, widespread service disruption and
+      forced logouts, halting collaboration workflows until the trust relationship is restored.
+
+  User Credentials:
+    id: user-credentials
+    description: User enters these credentials on identity provider login page
+    usage: business
+    tags:
+      - data:credential
+      - storage:ephemeral
+      - auth:human
+    origin: Individual user
+    owner: Individual user
+    quantity: many
+    confidentiality: strictly-confidential
+    integrity: critical
+    availability: important
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): These raw credentials (e.g., passwords,
+      PINs, or smartcard/CAC challenge responses) verify the primary identity of the human
+      operator to the Enterprise Identity Provider (IdP). Unauthorized disclosure, interception
+      in transit, or logging in plaintext would compromise the user's entire organizational
+      identity, permitting an attacker to pivot laterally across the DoW/IL5 environment
+      and bypass all subsequent perimeter authentication controls.
+
+      Integrity (Critical): The credential payload must remain cryptographically secure
+      and unaltered during transit from the user's endpoint to the IdP. Any tampering,
+      manipulation, or interception via a Man-in-the-Middle (MitM) attack would result
+      in an immediate authentication failure, preventing legitimate access to the mission
+      application.
+
+      Availability (Important): While the application does not persist or manage these
+      credentials, the ability for the user to securely submit them to the IdP is
+      paramount. A failure in the authentication pipeline or a Denial of Service (DoS)
+      attack against the login endpoint would lock all users out of the system, halting
+      productivity and collaborative workflows until the service is restored.
+
+  NPE Session Credentials:
+    id: npe-session-credentials
+    description: >
+      Short-lived Bearer tokens, JWTs, or mutual TLS (mTLS) certificates used
+      for active machine-to-machine (M2M) authentication and authorization between
+      internal microservices, backend APIs, or background workers.
+    usage: devops
+    tags:
+      - data:credential
+      - storage:ephemeral
+      - auth:npe
+    origin: Identity Provider or Internal Service Mesh (e.g., Istio)
+    owner: Application Team
+    quantity: many
+    confidentiality: confidential
+    integrity: critical
+    availability: important
+    justification_cia_rating: >
+      Confidentiality (Confidential): Ephemeral M2M tokens represent the authenticated
+      state of a backend Non-Person Entity (NPE). Unauthorized interception (e.g.,
+      via cleartext internal transit) allows an attacker who has breached the perimeter
+      to move laterally, impersonating trusted microservices to access backend datastores.
+
+      Integrity (Critical): The cryptographic signature and RBAC claims of the NPE
+      token must be strictly validated by the receiving API. Forged or tampered
+      assertions would allow a low-privileged background worker to execute
+      Horizontal or Vertical Privilege Escalation.
+
+      Availability (Important): If a microservice cannot obtain or validate an NPE
+      token, the internal API chain breaks. While this degrades specific application
+      features (e.g., an asynchronous reporting job fails), it may not result in a
+      total, immediate system outage like the loss of a primary database credential.
+
+  # ============================================================================
+  # 4. OBSERVABILITY AND AUDIT DATA
+  # Telemetry, logs, and audit trails produced by the platform.
+  # Source library: 04-data-assets-lib/04-observability-and-audit-data.yml
+  # ============================================================================
+
+  System Telemetry & Audit Logs:
+    id: system-telemetry-logs
+    description: Application stdout/stderr logs, web server access logs, and security audit trails
+    usage: devops
+    tags:
+      - data:payload
+      - storage:persistent
+      - auth:npe
+    origin: Application workloads and infrastructure components
+    owner: Platform Team
+    quantity: very-many
+    confidentiality: restricted
+    integrity: critical
+    availability: operational
+    justification_cia_rating: >
+      Confidentiality (Restricted): Logs contain detailed system state, internal routing
+      paths, API query structures, and potentially sensitive user interaction metadata
+      (or accidental CUI spillage). Unauthorized disclosure provides an attacker with a
+      comprehensive architectural map, significantly lowering the barrier to entry for
+      identifying and exploiting internal software vulnerabilities.
+
+      Integrity (Critical): Immutable audit logs are the primary mechanism for
+      non-repudiation, behavioral anomaly detection, and incident response. Tampering,
+      deletion, or suppression of these logs allows malicious insiders or advanced
+      persistent threats (APTs) to operate undetected within the ATO boundary.
+
+      Availability (Important): While the loss of log ingestion does not immediately halt
+      the primary mission application (the app continues to serve users), it severely
+      degrades the SOC's ability to monitor the environment. A prolonged outage violates
+      DoD continuous monitoring mandates and blinds the defensive cyber operations team.
+
+  # ============================================================================
+  # 5. INTERACTIVE SESSION DATA
+  # Ephemeral data streams produced during active user sessions (VDI path).
+  # Source library: 04-data-assets-lib/05-interactive-session-data.yml
+  # ============================================================================
+
+  User Input:
+    id: user-input
+    description: The real-time stream of interactive user commands sent from a user device to a web-based application or remote virtual session
+    usage: business
+    tags:
+      - data:payload
+      - storage:ephemeral
+      - auth:human
+    origin: Individual user
+    owner: Individual user
+    quantity: many
+    confidentiality: confidential
+    integrity: critical
+    availability: important
+    justification_cia_rating: >
+      Confidentiality (Confidential): This ephemeral data stream encapsulates every
+      keystroke, clipboard action, and mouse movement executed by the user during
+      their active application or virtual session. Unauthorized interception of this
+      stream (e.g., via a Man-in-the-Middle attack on the WebSocket) would expose
+      in-progress CUI, draft intellectual property, and potentially plaintext
+      authentication material as it is actively typed.
+
+      Integrity (Critical): The integrity of the interactive stream is paramount to
+      maintaining control of the remote session. Malicious tampering or injection
+      (e.g., a "Rubber Ducky" style attack over the network) would allow an attacker
+      to execute unauthorized commands, modify files, or escalate privileges within
+      the AVD environment, operating under the established trust of the legitimate user.
+
+      Availability (Important): The continuous, low-latency delivery of user input
+      is the foundational requirement for VDI usability. A network disruption,
+      Denial of Service (DoS) attack, or severe latency introduced into the stream
+      would render the remote workspace completely inaccessible and halt all
+      mission-related productivity.
+
+  Screen Buffer:
+    id: screen-buffer
+    description: The visual output sent from the Azure Virtual Desktop (AVD) session host back to the user AVD client
+    usage: business
+    tags:
+      - data:payload
+      - storage:ephemeral
+      - auth:human
+    origin: VDI
+    owner: Platform Team
+    quantity: many
+    confidentiality: confidential
+    integrity: important
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Confidential): The screen buffer transmits a continuous, real-time
+      pixel stream of the user's remote desktop environment. This stream visually renders
+      all accessed applications, encompassing Controlled Unclassified Information (CUI),
+      draft communications, and proprietary data. Unauthorized interception or decryption
+      of this stream would result in a massive, unlogged data breach (visual exfiltration)
+      equivalent to compromising the underlying databases.
+
+      Integrity (Important): The visual fidelity of the session must be maintained to
+      ensure operational trust. While technically complex, malicious manipulation of the
+      encrypted video stream (e.g., injecting false UI elements or altering displayed
+      data) could deceive the user into taking unauthorized actions or misinterpreting
+      critical mission information.
+
+      Availability (Critical): The continuous, low-latency delivery of the screen buffer
+      is the single absolute dependency for Virtual Desktop Infrastructure (VDI) operations.
+      Any degradation, severe latency, or Denial of Service (DoS) affecting the video
+      stream renders the remote workspace completely unusable, resulting in an immediate
+      halt to all user productivity and mission workflows.

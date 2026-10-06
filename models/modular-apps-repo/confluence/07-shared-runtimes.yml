@@ -1,0 +1,29 @@
+shared_runtimes:
+
+  # ============================================================================
+  # 1. AKS NODE POOLS
+  # Worker node pools underlying the AKS cluster's containerized workloads.
+  # Source library: 07-shared-runtimes-lib/01-azure/01-node-pools.yml
+  # ============================================================================
+
+  AKS Worker Node Pool:
+    id: aks-worker-node-pool
+    description: >
+      The underlying Azure Virtual Machine Scale Sets (VMSS) running the Linux 
+      kernel that hosts the containerized workloads. Models the shared CPU, 
+      Memory, and Kernel namespaces across the multi-tenant cluster.
+    tags:
+      - scope:ato-boundary
+      - zone:restricted
+      - net:micro-segmented
+      - compliance:fips-validated
+      - ops:host-agents-installed
+      - ops:stig-baseline
+      - ops:disk-encrypted
+      - ops:trusted-base-image
+    technical_assets_running:
+      - nginx-ingress-pod
+      - confluence
+      - aks-csi-driver
+      - keycloak-authentication
+      - keycloak-id-store

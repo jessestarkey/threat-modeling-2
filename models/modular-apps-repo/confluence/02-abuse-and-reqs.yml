@@ -1,0 +1,718 @@
+# ==============================================================================
+# Abuse Cases and Security Requirements
+# Confluence
+# Source library: 02-abuse-and-reqs-lib.yml
+# ==============================================================================
+# Migrated from the old flat, unlettered scheme (still recoverable in git
+# history) onto the library's current SABER-domain structure, ASVS/AISVS/
+# NIST 800-53 sourcing, and ASVS Vx.x/NIST-ID titling. Unlike the AI
+# Coding Agent apps, this app IS the primary application being modeled
+# (not an integration point another app reaches into), so its own
+# Application-domain surface gets real coverage here rather than being
+# deferred elsewhere. Domain/subsection selection is grounded in this
+# app's actual technical-asset tags (05-tech-assets.yml):
+#
+#   IDENTITY: feature:oauth-oidc-provider, feature:saml-sp, and
+#     feature:password-reset all fire (Keycloak and Entra ID both
+#     support OAuth/SAML; Keycloak and Confluence itself support
+#     password reset), plus feature:admin-panel (Confluence) -- whole
+#     domain applies. No mgmt:self-managed-identity or
+#     mgmt:self-managed-pam tag anywhere in this model (Keycloak here is
+#     containerized but not tagged as self-managed directory/PAM
+#     infrastructure the way coding-agent-legacy's Keycloak is), so
+#     AC-2(7) and AC-2(6) are both dropped entirely -- not merely
+#     uncopied.
+#   DEVICE AND INFRASTRUCTURE: container (Keycloak, Keycloak Identity
+#     Store, Confluence, Nginx Ingress Pod, AKS CSI Driver) and virtual
+#     (AVD Session Host) machine types are both genuinely present, no
+#     mgmt:self-managed-hardware tag, so the physical-hardware content
+#     is dropped -- same pattern as the AI Coding Agent apps.
+#   NETWORK AND ENVIRONMENT: net:tls-terminator and zone:dmz both fire
+#     (the Confluence and Keycloak Application Gateways) -- only the
+#     ASVS V12 (TLS) portion applies; no mgmt:self-managed-network or
+#     cds:* tags.
+#   APPLICATION: unlike the AI Coding Agent apps, this domain gets real
+#     coverage since Confluence's own application layer is what's being
+#     modeled. feature:dynamic-code-execution (wiki macros/OGNL/
+#     Velocity) grounds V1.3; feature:import-export grounds V2.3/V2.4;
+#     the Asymmetric DoS and Malicious File Upload scenarios ground
+#     V4.1 and V5.2 respectively, both carried forward from this app's
+#     own pre-restructure content (git history) rather than dropped.
+#     feature:third-party-plugins and feature:search-index are
+#     acknowledged as present but not separately broken out beyond
+#     what's already covered by V1.3/V15-family supply-chain content
+#     elsewhere in this file, keeping this section proportionate to
+#     what pre-restructure content already justified rather than
+#     exhaustively expanding to every technically-matching ASVS
+#     subsection.
+#   DATA: storage:persistent (Keycloak Identity Store, Postgres
+#     Database, Azure File Store), storage:vault (Azure Key Vault), and
+#     feature:import-export (Confluence) all fire. V11.2 (Custom
+#     Cryptography Exploitation) is carried forward directly from this
+#     app's own pre-restructure content -- a scenario this app's
+#     original author already identified as relevant.
+#   DETECTION: feature:public-api-endpoint (Confluence) and
+#     machine:container (widely) fire.
+#   RESPONSE: zone:dmz and sec:secrets-broker both fire, and this app
+#     carries an independent third reason per 02-abuse-and-reqs-lib.yml's
+#     own Response domain header: this model's business_criticality is
+#     Critical, and Confluence itself carries a policy exception
+#     (exception:local-auth-fallback) -- either fact alone would pull in
+#     this domain even without the tag matches.
+#   RECOVERY: ops:requires-backup fires widely (Keycloak, Keycloak
+#     Identity Store, Entra ID, Postgres Database, Azure File Store,
+#     Azure Log Analytics Workspace). No ops:vendor-hosted-service tag,
+#     so SA-9 and SC-12 are left out -- no vendor-hosted service the
+#     enterprise backup platform can't directly enroll.
+# ==============================================================================
+
+abuse_cases:
+
+  # ----------------------------------------------------------------------------
+  # IDENTITY
+  # ----------------------------------------------------------------------------
+
+  "ASVS V6.3: Credential Stuffing and Authentication Endpoint Abuse": >
+    As an attacker with a list of breached credentials, I want to perform
+    automated high-volume stuffing attacks against platform authentication
+    endpoints (IdP login, password reset, MFA enrollment) so that I can
+    identify valid accounts or cause lockout-based denial of service
+    without triggering network-layer DDoS protections.
+
+  "ASVS V7.2: Post-Authentication Session Hijacking": >
+    As an attacker on a compromised endpoint or VDI session, I want to
+    steal an active application session token so that I can bypass
+    perimeter MFA/Entra ID requirements and fully impersonate a
+    legitimate user.
+
+  "ASVS V7.5: Session Token Replay via AiTM Proxy or Infostealer": >
+    As an attacker operating an adversary-in-the-middle proxy or a
+    compromised endpoint's infostealer, I want to capture a session or
+    refresh token after Keycloak or Entra ID authentication so that I
+    can replay the bearer token from my own host and fully impersonate
+    the victim.
+
+  "ASVS V8.2: Vertical Privilege Escalation": >
+    As a low-privileged authenticated user, I want to manipulate API
+    parameters, hidden form fields, or JWT claims so that I can execute
+    administrative functions (e.g., changing system settings, elevating
+    permissions) without proper authorization.
+
+  "ASVS V8.3: Horizontal Privilege Escalation (IDOR)": >
+    As an authenticated user, I want to guess or modify resource IDs in
+    my HTTP requests so that I can view, modify, or delete mission data
+    and CUI belonging to other users, squads, or tenant groups.
+
+  "ASVS V9.1: JWT Algorithm Confusion and Signature Bypass": >
+    As an attacker in possession of a self-contained token issued by
+    Keycloak or Entra ID, I want to exploit algorithm confusion or a
+    missing signature check so that I can forge a token claiming
+    arbitrary identity or privilege without ever holding a valid signing
+    key.
+
+  "ASVS V10.1: OAuth and SAML Authentication Flow Abuse": >
+    As an attacker, I want to exploit misconfigured OAuth callback
+    validation, missing state parameters, or SAML XML Signature Wrapping
+    vulnerabilities so that I can forge authentication assertions,
+    intercept authorization codes, or impersonate arbitrary users
+    including administrators.
+
+  "ASVS V10.7: OAuth Illicit Consent Grant via Malicious Application": >
+    As an attacker, I want to register an OAuth application requesting
+    broad delegated scopes and phish a target into granting consent so
+    that I gain persistent, self-refreshing API access to the target's
+    data that survives a password reset and requires no further
+    phishing to maintain.
+
+  # ----------------------------------------------------------------------------
+  # DEVICE AND INFRASTRUCTURE
+  # ----------------------------------------------------------------------------
+
+  "CM-7: Container Breakout and Host Takeover": >
+    As an attacker who has gained RCE inside a Confluence or Keycloak
+    pod, I want to exploit unpatched kernel vulnerabilities or excessive
+    container privileges to escape the container boundary and take
+    control of the underlying AKS worker node OS.
+
+  "SC-7(21): Cloud Metadata API Abuse (IMDS)": >
+    As an attacker inside a compromised pod, I want to execute SSRF to
+    query the Azure Instance Metadata Service so that I can steal the
+    workload's managed identity tokens and pivot my attack into the
+    Azure control plane.
+
+  "AC-6(1): Kubernetes Service Account Token Theft": >
+    As an attacker with local file access inside a pod, I want to
+    extract the automatically mounted Kubernetes ServiceAccount token so
+    I can authenticate to the K8s API server, enumerate the cluster, and
+    steal platform secrets.
+
+  "SC-7(21): East-West Lateral Movement": >
+    As a compromised frontend/ingress pod, I want to abuse the absence
+    of strict Kubernetes NetworkPolicies to port-scan the internal
+    cluster subnet and attack backend databases, caching layers, or
+    other tenant namespaces not exposed to the internet.
+
+  "SC-5: Shared Runtime Resource Exhaustion (Noisy Neighbor)": >
+    As an attacker, I want to execute a CPU and Memory fork-bomb or
+    deploy a cryptominer inside a compromised container to exhaust the
+    underlying AKS node's resources, causing the Kubelet to crash and
+    denying availability to every other workload sharing the node.
+
+  "CM-14: Container Supply Chain Poisoning": >
+    As a sophisticated threat actor, I want to compromise an upstream
+    base image or the CI/CD pipeline's Helm charts so that the platform
+    team unwittingly deploys a backdoored container image directly into
+    the trusted production boundary.
+
+  "AC-17: Administrative Interface Brute-Force and Credential Stuffing": >
+    As an attacker with network visibility to the VM management subnet,
+    I want to perform automated brute-force attacks against SSH or RDP
+    interfaces so that I can gain direct OS-level access and bypass
+    application-layer security controls.
+
+  "SI-2: Persistent Rootkit and Malware Installation": >
+    As an attacker with local user access to the AVD session host, I
+    want to exploit unpatched OS vulnerabilities to escalate privileges
+    to root so that I can install persistent malware or backdoors that
+    survive reboots and evade file-integrity monitoring.
+
+  "AC-6(5): Lateral Movement via Local Managed Identity": >
+    As an attacker on a compromised VM, I want to query the instance
+    metadata service to steal the VM's managed identity token so that I
+    can move laterally into other cloud resources (Key Vault, storage
+    accounts) granted permissions to that identity.
+
+  "SC-28: Offline Data Disk Exfiltration": >
+    As a malicious platform administrator, I want to take a snapshot of
+    a VM's data disk so that I can mount it to a rogue VM and perform
+    offline analysis to steal mission data without triggering OS-level
+    logging.
+
+  "SC-7: Host-to-VNet Pivot and Internal Scanning": >
+    As an attacker who has compromised a VM in a transit or management
+    VNet, I want to use the VM as a jump-box to bypass perimeter
+    firewalls and exploit backend databases and the AKS cluster
+    otherwise shielded from the internet.
+
+  # ----------------------------------------------------------------------------
+  # NETWORK AND ENVIRONMENT
+  # ----------------------------------------------------------------------------
+
+  "ASVS V12.1: TLS Downgrade and Weak Cipher Exploitation": >
+    As an attacker positioned on the network path, I want to force a
+    client-server or service-to-service connection to negotiate a
+    deprecated TLS version or a weak cipher suite so that I can decrypt
+    or tamper with traffic that both endpoints believed was properly
+    protected.
+
+  "ASVS V12.3: Internal Service-to-Service Traffic Left Unencrypted": >
+    As an attacker who has gained a foothold inside the internal
+    network, I want to passively observe or actively tamper with
+    plaintext or self-signed, unvalidated internal service-to-service
+    traffic so that I can intercept CUI or forge requests between
+    trusted backend components without needing to compromise either
+    endpoint directly.
+
+  # ----------------------------------------------------------------------------
+  # APPLICATION
+  # ----------------------------------------------------------------------------
+
+  "ASVS V1.3: Server-Side Template Injection and RCE": >
+    As an attacker, I want to inject wiki macro directives or OGNL/
+    Velocity expression syntax into a field Confluence evaluates as
+    dynamic content so that I can achieve arbitrary code execution
+    inside the application's own JVM/container, rather than merely
+    rendering attacker-controlled markup.
+
+  "ASVS V2.3: Business Workflow Step Skipping": >
+    As an authenticated user or a script driving the REST API directly,
+    I want to call a downstream endpoint out of sequence -- skipping a
+    required approval, verification, or review step that the UI would
+    normally force me through -- so that I complete a multi-step
+    business process (e.g., publishing or restricting a page) in a
+    state the application never intended to allow.
+
+  "ASVS V2.4: Application-Layer Data Exfiltration": >
+    As a malicious insider or compromised account, I want to abuse
+    legitimate application features (like Export to CSV, reporting
+    tools, or un-paginated APIs) so that I can scrape and download
+    massive amounts of sensitive data without triggering network-level
+    DLP alarms.
+
+  "ASVS V4.1: Asymmetric Application Denial of Service": >
+    As an attacker, I want to repeatedly trigger computationally
+    expensive features (complex nested search queries, heavy report
+    generation, or massive file parsing) so that I exhaust container
+    CPU and Memory resources and deny availability to legitimate users,
+    bypassing standard network volumetric DDoS protections.
+
+  "ASVS V5.2: Malicious Payload Distribution via File Upload": >
+    As an attacker, I want to upload disguised malicious files (malware,
+    zip bombs, macro-enabled documents) through legitimate file
+    upload/attachment features so that I can compromise other users who
+    subsequently download them or trigger server-side parsing
+    vulnerabilities.
+
+  # ----------------------------------------------------------------------------
+  # DATA
+  # ----------------------------------------------------------------------------
+
+  "ASVS V11.1: Self-Authorized Key Misuse and Trace Removal": >
+    As a privileged insider holding both key-operation and vault-
+    administration permissions, I want to grant myself key-use access,
+    use the key, and then alter the vault's own audit configuration so
+    that no independent party can detect the misuse afterward.
+
+  "ASVS V11.2: Custom Cryptography Exploitation": >
+    As an attacker, I want to target a hand-rolled or non-standard
+    cryptographic routine (a custom hash, a proprietary token scheme, an
+    outdated cipher mode) so that I can forge tokens, recover plaintext,
+    or bypass an integrity check that a vetted, standard algorithm would
+    have resisted.
+
+  "ASVS V11.7: Software-Only Key Theft via Host Compromise": >
+    As an attacker who has compromised a host holding software-only key
+    material, I want to read the key directly from process or host
+    memory so that I obtain it with no hardware boundary to cross.
+
+  "ASVS V14.1: Exfiltration from an Unclassified Data Store": >
+    As an attacker, I want to reach a data store that has never been
+    run through a classification scan so that every downstream control
+    keyed to a sensitivity label -- encryption tier, access policy, DLP
+    -- silently applies a default posture, since no label exists to
+    drive the correct one.
+
+  "ASVS V14.2: Bulk Exfiltration via an Uninspected Export Path": >
+    As a malicious insider or compromised account, I want to use this
+    asset's own legitimate bulk-export or attachment feature so that I
+    can move CUI out with no DLP inspection in the path, since the
+    export feature was never covered by the classification-aware policy.
+
+  # ----------------------------------------------------------------------------
+  # DETECTION
+  # ----------------------------------------------------------------------------
+
+  "ASVS V16.3: Enumeration Paced Under the Rate Limit": >
+    As an attacker, I want to pace object-ID enumeration or credential
+    probing requests just under this API's rate limit so that I produce
+    no throttling event at all, remaining invisible to a SOC watching
+    only for volumetric abuse.
+
+  "ASVS V16.4: Audit Trail Evasion and Tampering": >
+    As an attacker performing unauthorized actions, I want to abuse
+    business logic flaws to suppress, bypass, or flood the application's
+    internal audit logging mechanism so that my malicious activities
+    cannot be traced back to my identity by the SOC.
+
+  # ----------------------------------------------------------------------------
+  # RESPONSE
+  # ----------------------------------------------------------------------------
+
+  "IR-4: Incomplete Credential Rotation After a Breach": >
+    As an attacker who has compromised this asset, I want to retain a
+    credential that was never inventoried as one this asset consumes,
+    so that it survives the incident response team's rotation effort
+    and gives me a return path after the incident is declared contained.
+
+  "IR-3: Incident Response Plan Fails Under Real Conditions": >
+    As an incident responder executing the documented plan for the
+    first time during an actual incident, I want the plan's untested
+    assumptions about tooling access, escalation paths, and authority to
+    isolate assets to fail exactly when they matter most, turning a
+    contained incident into a prolonged one.
+
+  # ----------------------------------------------------------------------------
+  # RECOVERY
+  # ----------------------------------------------------------------------------
+
+  "CP-9: Ransomware Deletes Co-Administered Backups": >
+    As a ransomware actor who has compromised a production administrator
+    account, I want to delete or shorten the retention on the Postgres
+    Database's or Azure File Store's backups using that same account so
+    that the incident becomes unrecoverable rather than merely
+    disruptive.
+
+  "CP-4: Undiscovered Restoration Gap During an Actual Incident": >
+    As an incident responder attempting recovery, I want to execute the
+    documented restoration procedure only to discover it is incomplete,
+    outdated, or dependent on knowledge held only by the engineer who
+    originally built the backup job -- knowledge unavailable during the
+    incident itself.
+
+
+security_requirements:
+
+  # ----------------------------------------------------------------------------
+  # IDENTITY
+  # ----------------------------------------------------------------------------
+
+  "ASVS V6.1: Authentication Documentation": |
+    6.1.1 | Verify that application documentation defines how controls such as rate limiting, anti-automation, and adaptive response, are used to defend against attacks such as credential stuffing and password brute force. The documentation must make clear how these controls are configured and prevent malicious account lockout. | 1
+    6.1.2 | Verify that a list of context-specific words is documented in order to prevent their use in passwords. | 2
+    6.1.3 | Verify that, if the application includes multiple authentication pathways, these are all documented together with the security controls and authentication strength which must be consistently enforced across them. | 2
+
+  "ASVS V6.2: Password Security": |
+    6.2.1 | Verify that user set passwords are at least 8 characters in length although a minimum of 15 characters is strongly recommended. | 1
+    6.2.2 | Verify that users can change their password. | 1
+    6.2.3 | Verify that password change functionality requires the user's current and new password. | 1
+    6.2.4 | Verify that passwords submitted during account registration or password change are checked against an available set of, at least, the top 3000 passwords which match the application's password policy. | 1
+    6.2.5 | Verify that passwords of any composition can be used, without rules limiting the type of characters permitted. | 1
+    6.2.6 | Verify that password input fields use type=password to mask the entry. | 1
+    6.2.7 | Verify that "paste" functionality, browser password helpers, and external password managers are permitted. | 1
+    6.2.8 | Verify that the application verifies the user's password exactly as received from the user, without any modifications such as truncation or case transformation. | 1
+    6.2.9 | Verify that passwords of at least 64 characters are permitted. | 2
+    6.2.10 | Verify that a user's password stays valid until it is discovered to be compromised or the user rotates it. | 2
+    6.2.11 | Verify that the documented list of context specific words is used to prevent easy to guess passwords being created. | 2
+    6.2.12 | Verify that passwords submitted during account registration or password changes are checked against a set of breached passwords. | 2
+
+  "ASVS V6.3: General Authentication Security": |
+    6.3.1 | Verify that controls to prevent attacks such as credential stuffing and password brute force are implemented according to the application's security documentation. | 1
+    6.3.2 | Verify that default user accounts (e.g., "root", "admin", or "sa") are not present in the application or are disabled. | 1
+    6.3.3 | Verify that either a multi-factor authentication mechanism or a combination of single-factor authentication mechanisms, must be used in order to access the application. | 2
+    6.3.4 | Verify that, if the application includes multiple authentication pathways, there are no undocumented pathways and that security controls and authentication strength are enforced consistently. | 2
+    6.3.5 | Verify that users are notified of suspicious authentication attempts (successful or unsuccessful). | 3
+    6.3.6 | Verify that email is not used as either a single-factor or multi-factor authentication mechanism. | 3
+    6.3.7 | Verify that users are notified after updates to authentication details. | 3
+    6.3.8 | Verify that valid users cannot be deduced from failed authentication challenges. | 3
+
+  "ASVS V6.4: Authentication Factor Lifecycle and Recovery": |
+    6.4.1 | Verify that system generated initial passwords or activation codes are securely randomly generated, follow the existing password policy, and expire after a short period of time or after they are initially used. | 1
+    6.4.2 | Verify that password hints or knowledge-based authentication (so-called "secret questions") are not present. | 1
+    6.4.3 | Verify that a secure process for resetting a forgotten password is implemented, that does not bypass any enabled multi-factor authentication mechanisms. | 2
+    6.4.4 | Verify that if a multi-factor authentication factor is lost, evidence of identity proofing is performed at the same level as during enrollment. | 2
+    6.4.5 | Verify that renewal instructions for authentication mechanisms which expire are sent with enough time to be carried out before the old authentication mechanism expires. | 3
+    6.4.6 | Verify that administrative users can initiate the password reset process for the user, but that this does not allow them to change or choose the user's password. | 3
+
+  "ASVS V6.5: General Multi-factor authentication requirements": |
+    6.5.1 | Verify that lookup secrets, out-of-band authentication requests or codes, and time-based one-time passwords (TOTPs) are only successfully usable once. | 2
+    6.5.2 | Verify that, when being stored in the application's backend, lookup secrets with less than 112 bits of entropy are hashed with an approved password storage hashing algorithm that incorporates a 32-bit random salt. | 2
+    6.5.3 | Verify that lookup secrets, out-of-band authentication code, and time-based one-time password seeds, are generated using a Cryptographically Secure Pseudorandom Number Generator (CSPRNG). | 2
+    6.5.4 | Verify that lookup secrets and out-of-band authentication codes have a minimum of 20 bits of entropy. | 2
+    6.5.5 | Verify that out-of-band authentication requests, codes, or tokens, as well as TOTPs have a defined lifetime -- 10 minutes max for out-of-band, 30 seconds max for TOTP. | 2
+    6.5.6 | Verify that any authentication factor (including physical devices) can be revoked in case of theft or other loss. | 3
+    6.5.7 | Verify that biometric authentication mechanisms are only used as secondary factors together with either something you have or something you know. | 3
+    6.5.8 | Verify that TOTPs are checked based on a time source from a trusted service and not from an untrusted or client provided time. | 3
+
+  "ASVS V6.6: Out-of-Band authentication mechanisms": |
+    6.6.1 | Verify that PSTN-delivered OTPs are offered only when the phone number has previously been validated, alternate stronger methods are also offered, and L3 applications exclude phone/SMS entirely. | 2
+    6.6.2 | Verify that out-of-band authentication requests, codes, or tokens are bound to the original authentication request for which they were generated. | 2
+    6.6.3 | Verify that a code based out-of-band authentication mechanism is protected against brute force attacks by using rate limiting. | 2
+    6.6.4 | Verify that, where push notifications are used for multi-factor authentication, rate limiting is used to prevent push bombing attacks. | 3
+
+  "ASVS V6.7: Cryptographic authentication mechanism": |
+    6.7.1 | Verify that the certificates used to verify cryptographic authentication assertions are stored in a way that protects them from modification. | 3
+    6.7.2 | Verify that the challenge nonce is at least 64 bits in length, and statistically unique or unique over the lifetime of the cryptographic device. | 3
+
+  "ASVS V6.8: Authentication with an Identity Provider": |
+    6.8.1 | Verify that, if the application supports multiple identity providers (IdPs), the user's identity cannot be spoofed via another supported identity provider. | 2
+    6.8.2 | Verify that the presence and integrity of digital signatures on authentication assertions (JWTs, SAML assertions) are always validated, rejecting any unsigned or invalidly signed assertions. | 2
+    6.8.3 | Verify that SAML assertions are uniquely processed and used only once within the validity period to prevent replay attacks. | 2
+    6.8.4 | Verify that, if an application uses a separate IdP and expects specific authentication strength, methods, or recentness, the application verifies this using the information returned by the IdP. | 2
+
+  "ASVS V7.1: Session Management Documentation": |
+    7.1.1 | Verify that the user's session inactivity timeout and absolute maximum session lifetime are documented, appropriate in combination with other controls, and justify any deviation from NIST SP 800-63B. | 2
+    7.1.2 | Verify that the documentation defines how many concurrent sessions are allowed for one account and the behavior when the maximum is reached. | 2
+    7.1.3 | Verify that all systems participating in a federated session (such as SSO) are documented along with controls to coordinate session lifetimes and termination. | 2
+
+  "ASVS V7.2: Fundamental Session Management Security": |
+    7.2.1 | Verify that the application performs all session token verification using a trusted, backend service. | 1
+    7.2.2 | Verify that the application uses dynamically generated tokens for session management, not static API secrets and keys. | 1
+    7.2.3 | Verify that reference tokens representing user sessions are unique, CSPRNG-generated, and possess at least 128 bits of entropy. | 1
+    7.2.4 | Verify that the application generates a new session token on user authentication/re-authentication and terminates the current session token. | 1
+
+  "ASVS V7.3: Session Timeout": |
+    7.3.1 | Verify that there is an inactivity timeout such that re-authentication is enforced according to risk analysis and documented security decisions. | 2
+    7.3.2 | Verify that there is an absolute maximum session lifetime such that re-authentication is enforced according to risk analysis and documented security decisions. | 2
+
+  "ASVS V7.4: Session Termination": |
+    7.4.1 | Verify that when session termination is triggered, the application disallows any further use of the session. | 1
+    7.4.2 | Verify that the application terminates all active sessions when a user account is disabled or deleted. | 1
+    7.4.3 | Verify that the application gives the option to terminate all other active sessions after a successful change or removal of any authentication factor. | 2
+    7.4.4 | Verify that all pages that require authentication have easy and visible access to logout functionality. | 2
+    7.4.5 | Verify that application administrators are able to terminate active sessions for an individual user or for all users. | 2
+
+  "ASVS V7.5: Defenses Against Session Abuse": |
+    7.5.1 | Verify that the application requires full re-authentication before allowing modifications to sensitive account attributes which may affect authentication. | 2
+    7.5.2 | Verify that users are able to view and (having authenticated again) terminate any or all currently active sessions. | 2
+    7.5.3 | Verify that the application requires further authentication before performing highly sensitive transactions or operations. | 3
+
+  "ASVS V7.6: Federated Re-authentication": |
+    7.6.1 | Verify that session lifetime and termination between Relying Parties and Identity Providers behave as documented, requiring re-authentication as necessary. | 2
+    7.6.2 | Verify that creation of a session requires either the user's consent or an explicit action. | 2
+
+  "ASVS V8.1: Authorization Documentation": |
+    8.1.1 | Verify that authorization documentation defines rules for restricting function-level and data-specific access based on consumer permissions and resource attributes. | 1
+    8.1.2 | Verify that authorization documentation defines rules for field-level access restrictions based on consumer permissions and resource attributes. | 2
+    8.1.3 | Verify that the application's documentation defines the environmental and contextual attributes used to make security decisions. | 3
+    8.1.4 | Verify that authentication and authorization documentation defines how environmental and contextual factors are used in decision-making. | 3
+
+  "ASVS V8.2: General Authorization Design": |
+    8.2.1 | Verify that the application ensures that function-level access is restricted to consumers with explicit permissions. | 1
+    8.2.2 | Verify that the application ensures that data-specific access is restricted to consumers with explicit permissions to specific data items (IDOR/BOLA mitigation). | 1
+    8.2.3 | Verify that the application ensures that field-level access is restricted to consumers with explicit permissions to specific fields (BOPLA mitigation). | 2
+    8.2.4 | Verify that adaptive security controls based on a consumer's environmental and contextual attributes are implemented for authentication and authorization decisions. | 3
+
+  "ASVS V8.3: Operation Level Authorization": |
+    8.3.1 | Verify that the application enforces authorization rules at a trusted service layer and doesn't rely on controls that an untrusted consumer could manipulate. | 1
+    8.3.2 | Verify that changes to values on which authorization decisions are made are applied immediately, or mitigating controls alert on stale decisions. | 3
+    8.3.3 | Verify that access to an object is based on the originating subject's permissions, not on the permissions of any intermediary or service acting on their behalf. | 3
+
+  "ASVS V8.4: Other Authorization Considerations": |
+    8.4.1 | Verify that multi-tenant applications use cross-tenant controls to ensure consumer operations will never affect tenants with which they do not have permissions to interact. | 2
+    8.4.2 | Verify that access to administrative interfaces incorporates multiple layers of security rather than relying on network location/trusted endpoints alone. | 3
+
+  "ASVS V9.1: Token source and integrity": |
+    9.1.1 | Verify that self-contained tokens are validated using their digital signature or MAC to protect against tampering before accepting the token's contents. | 1
+    9.1.2 | Verify that only algorithms on an allowlist can be used to create and verify self-contained tokens, and the allowlist must not include the 'None' algorithm. | 1
+    9.1.3 | Verify that key material used to validate self-contained tokens is from trusted pre-configured sources for the token issuer. | 1
+
+  "ASVS V9.2: Token content": |
+    9.2.1 | Verify that, if a validity time span is present in the token data, the token is accepted only if the verification time is within this validity time span. | 1
+    9.2.2 | Verify that the service receiving a token validates the token to be the correct type and is meant for the intended purpose before accepting the token's contents. | 2
+    9.2.3 | Verify that the service only accepts tokens which are intended for use with that service (audience). | 2
+    9.2.4 | Verify that, if a token issuer uses the same private key for issuing tokens to different audiences, the issued tokens contain an audience restriction that uniquely identifies the intended audiences. | 2
+
+  "ASVS V10.1: Generic OAuth and OIDC Security": |
+    10.1.1 | Verify that tokens are only sent to components that strictly need them. | 2
+    10.1.2 | Verify that the client only accepts authorization-server values that result from a flow initiated by the same user agent session and transaction. | 2
+
+  "ASVS V10.2: OAuth Client": |
+    10.2.1 | Verify that, if the code flow is used, the OAuth client has CSRF protection via PKCE or the 'state' parameter. | 2
+    10.2.2 | Verify that, if the OAuth client can interact with more than one authorization server, it has a defense against mix-up attacks. | 2
+    10.2.3 | Verify that the OAuth client only requests the required scopes in requests to the authorization server. | 3
+
+  "ASVS V10.3: OAuth Resource Server": |
+    10.3.1 | Verify that the resource server only accepts access tokens that are intended for use with that service (audience). | 2
+    10.3.2 | Verify that the resource server enforces authorization decisions based on claims from the access token that define delegated authorization. | 2
+    10.3.3 | Verify that if an access control decision requires identifying a unique user from an access token, the resource server identifies the user from claims that cannot be reassigned to other users. | 2
+    10.3.4 | Verify that, if the resource server requires specific authentication strength, methods, or recentness, it verifies that the presented access token satisfies these constraints. | 2
+    10.3.5 | Verify that the resource server prevents the use of stolen/replayed access tokens by requiring sender-constrained access tokens (mTLS or DPoP). | 3
+
+  "ASVS V10.4: OAuth Authorization Server": |
+    10.4.1 | Verify that the authorization server validates redirect URIs based on a client-specific allowlist of pre-registered URIs using exact string comparison. | 1
+    10.4.2 | Verify that an authorization code can be used only once for a token request; reuse revokes all issued tokens related to it. | 1
+    10.4.3 | Verify that the authorization code is short-lived (up to 10 minutes for L1/L2, up to 1 minute for L3). | 1
+    10.4.4 | Verify that for a given client, the authorization server only allows the grants that client needs. | 1
+    10.4.5 | Verify that the authorization server mitigates refresh token replay attacks for public clients, preferably via sender-constrained refresh tokens. | 1
+    10.4.6 | Verify that, if the code grant is used, the authorization server requires PKCE. | 2
+    10.4.7 | Verify that, if unauthenticated dynamic client registration is supported, client metadata is validated and the user warned before processing. | 2
+    10.4.8 | Verify that refresh tokens have an absolute expiration, including if sliding refresh token expiration is applied. | 2
+    10.4.9 | Verify that refresh tokens and reference access tokens can be revoked by an authorized user via the authorization server UI. | 2
+    10.4.10 | Verify that confidential clients are authenticated for backchannel requests such as token requests and revocation requests. | 2
+    10.4.11 | Verify that the authorization server configuration only assigns the required scopes to the OAuth client. | 2
+
+  "ASVS V10.5: OIDC Client": |
+    10.5.1 | Verify that the client mitigates ID Token replay attacks (e.g. nonce validation). | 2
+    10.5.2 | Verify that the client uniquely identifies the user from ID Token claims that cannot be reassigned to other users. | 2
+    10.5.3 | Verify that the client rejects authorization server metadata whose issuer URL doesn't exactly match the pre-configured value. | 2
+    10.5.4 | Verify that the client validates the ID Token's audience against its own client_id. | 2
+    10.5.5 | Verify that, when using OIDC back-channel logout, the client mitigates forced-logout DoS and cross-JWT confusion. | 2
+
+  "ASVS V10.6: OpenID Provider": |
+    10.6.1 | Verify that the OpenID Provider only allows values 'code', 'ciba', 'id_token', or 'id_token code' for response mode. | 2
+    10.6.2 | Verify that the OpenID Provider mitigates denial of service through forced logout. | 2
+
+  "ASVS V10.7: Consent Management": |
+    10.7.1 | Verify that the authorization server ensures that the user consents to each authorization request. | 2
+    10.7.2 | Verify that when the authorization server prompts for user consent, it presents sufficient and clear information about what is being consented to. | 2
+    10.7.3 | Verify that the user can review, modify, and revoke consents which the user has granted through the authorization server. | 2
+
+  # ----------------------------------------------------------------------------
+  # DEVICE AND INFRASTRUCTURE
+  # ----------------------------------------------------------------------------
+
+  "CM-14: Immutable and Trusted Image Supply Chain": |
+    1 | All container workloads MUST be instantiated from cryptographically signed, vulnerability-scanned images sourced from an approved registry (e.g., Iron Bank). | 1
+    2 | Mutable image tags (e.g., :latest) are prohibited; all deployments MUST reference explicit SHA-256 image digests. | 2
+
+  "CM-7: Least-Privilege, Read-Only Container Execution": |
+    1 | Containers MUST NOT execute as root (UID 0) without a formal POA&M; the PodSecurityContext MUST set allowPrivilegeEscalation: false and runAsNonRoot: true. | 1
+    2 | Containers MUST explicitly drop all unnecessary Linux capabilities, adding back only what's demonstrably required. | 2
+    3 | Containers MUST mount their root filesystem as read-only; required ephemeral write access MUST be restricted to explicitly defined temporary volumes. | 2
+
+  "SC-7(21): Zero-Trust Network Micro-Segmentation": |
+    1 | A default-deny Kubernetes NetworkPolicy MUST be enforced across all namespaces, with East-West and North-South communication explicitly allow-listed. | 1
+    2 | Pods MUST NOT route traffic to the broader Azure VNet unless explicitly authorized. | 2
+    3 | Pods MUST be blocked via NetworkPolicy from accessing the Azure instance metadata service. | 2
+
+  "SC-5: Resource Quotas and Limit Enforcement": |
+    1 | All Deployments, StatefulSets, and DaemonSets MUST define explicit CPU and Memory requests and limits. | 1
+    2 | Pods lacking explicit resource requests/limits MUST be rejected by the cluster admission controller. | 2
+
+  "AC-6: Least-Privilege Workload and Node Identity": |
+    1 | Default Kubernetes ServiceAccount tokens MUST NOT be auto-mounted unless the workload explicitly requires K8s API access. | 1
+    2 | VM and node managed identities MUST adhere to least privilege. | 2
+    3 | Instance metadata service access MUST enforce IMDSv2 to mitigate SSRF-based token theft. | 2
+
+  "CM-6: Hardened Baseline Operating System Configuration": |
+    1 | All VMs and node images MUST be provisioned from approved, hardened base images. | 1
+    2 | OS configuration MUST comply with the latest applicable DISA STIG or an equivalent vendor-published hardening baseline. | 2
+
+  "SI-2: Automated Vulnerability and Patch Management": |
+    1 | VMs and node images MUST be enrolled in an automated patch management system. | 1
+    2 | Critical CVEs MUST be remediated within 7 days and High CVEs within 21 days. | 2
+
+  "SI-4: Continuous Endpoint Monitoring": |
+    1 | All VMs MUST have mandatory endpoint security agents (EDR, HBSS-equivalent) installed, active, and reporting health status. | 1
+
+  "AC-17: Secure Administrative Access (JIT and Bastion)": |
+    1 | Direct internet-inbound administrative access (SSH port 22, RDP port 3389) is strictly prohibited. | 1
+    2 | All administrative access MUST route through an authorized chokepoint (e.g., Azure Bastion) and enforce JIT access controls requiring MFA and explicit approval. | 2
+
+  "SC-28: Host-Level Data-at-Rest Encryption": |
+    1 | All virtual disks MUST be encrypted at rest using Azure Disk Encryption or Host-Based Encryption. | 1
+    2 | Encryption MUST use FIPS 140-2/3 validated modules, with keys managed via the enterprise key vault. | 3
+
+  # ----------------------------------------------------------------------------
+  # NETWORK AND ENVIRONMENT
+  # ----------------------------------------------------------------------------
+
+  "ASVS V12.1: General TLS Security Guidance": |
+    12.1.1 | Verify that only the latest recommended versions of the TLS protocol are enabled, such as TLS 1.2 and TLS 1.3. | 1
+    12.1.2 | Verify that only recommended cipher suites are enabled, with the strongest cipher suites set as preferred. | 2
+    12.1.3 | Verify that the application validates that mTLS client certificates are trusted before using the certificate identity for authentication or authorization. | 2
+    12.1.4 | Verify that proper certification revocation, such as OCSP Stapling, is enabled and configured. | 3
+    12.1.5 | Verify that Encrypted Client Hello (ECH) is enabled to prevent exposure of sensitive metadata during TLS handshake. | 3
+
+  "ASVS V12.2: HTTPS Communication with External Facing Services": |
+    12.2.1 | Verify that TLS is used for all connectivity between a client and external facing, HTTP-based services, with no fallback to insecure communications. | 1
+    12.2.2 | Verify that external facing services use publicly trusted TLS certificates. | 1
+
+  "ASVS V12.3: General Service to Service Communication Security": |
+    12.3.1 | Verify that an encrypted protocol such as TLS is used for all inbound and outbound connections to and from the application. | 2
+    12.3.2 | Verify that TLS clients validate certificates received before communicating with a TLS server. | 2
+    12.3.3 | Verify that TLS or another appropriate transport encryption mechanism is used for all internal, HTTP-based service-to-service connectivity within the application. | 2
+    12.3.4 | Verify that TLS connections between internal services use trusted certificates. | 2
+    12.3.5 | Verify that services communicating internally use strong authentication (e.g. TLS client authentication) to ensure that each endpoint is verified. | 3
+
+  # ----------------------------------------------------------------------------
+  # APPLICATION
+  # ----------------------------------------------------------------------------
+
+  "ASVS V1.3: Sanitization": |
+    1.3.1 | Verify that all untrusted HTML input from WYSIWYG editors or similar is sanitized using a well-known and secure HTML sanitization library or framework feature. | 1
+    1.3.2 | Verify that the application avoids the use of eval() or other dynamic code execution features such as Spring Expression Language (SpEL). Where there is no alternative, any user input being included must be sanitized before being executed. | 1
+    1.3.5 | Verify that the application sanitizes or disables user-supplied scriptable or expression template language content, such as Markdown, CSS or XSL stylesheets, BBCode, or similar -- including wiki macro directives and OGNL/Velocity expression syntax. | 2
+    1.3.7 | Verify that the application protects against template injection attacks by not allowing templates to be built based on untrusted input. Where there is no alternative, any untrusted input being included dynamically during template creation must be sanitized or strictly validated. | 2
+
+  "ASVS V2.3: Business Logic Security": |
+    2.3.1 | Verify that the application will only process business logic flows for the same user in the expected sequential step order and without skipping steps. | 1
+    2.3.2 | Verify that business logic limits are implemented per the application's documentation to avoid business logic flaws being exploited. | 2
+    2.3.3 | Verify that transactions are being used at the business logic level such that either a business logic operation succeeds in its entirety or it is rolled back to the previous correct state. | 2
+
+  "ASVS V2.4: Anti-automation": |
+    2.4.1 | Verify that anti-automation controls are in place to protect against excessive calls to application functions that could lead to data exfiltration, garbage-data creation, quota exhaustion, rate-limit breaches, denial-of-service, or overuse of costly resources. | 2
+    2.4.2 | Verify that business logic flows require realistic human timing, preventing excessively rapid transaction submissions. | 3
+
+  "ASVS V4.1: Generic Web Service Security": |
+    4.1.1 | Verify that every HTTP response with a message body contains a Content-Type header field that matches the actual content of the response. | 1
+    4.1.2 | Verify that only user-facing endpoints automatically redirect from HTTP to HTTPS, while other services or endpoints do not implement transparent redirects. | 2
+    4.1.3 | Verify that any HTTP header field used by the application and set by an intermediary layer cannot be overridden by the end-user. | 2
+    4.1.4 | Verify that only HTTP methods that are explicitly supported by the application or its API can be used and that unused methods are blocked. | 3
+
+  "ASVS V5.1: File Handling Documentation": |
+    5.1.1 | Verify that the documentation defines the permitted file types, expected file extensions, and maximum size (including unpacked size) for each upload feature, and how files are made safe for end-users to download and process. | 2
+
+  "ASVS V5.2: File Upload and Content": |
+    5.2.1 | Verify that the application will only accept files of a size which it can process without causing a loss of performance or a denial of service attack. | 1
+    5.2.2 | Verify that when the application accepts a file, it checks if the file extension matches an expected file extension and validates that the contents correspond to the type represented by the extension. | 1
+    5.2.3 | Verify that the application checks compressed files against maximum allowed uncompressed size and against maximum number of files before uncompressing the file. | 2
+    5.2.5 | Verify that the application does not allow uploading compressed files containing symlinks unless this is specifically required. | 3
+    5.2.6 | Verify that the application rejects uploaded images with a pixel size larger than the maximum allowed, to prevent pixel flood attacks. | 3
+
+  "ASVS V5.3: File Storage": |
+    5.3.1 | Verify that files uploaded or generated by untrusted input and stored in a public folder, are not executed as server-side program code when accessed directly with an HTTP request. | 1
+    5.3.2 | Verify that when the application creates file paths for file operations, it uses internally generated or trusted data rather than user-submitted filenames, to protect against path traversal, LFI, RFI, and SSRF attacks. | 1
+
+  "ASVS V5.4: File Download": |
+    5.4.1 | Verify that the application validates or ignores user-submitted filenames and specifies a filename in the Content-Disposition header field in the response. | 2
+    5.4.3 | Verify that files obtained from untrusted sources are scanned by antivirus scanners to prevent serving of known malicious content. | 2
+
+  # ----------------------------------------------------------------------------
+  # DATA
+  # ----------------------------------------------------------------------------
+
+  "ASVS V11.1: Cryptographic Inventory and Documentation": |
+    11.1.1 | Verify that there is a documented policy for management of cryptographic keys and a cryptographic key lifecycle that follows a key management standard such as NIST SP 800-57. | 2
+    11.1.2 | Verify that a cryptographic inventory is performed, maintained, regularly updated, and includes all cryptographic keys, algorithms, and certificates used by the application. | 2
+
+  "ASVS V11.2: Secure Cryptography Implementation": |
+    11.2.1 | Verify that industry-validated implementations (including libraries and hardware-accelerated implementations) are used for cryptographic operations -- hand-rolled or non-standard cryptographic routines are prohibited. | 2
+    11.2.2 | Verify that the application is designed with crypto agility such that algorithms, key lengths, and modes can be reconfigured, upgraded, or swapped at any time. | 2
+    11.2.3 | Verify that all cryptographic primitives utilize a minimum of 128-bits of security based on the algorithm, key size, and configuration. | 2
+
+  "ASVS V14.1: Data Protection Documentation": |
+    14.1.1 | Verify that all sensitive data created and processed by the application has been identified and classified into protection levels. | 2
+    14.1.2 | Verify that all sensitive data protection levels have a documented set of protection requirements. | 2
+
+  "ASVS V14.2: General Data Protection": |
+    14.2.1 | Verify that sensitive data is only sent to the server in the HTTP message body or header fields. | 1
+    14.2.2 | Verify that the application prevents sensitive data from being cached in server components. | 2
+    14.2.3 | Verify that defined sensitive data is not sent to untrusted parties. | 2
+    14.2.4 | Verify that controls around sensitive data related to encryption, integrity verification, retention, and logging are implemented as defined in the documentation. | 2
+    14.2.7 | Verify that sensitive information is subject to data retention classification, ensuring that outdated or unnecessary data is deleted automatically or on a defined schedule. | 3
+
+  # ----------------------------------------------------------------------------
+  # DETECTION
+  # ----------------------------------------------------------------------------
+
+  "ASVS V16.1: Security Logging Documentation": |
+    16.1.1 | Verify that an inventory exists documenting the logging performed at each layer of the application's technology stack. | 2
+
+  "ASVS V16.2: General Logging": |
+    16.2.1 | Verify that each log entry includes necessary metadata (when, where, who, what). | 2
+    16.2.2 | Verify that time sources for all logging components are synchronized, and that timestamps use UTC or include an explicit time zone offset. | 2
+    16.2.3 | Verify that the application only stores or broadcasts logs to the files and services documented in the log inventory. | 2
+    16.2.4 | Verify that logs can be read and correlated by the log processor in use, preferably using a common logging format. | 2
+    16.2.5 | Verify that logging sensitive data enforces the data's protection level. | 2
+
+  "ASVS V16.3: Security Events": |
+    16.3.1 | Verify that all authentication operations are logged, including successful and unsuccessful attempts. | 2
+    16.3.2 | Verify that failed authorization attempts are logged. | 2
+    16.3.3 | Verify that the application logs the security events defined in documentation and attempts to bypass security controls. | 2
+    16.3.4 | Verify that the application logs unexpected errors and security control failures. | 2
+
+  "ASVS V16.4: Log Protection": |
+    16.4.1 | Verify that all logging components appropriately encode data to prevent log injection. | 2
+    16.4.2 | Verify that logs are protected from unauthorized access and cannot be modified. | 2
+    16.4.3 | Verify that logs are securely transmitted to a logically separate system for analysis, detection, alerting, and escalation. | 2
+
+  "ASVS V16.5: Error Handling": |
+    16.5.1 | Verify that a generic message is returned to the consumer when an unexpected or security-sensitive error occurs. | 2
+    16.5.2 | Verify that the application continues to operate securely when external resource access fails. | 2
+    16.5.3 | Verify that the application fails gracefully and securely, preventing fail-open conditions. | 2
+    16.5.4 | Verify that a "last resort" error handler is defined which will catch all unhandled exceptions. | 3
+
+  # ----------------------------------------------------------------------------
+  # RESPONSE
+  # ----------------------------------------------------------------------------
+
+  "IR-4: Containment Disposition": |
+    1 | Business-critical, mission-critical, internet-facing, exception-bearing, and CDS-interface assets MUST have a documented containment disposition (auto-isolation permitted / human approval required / prohibited) agreed in advance by the asset owner and the response team. | 1
+
+  "IR-4: Credential Inventory for Incident-Driven Rotation": |
+    1 | A current inventory of every credential/secret an asset consumes or issues MUST exist, sufficient to identify every consumer and complete a full rotation without an extended outage. | 1
+    2 | The rotation procedure MUST be exercised, not merely documented, within the current ATO period. | 3
+
+  "IR-3: Regularly Tested Incident Response Plan": |
+    1 | A plan that has only ever been reviewed on paper does not satisfy this requirement. | 1
+    2 | The incident response plan MUST be exercised via tabletop or live-fire testing at least annually, with findings tracked to closure. | 2
+
+  "IR-6: Mandatory Incident Reporting Timeline": |
+    1 | Cyber incidents meeting the DFARS 252.204-7012 reporting threshold MUST be reported to the required authority within 72 hours of discovery. | 1
+    2 | The reporting workflow and escalation contacts MUST be documented and known to the on-call responder, not looked up for the first time during the incident. | 2
+
+  # ----------------------------------------------------------------------------
+  # RECOVERY
+  # ----------------------------------------------------------------------------
+
+  "CP-9 / AC-5: Backup Access Separation and Immutability": |
+    1 | Backup administration MUST be a role distinct from production administration, with dual authorization and step-up authentication required for destructive backup operations. | 1
+    2 | The backup store's immutability lock MUST be in compliance mode -- irreversible by any account, including the backup platform's own administrators, for the retention period. | 3
+
+  "CP-2: Criticality-Derived Recovery Objectives": |
+    1 | A criticality-tier-derived RTO and RPO MUST be documented in the system contingency plan for each asset. | 1
+
+  "CP-4: Tested Restoration Procedure": |
+    1 | Documented RTO/RPO values MUST be validated against the measured result of an actual restore test. | 2
+    2 | A full restoration exercise, using only the written procedure and performed by someone other than its author, MUST be completed at least annually for business-critical/mission-critical assets. | 3

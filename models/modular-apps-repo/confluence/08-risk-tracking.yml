@@ -1,0 +1,32 @@
+risk_tracking:
+
+  unauthorized-marketplace-plugin@confluence:
+    status: in-progress
+    justification: >
+      Investigation pending. The ISSE team is currently coordinating with the 
+      Platform Engineering team to determine the exact technical or procedural 
+      controls (e.g., UPM disablement, strict RBAC, or IaC deployments) utilized 
+      to restrict third-party plugin installations within the Confluence JVM. 
+      Once the mitigation strategy is confirmed and verified, this finding will 
+      be updated.
+    ticket: TBD
+    date: 2026-04-26
+    checked_by: Jesse Starkey
+
+  cui-telemetry-spillage@*:
+    status: in-discussion
+    justification: >
+      Finding acknowledged; currently unmitigated. The Confluence application 
+      (Log4j) does not currently employ regex-based data masking or redaction 
+      for user-generated content (CUI) or verbose error traces prior to 
+      writing to stdout. Consequently, sensitive mission metadata may be 
+      ingested in plaintext by the Azure Monitor agent. 
+      
+      The Platform Security team is currently evaluating the engineering effort 
+      required to implement custom Logstash filters at the cluster level versus 
+      formalizing a Risk Acceptance (POA&M) to treat the destination SIEM as a 
+      high-side CUI enclave. This finding remains open pending a formal 
+      architectural decision and resource allocation.
+    ticket: TBD
+    date: 2026-04-26
+    checked_by: Jesse Starkey

@@ -1,0 +1,364 @@
+trust_boundaries:
+
+  # ============================================================================
+  # 1. CLOUD PERIMETERS
+  # Top-level Azure cloud and ATO accreditation boundaries.
+  # Source library: 06-boundaries-lib/01-azure/01-cloud-perimeters.yml
+  # ============================================================================
+
+  Azure Gov Environment:
+    id: azure-gov
+    description: >
+      The authorized Microsoft Azure Government cloud boundary. Encompasses all 
+      tenant subscriptions, regions, and underlying physical infrastructure managed 
+      by the Cloud Service Provider (CSP) under the FedRAMP High / DoD IL5 provisional authorization.
+    type: network-cloud-provider
+    tags:
+      - mgmt:csp-managed
+      - icon:azure-management-groups
+    technical_assets_inside:
+    trust_boundaries_nested:
+      - sys-env
+
+  System Environment:
+    id: sys-env
+    description: >
+      The formal Accreditation Boundary (ATO) for this specific mission system. 
+      All ingress/egress traffic crossing this perimeter is strictly controlled, 
+      monitored, and logged by central routing chokepoints.
+    type: network-cloud-provider
+    tags:
+      - scope:ato-boundary
+      - icon:azure-subscription
+    technical_assets_inside:
+    trust_boundaries_nested:
+      - dmz-vnet
+      - platform-prod-vnet
+      - firewall-vnet
+      - avd-vnet
+      - azure-paas-services
+      - azure-global-tenant-services
+
+
+  # ============================================================================
+  # 2. CLOUD Services
+  # Azure services that are managed at the global level or customer subscription level.
+  # Source library: 06-boundaries-lib/01-azure/02-cloud-services.yml
+  # ============================================================================
+
+  Azure PaaS Services:
+    id: azure-paas-services
+    description: >
+      The logical boundary representing Microsoft-managed Platform-as-a-Service 
+      (PaaS) offerings (e.g., Key Vault, Azure Storage). While the physical infrastructure 
+      is managed by the CSP, access is strictly governed by Azure RBAC and Private Endpoints.
+    type: network-cloud-security-group
+    tags:
+      - mgmt:csp-managed
+      - zone:restricted
+    technical_assets_inside: 
+      - azure-key-vault
+      - azure-file-store
+      - log-analytics-workspace
+    trust_boundaries_nested:
+
+
+  # ============================================================================
+  # 3. IDENTITY ENCLAVES
+  # Identity provider enclaves for federated authentication.
+  # Source library: 06-boundaries-lib/01-azure/03-identity-enclaves.yml (currently an empty placeholder -- this content is custom-authored)
+  # ============================================================================
+
+  Azure Global Tenant Services:
+    id: azure-global-tenant-services
+    description: >
+      The logical boundary for cloud provider-managed global, tenant-scoped
+      services -- Entra ID is the parent of (not a resource deployed into)
+      this subscription, with no regional deployment step at all, so it
+      belongs here rather than Azure PaaS Services above (which is for
+      regionally-deployed managed resources like Key Vault and Storage).
+      Keycloak is a separate, self-hosted IdP running as a pod on the
+      Platform Prod AKS Cluster -- see its own namespace there, not this
+      boundary.
+    type: network-cloud-provider
+    tags:
+      - mgmt:csp-managed
+    technical_assets_inside:
+      - entra-id
+    trust_boundaries_nested:
+
+
+  # ============================================================================
+  # 4. HUB Azure Virtual Enclave (AVE)
+  # Central traffic inspection and routing chokepoint.
+  # Source library: 06-boundaries-lib/01-azure/04-hub-enclave.yml
+  # ============================================================================
+
+  Hub Firewall VNet:
+    id: firewall-vnet
+    description: >
+      The centralized Hub Virtual Network. Acts as the primary transit and
+      inspection chokepoint for all North-South (Internet) and East-West
+      (Inter-VNet) traffic, enforcing deep packet inspection (DPI) and
+      strict network access controls.
+    type: network-cloud-security-group
+    tags:
+      - zone:dmz
+      - icon:azure-vnet
+    technical_assets_inside:
+    trust_boundaries_nested:
+      - firewall-subnet
+
+
+  # ============================================================================
+  # 5. SPOKE Azure Virtual Enclaves (AVEs)
+  # Application, DMZ, AVD, Management, and environment-specific AVEs.
+  # Source library: 06-boundaries-lib/01-azure/05-spoke-enclaves.yml
+  # ============================================================================
+
+  DMZ VNet:
+    id: dmz-vnet
+    description: >
+      The public-facing Demilitarized Zone (DMZ) Virtual Network. Hosts internet-accessible
+      reverse proxies and Web Application Firewalls (WAF) to terminate TLS and
+      filter malicious Layer-7 payloads before traffic enters the internal hub.
+    type: network-cloud-security-group
+    tags:
+      - zone:dmz
+      - icon:azure-vnet
+    technical_assets_inside:
+    trust_boundaries_nested:
+      - dmz-subnet
+
+  Prod VNet:
+    id: platform-prod-vnet
+    description: >
+      The highly restricted Production Virtual Network. Hosts the primary mission
+      compute clusters (AKS) and backend PaaS services. This VNet has no direct
+      inbound route from the internet and relies exclusively on the Hub VNet for ingress.
+    type: network-cloud-security-group
+    tags:
+      - zone:restricted
+      - icon:azure-vnet
+    technical_assets_inside:
+    trust_boundaries_nested:
+      - platform-prod-aks-subnet
+      - platform-prod-private-endpoints
+      - platform-prod-storage-resources
+
+  AVD VNet:
+    id: avd-vnet
+    description: >
+      The dedicated Virtual Network for Azure Virtual Desktop (AVD) session hosts.
+      Provides a secure, isolated execution environment for mission users, segregating
+      endpoint computing from the backend mission data and application clusters.
+    type: network-cloud-security-group
+    tags:
+      - zone:restricted
+      - icon:azure-vnet
+    technical_assets_inside:
+    trust_boundaries_nested:
+      - avd-subnet
+
+
+  # ============================================================================
+  # 6. SUBNETS
+  # Delegated subnets within the Hub Firewall, DMZ, AVD, and Prod VNets for
+  # specific workload types.
+  # Source library: 06-boundaries-lib/01-azure/06-subnets.yml
+  # ============================================================================
+
+  AVD Subnet:
+    id: avd-subnet
+    description: >
+      A private (no direct internet route) subnet within the AVD VNet
+      hosting the Azure Virtual Desktop session hosts -- a real AVD host
+      pool is always assigned to a specific subnet, so this is modeled
+      explicitly rather than nesting it directly inside the parent VNet.
+      Network Security Group rules restrict inbound connections to the
+      Azure-managed AVD control plane; session hosts have no direct
+      inbound route from the internet.
+    type: network-cloud-security-group
+    tags:
+      - zone:restricted
+      - icon:azure-subnet
+      - icon:azure-nsg
+    technical_assets_inside:
+      - avd-session-host
+    trust_boundaries_nested:
+
+  Firewall Subnet:
+    id: firewall-subnet
+    description: >
+      The reserved AzureFirewallSubnet hosting Azure Firewall's inspection
+      endpoints -- public (internet-routable), since this is the
+      North-South inspection chokepoint itself, not a backend workload
+      tier. No icon:azure-nsg here unlike the app's other subnets below:
+      Azure does not permit a Network Security Group to be associated with
+      the AzureFirewallSubnet specifically (a platform-enforced
+      restriction, not a modeling choice) -- access control here is
+      enforced entirely through Azure Firewall's own rule collections
+      instead.
+    type: network-cloud-security-group
+    tags:
+      - zone:dmz
+      - icon:azure-subnet
+    technical_assets_inside:
+      - azure-firewall
+    trust_boundaries_nested:
+
+  DMZ Subnet:
+    id: dmz-subnet
+    description: >
+      A public (internet-routable) subnet within the DMZ VNet hosting the
+      internet-facing Application Gateways -- a real Application Gateway
+      requires its own dedicated subnet, so it's modeled explicitly rather
+      than directly inside the parent VNet. Network Security Group rules
+      restrict inbound connections to HTTPS from the internet plus the
+      Azure-required GatewayManager/AzureLoadBalancer service tags.
+    type: network-cloud-security-group
+    tags:
+      - zone:dmz
+      - icon:azure-subnet
+      - icon:azure-nsg
+    technical_assets_inside:
+      - confluence-application-gateway
+      - keycloak-application-gateway
+    trust_boundaries_nested:
+
+  Platform Prod Storage Resources:
+    id: platform-prod-storage-resources
+    description: >
+      A highly restricted, delegated subnet within the Prod VNet explicitly reserved
+      for managed database instances (e.g., PostgreSQL Flexible Server). Network Security
+      Groups (NSGs) restrict inbound connections exclusively to authorized application subnets.
+    type: network-cloud-security-group
+    tags:
+      - zone:restricted
+      - icon:azure-subnet
+      - icon:azure-nsg
+    technical_assets_inside:
+      - postgres-database
+    trust_boundaries_nested:
+
+  Platform Prod AKS Subnet:
+    id: platform-prod-aks-subnet
+    description: >
+      A dedicated subnet within the Prod VNet delegated to the AKS cluster's
+      node pool -- a real AKS node pool is always assigned to a specific
+      subnet, so this is modeled explicitly rather than nesting the cluster
+      boundary directly inside the VNet.
+    type: network-cloud-security-group
+    tags:
+      - zone:restricted
+      - icon:azure-subnet
+      - icon:azure-nsg
+    technical_assets_inside:
+    trust_boundaries_nested:
+      - platform-prod-aks-cluster
+
+  Platform Prod Private Endpoints:
+    id: platform-prod-private-endpoints
+    description: >
+      A dedicated subnet hosting Azure Private Link endpoints. This enables workloads 
+      within the Prod VNet to communicate securely with PaaS services (Key Vault, Storage) 
+      over the Azure backbone network, completely bypassing the public internet.
+    type: network-cloud-security-group
+    tags:
+      - zone:restricted
+      - icon:azure-subnet
+      - icon:azure-nsg
+    technical_assets_inside:
+      - azure-file-store-private-endpoint
+      - azure-key-vault-private-endpoint
+    trust_boundaries_nested:
+
+
+  # ============================================================================
+  # 7. AKS CLUSTERS
+  # Kubernetes managed cluster boundaries per environment.
+  # Source library: 06-boundaries-lib/01-azure/07-aks-clusters.yml
+  # ============================================================================
+
+  Platform Prod AKS Cluster:
+    id: platform-prod-aks-cluster
+    description: >
+      The Azure Kubernetes Service (AKS) managed cluster boundary. Enforces node-level 
+      security, strict pod admission controls (e.g., OPA Gatekeeper/Azure Policy), 
+      and centralized orchestration for all containerized mission workloads.
+    type: network-cloud-security-group
+    tags:
+      - zone:restricted
+      - icon:azure-aks
+    technical_assets_inside:
+      - aks-etcd-datastore
+    trust_boundaries_nested:
+      - confluence-namespace
+      - ingress-namespace
+      - keycloak-namespace
+      - storage-csi-namespace
+
+
+  # ============================================================================
+  # 8. KUBERNETES NAMESPACES
+  # NetworkPolicy-enforced namespace isolation within AKS clusters.
+  # Source library: 06-boundaries-lib/01-azure/08-kubernetes-namespaces.yml
+  # ============================================================================
+
+  Ingress Namespace:
+    id: ingress-namespace
+    description: >
+      A dedicated Kubernetes namespace isolated via strict NetworkPolicies. Hosts the 
+      internal Nginx Ingress Controllers, acting as the final Layer-7 routing chokepoint 
+      before traffic reaches the individual tenant application namespaces.
+    type: network-policy-namespace-isolation
+    tags:
+      - icon:k8s-namespace
+    technical_assets_inside:
+      - nginx-ingress-pod
+    trust_boundaries_nested: 
+
+  Confluence Namespace:
+    id: confluence-namespace
+    description: >
+      The logically isolated Kubernetes namespace dedicated exclusively to the Confluence
+      application stack. NetworkPolicies enforce a 'default-deny' posture, restricting
+      lateral movement and only allowing ingress from the designated Ingress namespace.
+    type: network-policy-namespace-isolation
+    tags:
+      - icon:k8s-namespace
+    technical_assets_inside:
+      - confluence
+    trust_boundaries_nested:
+
+  Storage CSI Namespace:
+    id: storage-csi-namespace
+    description: >
+      Dedicated Kubernetes namespace for the AKS CSI driver -- cluster-level
+      storage plumbing shared by any workload needing its storage class, not
+      an app-specific component, so it doesn't belong inside Confluence
+      Namespace even though Confluence is currently its only caller.
+      NetworkPolicies restrict ingress to the specific in-cluster callers
+      that mount volumes through it.
+    type: network-policy-namespace-isolation
+    tags:
+      - icon:k8s-namespace
+    technical_assets_inside:
+      - aks-csi-driver
+    trust_boundaries_nested:
+
+  Keycloak Namespace:
+    id: keycloak-namespace
+    description: >
+      Dedicated Kubernetes namespace for the Keycloak IdP and its backing
+      identity store, isolated from every other service per
+      namespace-per-service best practice. NetworkPolicies enforce a
+      'default-deny' posture, restricting lateral movement and only
+      allowing ingress from the designated Ingress namespace.
+    type: network-policy-namespace-isolation
+    tags:
+      - icon:k8s-namespace
+    technical_assets_inside:
+      - keycloak-authentication
+      - keycloak-id-store
+    trust_boundaries_nested:

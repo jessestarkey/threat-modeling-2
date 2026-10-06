@@ -1,0 +1,1605 @@
+technical_assets:
+
+  # ============================================================================
+  # 1. EXTERNAL ENTITIES (Out of Scope)
+  # Assets representing users and endpoints outside the ATO boundary.
+  # Source library: 05-tech-assets-lib/01-azure/01-external-entities.yml
+  # ============================================================================
+
+  End User Web Client:
+    id: end-user-web-client
+    description: >
+      A human mission user or administrator attempting to access an authorized 
+      web application or service via an approved web browser.
+    type: external-entity
+    usage: business 
+    used_as_client_by_human: true
+    out_of_scope: true
+    justification_out_of_scope: >
+      This asset represents the physical endpoint (e.g., GFEs, laptops, or mobile devices) 
+      utilized by mission personnel to access the application. These devices reside outside 
+      the formal Accreditation Boundary (ATO) of this specific cloud-hosted system. 
+      Security configuration, patch management, endpoint detection and response (EDR), and 
+      physical security for these devices are the explicit responsibility of the user's 
+      parent organization or the enterprise IT service provider, not the application owner.
+    size: component
+    technology: browser
+    tags:
+      - icon:human-web
+    internet: true
+    machine: physical
+    encryption: none
+    owner: External user
+    confidentiality: internal
+    integrity: operational
+    availability: operational 
+    justification_cia_rating: >
+      Confidentiality (Internal): As an unmanaged or external endpoint, this client 
+      is not authorized to permanently store mission payloads. However, it temporarily 
+      processes in-memory session tokens, user credentials, and rendered CUI during 
+      active browser sessions. The 'Internal' rating reflects the risk that a compromised 
+      endpoint (e.g., via malware or physical theft) could lead to localized data 
+      exposure, necessitating strong transport encryption (TLS 1.2+) and short-lived 
+      session timeouts to mitigate exfiltration risks.
+      
+      Integrity (Operational): The integrity of the client environment is required 
+      to ensure that user commands and data submissions are transmitted unaltered. 
+      While the endpoint itself is out of scope for direct DoW management, a loss 
+      of integrity (e.g., via a malicious browser extension or Man-in-the-Browser attack) 
+      would permit an attacker to hijack the active session and inject unauthorized 
+      transactions into the backend application.
+      
+      Availability (Operational): The functional availability of the client device 
+      is necessary for the individual user to participate in the mission. A localized 
+      failure (e.g., a hardware crash or network disconnect) disrupts the specific 
+      operator's productivity but does not impact the broader availability or 
+      resilience of the centralized DoD application platform.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: false
+    data_assets_processed:
+      - structured-confluence-data
+      - unstructured-confluence-data
+      - human-session-credentials
+      - user-credentials
+      - user-input
+    data_assets_stored:
+    data_formats_accepted:
+    communication_links:
+      Keycloak Authentication:
+        target: keycloak-application-gateway
+        description: >
+          Initial OIDC/SAML authentication flow; transmits raw user credentials
+          to the Keycloak Application Gateway to establish a trusted session.
+        protocol: https
+        authentication: credentials
+        authorization: none
+        tags:
+          - path:identity
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - user-credentials
+        data_assets_received:
+          - human-session-credentials
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+      Confluence Application Gateway Traffic:
+        target: confluence-application-gateway
+        description: >
+          Authorized HTTPS mission traffic; transmits the user's ephemeral 
+          MFA-verified session token (OIDC/JWT) and interactive commands for 
+          WAF inspection and perimeter-level input validation.
+        protocol: https
+        authentication: two-factor
+        authorization: end-user-identity-propagation
+        tags:
+          - path:network
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - human-session-credentials
+          - user-input
+        data_assets_received:
+          - structured-confluence-data
+          - unstructured-confluence-data
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+
+  End User AVD Client:
+    id: end-user-avd-client
+    description: >
+      A human user or administrator utilizing an authorized Azure Virtual Desktop 
+      (AVD) client (native app or HTML5 browser) to access the centralized hosting enclave.
+    type: external-entity
+    usage: business
+    used_as_client_by_human: true
+    out_of_scope: true
+    justification_out_of_scope: >
+      This asset represents the physical endpoint (e.g., GFEs, laptops) utilizing the AVD client. 
+      These devices reside outside the formal Accreditation Boundary (ATO) of the cloud system. 
+      Security configuration and endpoint management are the responsibility of the parent organization.
+    size: component
+    technology: desktop
+    tags:
+      - feature:vdi-path
+      - icon:human-vdi
+    internet: true
+    machine: physical
+    encryption: none
+    owner: External user
+    confidentiality: internal
+    integrity: operational
+    availability: operational
+    justification_cia_rating: >
+      Confidentiality (Internal): Temporarily processes in-memory session tokens and 
+      screen buffers containing CUI. Necessitates strong transport encryption (WSS/TLS 1.2+).
+
+      Integrity (Operational): Must ensure user commands (mouse/keyboard) are transmitted 
+      unaltered to prevent unauthorized session manipulation.
+
+      Availability (Operational): Localized hardware/network failure disrupts the specific 
+      operator's productivity but does not impact the broader centralized VDI platform.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: false
+    data_assets_processed:
+      - human-session-credentials
+      - user-credentials
+      - user-input
+      - screen-buffer
+    data_assets_stored:
+    data_formats_accepted:
+    communication_links:
+      Entra Authentication:
+        target: entra-id
+        description: Primary OIDC/SAML authentication flow with the Azure AD / Entra ID tenant.
+        protocol: https
+        authentication: credentials
+        authorization: none
+        tags:
+          - path:identity
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - user-credentials
+        data_assets_received:
+          - human-session-credentials
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+      AVD Session Host:
+        target: avd-session-host
+        description: >
+          Encrypted, bidirectional remote desktop stream (RDP over WSS) 
+          transmitting user interaction and screen rendering.
+        protocol: wss
+        authentication: two-factor 
+        authorization: end-user-identity-propagation 
+        tags:
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - human-session-credentials
+          - user-input
+        data_assets_received:
+          - screen-buffer
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+
+
+  # ============================================================================
+  # 2. IDENTITY AND ACCESS
+  # Identity providers and identity stores for human and NPE authentication.
+  # Source library: 05-tech-assets-lib/01-azure/02-identity-and-access.yml
+  # ============================================================================
+
+  Keycloak:
+    id: keycloak-authentication
+    description: >
+      The federated Identity Provider. Handles OIDC/SAML token minting and
+      primary MFA validation for mission users. Runs as a pod in its own
+      namespace on the Prod AKS Cluster, reached via the Keycloak
+      Application Gateway, Azure Firewall, and the shared Nginx Ingress
+      Controller -- not directly internet-facing itself.
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: identity-provider
+    tags:
+      - compliance:fips-validated
+      - sec:secrets-broker
+      - ops:requires-backup
+      - ops:trusted-base-image
+      - ops:read-only-fs
+      - net:micro-segmented
+      - net:tls-terminator
+      - app:backend-api
+      - feature:oauth-oidc-provider
+      - feature:saml-sp
+      - feature:password-reset
+      - icon:keycloak
+    internet: false
+    machine: container
+    encryption: transparent
+    owner: Platform Team
+    confidentiality: strictly-confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): This service processes raw user 
+      credentials and mints highly privileged session tokens (JWTs/SAML). 
+      Unauthorized access to this memory space or its private signing keys 
+      would allow an attacker to forge tokens and impersonate any mission user.
+      
+      Integrity (Critical): The authentication logic and cryptographic signing 
+      modules must remain pristine. Tampering could enable authentication bypass 
+      or the issuance of unauthorized 'Golden SAML' assertions.
+      
+      Availability (Critical): This is the single point of entry for the entire
+      application stack. A Denial of Service (DoS) or outage here prevents all
+      human users from authenticating to Confluence, halting the mission.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - user-credentials
+      - human-session-credentials
+    data_assets_stored:
+      - human-session-credentials
+    data_formats_accepted:
+      - json
+      - serialization
+    communication_links:
+      Keycloak Identity Store:
+        target: keycloak-id-store
+        description: Backend TLS link to the Postgres ID store to verify user credential hashes.
+        protocol: https
+        authentication: credentials
+        authorization: technical-user
+        tags:
+          - path:identity
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - user-credentials
+        data_assets_received:
+          - user-credentials
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+
+  Keycloak Identity Store:
+    id: keycloak-id-store
+    description: >
+      Self-hosted PostgreSQL instance hosting the federated user directory,
+      credential hashes, and session state for the Keycloak IdP. Runs
+      alongside Keycloak as its own pod, not a managed database service.
+    type: datastore
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: component
+    technology: identity-store-database
+    tags:
+      - ops:requires-backup
+      - ops:trusted-base-image
+      - ops:read-only-fs
+      - net:micro-segmented
+      - storage:persistent
+      - icon:postgresql
+    internet: false
+    machine: container
+    encryption: transparent
+    owner: Platform Team
+    confidentiality: strictly-confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): This datastore contains the
+      cryptographic hashes of mission user passwords and primary account metadata. 
+      Unauthorized exposure would enable offline brute-force attacks and 
+      mass credential compromise, leading to enterprise-wide account takeover.
+      
+      Integrity (Critical): The integrity of the authentication records is 
+      absolute. Unauthorized tampering (e.g., modifying password hashes or 
+      user roles) would allow an attacker to lock out legitimate users or 
+      elevate their own permissions to gain administrative access.
+      
+      Availability (Critical): This is a mission-critical dependency. If the 
+      identity store is unreachable, Keycloak cannot authenticate any users, 
+      resulting in a total failure of the application stack.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - user-credentials
+    data_assets_stored: 
+      - user-credentials
+    data_formats_accepted:
+      - json
+      - serialization
+
+  Entra ID:
+    id: entra-id
+    description: >
+      Centralized Identity-as-a-Service (IDaaS) and authoritative directory
+      managed by Microsoft Azure. Handles federated authentication
+      (OIDC/SAML), conditional access policy enforcement, and directory
+      services (user objects, groups, credential hashes) for AVD users --
+      unlike self-hosted Keycloak, there's no separate identity-store asset
+      to model: Microsoft doesn't expose Entra's backing directory as a
+      customer-addressable component. Tenant-scoped and reached directly;
+      no dedicated gateway fronts it the way Keycloak has one, since there's
+      no customer-controlled ingress to put one in front of.
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: identity-provider
+    tags:
+      - compliance:fips-validated
+      - sec:secrets-broker
+      - feature:oauth-oidc-provider
+      - feature:saml-sp
+      - ops:requires-backup
+      - icon:azure-entra-id
+    internet: true
+    machine: serverless
+    encryption: transparent
+    owner: Microsoft
+    confidentiality: strictly-confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): Processes raw user credentials,
+      mints highly privileged session tokens (JWTs/SAML), and holds the
+      authoritative hashes and metadata for every user in the tenant. A
+      breach here results in a total compromise of organizational identity.
+
+      Integrity (Critical): Claims, cryptographic signatures, and directory
+      objects (user records, group memberships) must remain unaltered to
+      prevent authentication bypass and unauthorized privilege escalation
+      across the tenant.
+
+      Availability (Critical): Primary boot-time dependency for the AVD
+      infrastructure. A service failure prevents all remote users from
+      authenticating to the hosting enclave, halting the mission.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - user-credentials
+      - human-session-credentials
+    data_assets_stored:
+      - user-credentials
+      - human-session-credentials
+    data_formats_accepted:
+      - json
+      - serialization
+    communication_links:
+
+
+  # ============================================================================
+  # 3. NETWORK PERIMETER
+  # Internet-facing and hub network components that inspect and route traffic.
+  # Source library: 05-tech-assets-lib/01-azure/03-network-perimeter.yml
+  # ============================================================================
+
+  Confluence Application Gateway:
+    id: confluence-application-gateway
+    description: >
+      Azure Application Gateway (v2) with Web Application Firewall (WAF) enabled. 
+      Acts as the perimeter reverse proxy, handling Layer-7 inspection and TLS termination.
+    type: process 
+    usage: business 
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: waf
+    tags:
+      - net:ingress-path
+      - net:tls-terminator
+      - icon:azure-waf
+      - icon:azure-app-gateway
+      - compliance:fips-validated
+      - zone:dmz
+      - ops:waf-enabled
+    internet: true
+    machine: serverless 
+    encryption: data-with-asymmetric-shared-key
+    owner: Platform Team
+    confidentiality: confidential
+    integrity: critical 
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Confidential): As the primary TLS termination point, the gateway 
+      processes decrypted session tokens and CUI in memory. A compromise would result 
+      in the exposure of all inbound mission traffic and authentication material.
+      
+      Integrity (Critical): The gateway enforces the OWASP WAF rules. If the integrity 
+      of the gateway configuration is tampered with, an attacker could disable security 
+      rules to launch un-inspected injection attacks against the backend cluster.
+      
+      Availability (Critical): The gateway is the sole entry point for the public ingress 
+      path. A failure here results in a total system outage for all external users, 
+      regardless of the backend AKS health.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - structured-confluence-data
+      - unstructured-confluence-data
+      - human-session-credentials
+      - user-input
+      - crypto-key-material
+      - system-telemetry-logs
+    data_assets_stored:
+    data_formats_accepted:
+      - json 
+      - file 
+      - serialization 
+    communication_links:
+      Azure Firewall Traffic:
+        target: azure-firewall
+        description: Perimeter-inspected traffic forwarded to the internal hub firewall.
+        protocol: https
+        authentication: none
+        authorization: technical-user
+        tags:
+          - path:network
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - user-input
+          - human-session-credentials
+        data_assets_received:
+          - structured-confluence-data
+          - unstructured-confluence-data
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+      Log Forwarding:
+        target: log-analytics-workspace
+        description: Asynchronous forwarding of stdout/stderr and audit trails.
+        protocol: https 
+        authentication: token 
+        authorization: technical-user 
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops 
+        data_assets_sent: 
+          - system-telemetry-logs
+        data_assets_received: 
+        #diagram_tweak_weight: 1
+        diagram_tweak_constraint: false
+
+  Keycloak Application Gateway:
+    id: keycloak-application-gateway
+    description: >
+      Azure Application Gateway (v2) with Web Application Firewall (WAF)
+      enabled, dedicated to authentication traffic. Acts as the perimeter
+      reverse proxy for Keycloak, handling Layer-7 inspection and TLS
+      termination for human OIDC/SAML logins. Separate from the Confluence
+      Application Gateway above, which only carries application traffic
+      once a session already exists.
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: waf
+    tags:
+      - net:ingress-path
+      - net:tls-terminator
+      - icon:azure-waf
+      - icon:azure-app-gateway
+      - compliance:fips-validated
+      - zone:dmz
+      - ops:waf-enabled
+    internet: true
+    machine: serverless
+    encryption: data-with-asymmetric-shared-key
+    owner: Platform Team
+    confidentiality: strictly-confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): As the TLS termination point
+      for every authentication flow, this gateway processes raw user
+      credentials and newly minted session tokens in memory.
+
+      Integrity (Critical): The attached WAF enforces the OWASP-aligned
+      managed rule groups. If the integrity of the gateway configuration is
+      tampered with, an attacker could disable security rules to launch
+      un-inspected injection or credential-stuffing attacks against
+      Keycloak directly.
+
+      Availability (Critical): The gateway is the sole entry point for
+      authentication. A failure here prevents any new session from being
+      established, even if the rest of the application stack is healthy.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - user-credentials
+      - human-session-credentials
+      - system-telemetry-logs
+    data_assets_stored:
+    data_formats_accepted:
+      - json
+      - serialization
+    communication_links:
+      Azure Firewall Traffic:
+        target: azure-firewall
+        description: Perimeter-inspected authentication traffic forwarded to the internal hub firewall.
+        protocol: https
+        authentication: none
+        authorization: technical-user
+        tags:
+          - path:network
+          - path:identity
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - user-credentials
+        data_assets_received:
+      Log Forwarding:
+        target: log-analytics-workspace
+        description: Asynchronous forwarding of stdout/stderr and audit trails.
+        protocol: https
+        authentication: token
+        authorization: technical-user
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops
+        data_assets_sent:
+          - system-telemetry-logs
+        data_assets_received:
+        diagram_tweak_constraint: false
+
+  Azure Firewall:
+    id: azure-firewall
+    description: >
+      Centralized Hub VNet firewall providing Intrusion Detection and Prevention 
+      (IDPS), deep packet inspection (DPI), and Layer 3/4/7 routing between the 
+      DMZ, AVD, and internal AKS subnets.
+    type: process
+    usage: business 
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service 
+    technology: ips
+    tags:
+      - net:ingress-path
+      - net:egress-path
+      - compliance:fips-validated
+      - icon:azure-ngfw
+      - net:tls-terminator
+    internet: true
+    machine: serverless
+    encryption: transparent 
+    owner: Platform Team
+    confidentiality: confidential 
+    integrity: critical 
+    availability: critical 
+    justification_cia_rating: >
+      Confidentiality (Confidential): As the central hub firewall, this service 
+      processes all decrypted ingress/egress payloads (including CUI and session 
+      tokens) in memory during deep packet inspection (DPI).
+      
+      Integrity (Critical): The firewall enforces the primary organizational 
+      Network Security Groups (NSGs) and IDPS signatures. Unauthorized modification 
+      of these rules would permit malicious traffic to bypass the DMZ and attack 
+      the internal AKS clusters directly.
+      
+      Availability (Critical): The firewall is a non-bypassable chokepoint for 
+      all North-South and East-West inter-VNet traffic. A failure or misconfiguration 
+      here isolates all application workloads from the internet and from each other, 
+      halting the entire mission.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - structured-confluence-data
+      - unstructured-confluence-data
+      - user-input
+      - human-session-credentials
+      - user-credentials
+      - system-telemetry-logs
+    data_assets_stored:
+    data_formats_accepted:
+      - serialization
+      - file
+      - json
+    communication_links:
+      Ingress Traffic:
+        target: nginx-ingress-pod
+        description: >
+          Inspected traffic (application and authentication alike) forwarded
+          from the Hub Firewall to the internal AKS cluster's Nginx Ingress
+          Controller, which then fans out to both Confluence and Keycloak.
+        protocol: https
+        authentication: none
+        authorization: technical-user
+        tags:
+          - path:network
+          - path:identity
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - user-input
+          - human-session-credentials
+          - user-credentials
+        data_assets_received:
+          - structured-confluence-data
+          - unstructured-confluence-data
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+      Log Forwarding:
+        target: log-analytics-workspace
+        description: Asynchronous forwarding of stdout/stderr and audit trails.
+        protocol: https 
+        authentication: token 
+        authorization: technical-user 
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops 
+        data_assets_sent: 
+          - system-telemetry-logs
+        data_assets_received: 
+        #diagram_tweak_weight: 1
+        diagram_tweak_constraint: false
+
+
+  # ============================================================================
+  # 4. APPLICATION LAYER
+  # Custom-developed and COTS application workloads.
+  # Source library: 05-tech-assets-lib/01-azure/04-app-layer.yml
+  # ============================================================================
+
+  Confluence:
+    id: confluence
+    description: >
+      Confluence, hosted on the app's own AKS pods. Named after the product
+      itself (matching Keycloak, etc. elsewhere in this model), not its
+      Kubernetes resource type.
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: web-application
+    tags:
+      - app:frontend-ui
+      - app:backend-api
+      - feature:third-party-plugins
+      - feature:dynamic-code-execution
+      - ops:trusted-base-image
+      - net:micro-segmented
+      - feature:search-index
+      - feature:file-upload-processing
+      - feature:public-api-endpoint
+      - feature:import-export
+      - feature:admin-panel
+      - feature:password-reset
+      - exception:local-auth-fallback
+      - icon:confluence
+    internet: false
+    machine: container
+    encryption: none
+    owner: Platform Team
+    confidentiality: confidential
+    integrity: important
+    availability: important 
+    justification_cia_rating: >
+      Confidentiality (Confidential): Acts as the primary application processing 
+      engine; processes decrypted CUI, attachments, and active session tokens in memory.
+
+      Integrity (Important): Maintains the integrity of collaborative data and 
+      enforces the authoritative Space/Page RBAC permission sets.
+
+      Availability (Important): Core business service required for team operations; 
+      downtime halts all internal knowledge management workflows.
+    multi_tenant: false
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - structured-confluence-data
+      - unstructured-confluence-data
+      - user-input
+      - human-session-credentials
+      - database-credentials
+      - blob-storage-credentials
+      - system-telemetry-logs
+    data_assets_stored:
+    data_formats_accepted:
+      - json
+      - serialization
+      - file
+    communication_links:
+      AKS CSI Driver:
+        target: aks-csi-driver
+        description: Local file mount provided by the CSI driver to read injected vault secrets.
+        protocol: local-file-access
+        authentication: none 
+        authorization: technical-user
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: true
+        usage: business 
+        data_assets_sent: # sequence of IDs to reference
+        data_assets_received: # sequence of IDs to reference
+          - database-credentials
+          - blob-storage-credentials
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+      Postgres Database:
+        target: postgres-database
+        description: Link to the Postgres Database
+        protocol: sql-access-protocol-encrypted
+        authentication: credentials
+        authorization: technical-user
+        tags:
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - structured-confluence-data
+          - database-credentials
+        data_assets_received: 
+          - structured-confluence-data
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+      Azure File Store Private Endpoint:
+        target: azure-file-store-private-endpoint
+        description: Link to the Azure file store private endpoint.
+        protocol: smb-encrypted
+        authentication: credentials
+        authorization: technical-user
+        tags:
+          - path:mission
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - unstructured-confluence-data
+          - blob-storage-credentials
+        data_assets_received: 
+          - unstructured-confluence-data
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+      Log Forwarding:
+        target: log-analytics-workspace
+        description: Asynchronous forwarding of stdout/stderr and audit trails.
+        protocol: https 
+        authentication: token 
+        authorization: technical-user 
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops 
+        data_assets_sent: 
+          - system-telemetry-logs
+        data_assets_received: 
+        #diagram_tweak_weight: 1
+        diagram_tweak_constraint: false
+
+
+  # ============================================================================
+  # 7. DATA STORES
+  # Persistent datastores for application data.
+  # Source library: 05-tech-assets-lib/01-azure/07-data-stores.yml (currently an empty placeholder -- this content is custom-authored)
+  # ============================================================================
+
+  Postgres Database:
+    id: postgres-database
+    description: >
+      Azure Database for PostgreSQL (Flexible Server). The primary persistent 
+      datastore for all metadata, user profiles, and page content.
+    type: datastore
+    usage: business 
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service 
+    technology: database
+    tags:
+      - ops:requires-backup
+      - compliance:fips-validated
+      - storage:persistent
+      - icon:azure-database
+    internet: false
+    machine: serverless
+    encryption: transparent
+    owner: Platform Team
+    confidentiality: confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Confidential): Contains proprietary internal documentation,
+      project metadata, and CUI payloads. Protection is enforced via AES-256 
+      transparent encryption at rest and TLS 1.2+ for all data in transit.
+      
+      Integrity (Critical): The primary stateful store for application logic and 
+      content. Integrity is maintained through strictly controlled RBAC, preventing 
+      unauthorized schema or data modifications. Automated transaction logging 
+      and Point-in-Time Restore (PITR) are enabled.
+      
+      Availability (Critical): Mission-critical dependency for Confluence; the 
+      application enters a 'CrashLoopBackOff' state if the database is unreachable. 
+      Managed via Azure High Availability (HA) with cross-zone redundancy.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed: 
+      - structured-confluence-data
+      - database-credentials
+      - system-telemetry-logs
+    data_assets_stored: 
+      - structured-confluence-data
+      - database-credentials
+    data_formats_accepted: 
+      - serialization
+    communication_links:
+      Log Forwarding:
+        target: log-analytics-workspace
+        description: Asynchronous forwarding of stdout/stderr and audit trails.
+        protocol: https 
+        authentication: token 
+        authorization: technical-user 
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops 
+        data_assets_sent: 
+          - system-telemetry-logs
+        data_assets_received: 
+        #diagram_tweak_weight: 1
+        diagram_tweak_constraint: false
+
+  Azure File Store Private Endpoint:
+    id: azure-file-store-private-endpoint
+    description: >
+      Azure Private Link endpoint for the File Store. Provides a private 
+      IP address for the AKS cluster to securely mount the backend storage 
+      account without traversing the public internet.
+    type: process
+    usage: business 
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope: 
+    size: service 
+    technology: reverse-proxy
+    tags:
+      - sec:secrets-broker
+      - icon:azure-private-link
+    internet: false
+    machine: serverless
+    encryption: transparent 
+    owner: Platform Team
+    confidentiality: confidential 
+    integrity: critical 
+    availability: critical 
+    justification_cia_rating: >
+      Confidentiality (Confidential): The private endpoint serves as the dedicated 
+      network path for the retrieval of unstructured CUI and mission attachments. 
+      Compromise of this endpoint could lead to traffic sniffing of sensitive 
+      binaries and storage credentials (SAS tokens).
+      
+      Integrity (Critical): The endpoint establishes the non-internet routing path 
+      for mission storage. Tampering with the routing logic could maliciously 
+      redirect file requests to an attacker-controlled storage account.
+      
+      Availability (Critical): The private endpoint is the sole route for Confluence 
+      pods to mount their persistent file storage. A failure results in an immediate 
+      functional outage for all collaboration workspaces.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed: 
+      - unstructured-confluence-data
+      - blob-storage-credentials
+      - npe-session-credentials
+    data_assets_stored: 
+    data_formats_accepted: 
+    communication_links:
+      Azure File Store:
+        target: azure-file-store
+        description: >
+          Encrypted SMB/NFS link forwarding storage credentials and binary
+          payloads to the managed backend storage account.
+        protocol: smb-encrypted
+        authentication: token
+        authorization: technical-user
+        tags:
+          - path:mission
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business 
+        data_assets_sent:
+          - unstructured-confluence-data
+          - blob-storage-credentials
+          - npe-session-credentials
+        data_assets_received: 
+          - unstructured-confluence-data
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+
+  Azure File Store:
+    id: azure-file-store
+    description: >
+      Azure Storage Account (Files/Blob). Provides persistent, redundant storage 
+      for all unstructured data and collaborative attachments.
+    type: datastore 
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service 
+    technology: file-server
+    tags:
+      - ops:requires-backup
+      - compliance:fips-validated
+      - storage:persistent
+      - icon:azure-storage
+    internet: false
+    machine: serverless
+    encryption: transparent
+    owner: Platform Team
+    confidentiality: confidential
+    integrity: critical
+    availability: critical 
+    justification_cia_rating: >
+      Confidentiality (Confidential): Attachments and document uploads are protected by
+      AES-256 transparent encryption at rest (Platform-Managed Keys). Data in transit is
+      enforced via SMB 3.1.1 with AES-128-GCM encryption or NFS over TLS. Access is restricted
+      to the AKS subnet via Private Endpoints.
+
+      Integrity (Critical): Write access is restricted to the Confluence service principal/identity
+      only. Azure Backup and Point-in-Time Soft Delete are enabled to protect against accidental 
+      deletion or ransomware-style file modification.
+
+      Availability (Critical): Redundant storage (LRS/ZRS) with a 99.9% uptime SLA. Mounted as a 
+      Persistent Volume (PV); health probes are configured to ensure the application restarts if 
+      the mount becomes stale or disconnected.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed: 
+      - unstructured-confluence-data
+      - blob-storage-credentials
+      - npe-session-credentials
+      - system-telemetry-logs
+    data_assets_stored: 
+      - unstructured-confluence-data
+      - blob-storage-credentials
+    data_formats_accepted: 
+      - file
+    communication_links:
+      Log Forwarding:
+        target: log-analytics-workspace
+        description: Asynchronous forwarding of stdout/stderr and audit trails.
+        protocol: https 
+        authentication: token 
+        authorization: technical-user 
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops 
+        data_assets_sent: 
+          - system-telemetry-logs
+        data_assets_received: 
+        #diagram_tweak_weight: 1
+        diagram_tweak_constraint: false
+
+
+  # ============================================================================
+  # 8. SECURITY AND SECRETS
+  # Secrets management and private connectivity for platform credentials.
+  # Source library: 05-tech-assets-lib/01-azure/08-security-and-secrets.yml (currently an empty placeholder -- this content is custom-authored)
+  # ============================================================================
+
+  Azure Key Vault Private Endpoint:
+    id: azure-key-vault-private-endpoint
+    description: >
+      Azure Private Link endpoint for Key Vault access. Provides a private
+      IP address for the AKS CSI Driver to communicate with the vault without
+      traversing the public internet.
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: reverse-proxy
+    tags:
+      - sec:secrets-broker
+      - icon:azure-private-link
+    internet: false
+    machine: serverless 
+    encryption: transparent 
+    owner: Platform Team
+    confidentiality: confidential
+    integrity: critical
+    availability: critical 
+    justification_cia_rating: >
+      Confidentiality (Confidential): The private endpoint serves as the dedicated network 
+      path for plaintext secret retrieval from Azure Key Vault. Compromise of the 
+      endpoint's virtual network interface (VNI) could lead to traffic sniffing of 
+      backend credentials.
+      
+      Integrity (Critical): The endpoint establishes the non-internet routing path for 
+      mission secrets. Tampering with the DNS resolution or private link mapping 
+      could maliciously redirect secret requests to an attacker-controlled service.
+      
+      Availability (Critical): The private endpoint is the sole route for application 
+      pods to fetch their database connection strings. A failure results in a cluster-wide 
+      boot failure and total application downtime.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed: 
+      - database-credentials
+      - npe-session-credentials
+    data_assets_stored: 
+    data_formats_accepted:
+    communication_links:
+      Azure Key Vault:
+        target: azure-key-vault
+        description: Link to the Azure Key Vault
+        protocol: https
+        authentication: token
+        authorization: technical-user
+        tags:
+          - path:mission
+        vpn: false
+        ip_filtered: true
+        readonly: true
+        usage: business
+        data_assets_sent:
+          - npe-session-credentials
+        data_assets_received: 
+          - database-credentials
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+
+  Azure Key Vault:
+    id: azure-key-vault
+    description: >
+      Enterprise secrets management and cryptographic key storage vault (Azure PaaS). 
+      Provides centralized, RBAC-governed access to backend connection strings.
+    type: datastore
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: vault
+    tags:
+      - sec:secrets-broker
+      - compliance:fips-validated
+      - storage:vault
+      - icon:azure-key-vault
+    internet: false
+    machine: serverless 
+    encryption: data-with-asymmetric-shared-key 
+    owner: Platform Team
+    confidentiality: strictly-confidential
+    integrity: mission-critical 
+    availability: critical 
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): Managed Service (PaaS) providing hardware-backed 
+      security modules (HSM) and AES-256 transparent encryption at rest. Access is restricted 
+      via Azure RBAC and OIDC-based Managed Identities.
+
+      Integrity (Mission-Critical): Protection against unauthorized modification is enforced 
+      via the Principle of Least Privilege (PoLP) using Azure RBAC. Soft-delete and Purge 
+      Protection are enabled to prevent accidental or malicious data loss.
+
+      Availability (Critical): Globally redundant service managed by Microsoft with a 99.99% SLA.
+      Critical for application bootstrap; secrets are cached locally by the CSI Driver to mitigate
+      transient network failures.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - database-credentials
+      - npe-session-credentials
+      - system-telemetry-logs
+    data_assets_stored:
+      - database-credentials
+    data_formats_accepted:
+      - json
+      - serialization
+    communication_links:
+      Log Forwarding:
+        target: log-analytics-workspace
+        description: Asynchronous forwarding of stdout/stderr and audit trails.
+        protocol: https 
+        authentication: token 
+        authorization: technical-user 
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops 
+        data_assets_sent: 
+          - system-telemetry-logs
+        data_assets_received: 
+        #diagram_tweak_weight: 1
+        diagram_tweak_constraint: false
+
+
+  # ============================================================================
+  # 9. OBSERVABILITY
+  # Centralized logging, monitoring, and SIEM aggregation for platform and application telemetry.
+  # Source library: 05-tech-assets-lib/01-azure/09-observability.yml (currently an empty placeholder -- this content is custom-authored)
+  # ============================================================================
+
+  Azure Log Analytics Workspace:
+    id: log-analytics-workspace
+    description: >
+      Centralized SIEM (e.g., Azure Sentinel) for aggregating, indexing, 
+      and analyzing all system telemetry, security events, and application logs.
+    type: datastore 
+    usage: devops 
+    used_as_client_by_human: false
+    out_of_scope: false
+    size: service 
+    technology: database
+    tags:
+      - ops:requires-backup
+      - compliance:fips-validated
+      - icon:azure-monitor
+    internet: false
+    machine: serverless
+    encryption: transparent
+    owner: Platform Team
+    confidentiality: restricted
+    integrity: critical 
+    availability: important 
+    justification_cia_rating: >
+      Confidentiality (Restricted): As the centralized Security Information and 
+      Event Management (SIEM) repository, this workspace aggregates highly sensitive 
+      system telemetry, including internal routing paths, privileged API queries, 
+      and potentially unmasked CUI/PII spillage from application error traces. 
+      Unauthorized disclosure provides an adversary with a comprehensive blueprint 
+      of the internal architecture and security control configurations.
+      
+      Integrity (Critical): The absolute immutability of audit trails is a foundational 
+      DoD requirement for non-repudiation and forensic incident response. Malicious 
+      tampering, deletion, or suppression of these event logs would allow an Advanced 
+      Persistent Threat (APT) or malicious insider to operate undetected within the 
+      ATO boundary and destroy evidence of exploitation.
+      
+      Availability (Important): Continuous ingestion of security telemetry is mandatory 
+      for real-time SOC monitoring and automated alerting (e.g., Azure Sentinel analytics). 
+      While an outage of the logging platform does not immediately halt the primary 
+      kinetic or business mission, a prolonged blind spot violates continuous monitoring 
+      mandates (NIST SP 800-53 AU-9) and severely degrades defensive cyber operations.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed: 
+      - system-telemetry-logs
+    data_assets_stored: 
+      - system-telemetry-logs
+    data_formats_accepted: 
+      - json
+
+
+  # ============================================================================
+  # 11. PLATFORM INFRASTRUCTURE
+  # AKS control plane, ingress, and secrets injection components.
+  # Source library: 05-tech-assets-lib/01-azure/11-platform-infra.yml
+  # ============================================================================
+
+  Nginx Ingress Pod:
+    id: nginx-ingress-pod
+    description: >
+      AKS Nginx Ingress Controller DaemonSet. Acts as the internal Layer-7 
+      routing and TLS termination chokepoint within the Kubernetes cluster, 
+      isolating mission namespaces.
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: reverse-proxy
+    tags:
+      - net:ingress-path
+      - net:tls-terminator
+      - ops:trusted-base-image
+      - net:micro-segmented
+      - ops:read-only-fs
+      - ops:container-capabilities-restricted
+      - icon:nginx
+    internet: false
+    machine: container
+    encryption: transparent
+    owner: Platform Team
+    confidentiality: restricted
+    integrity: important
+    availability: important
+    justification_cia_rating: >
+      Confidentiality (Restricted): Terminate TLS for internal cluster traffic,
+      processing decrypted session tokens and CUI in memory.
+
+      Integrity (Important): Performs Layer-7 routing between AKS namespaces; 
+      misconfiguration could lead to unauthorized lateral traffic movement.
+
+      Availability (Important): Serves as the primary ingress chokepoint for the 
+      AKS cluster; failure halts all user access to the hosted application pods.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - structured-confluence-data
+      - unstructured-confluence-data
+      - user-input
+      - human-session-credentials
+      - user-credentials
+      - crypto-key-material
+      - system-telemetry-logs
+    data_assets_stored:
+    data_formats_accepted:
+      - serialization
+      - json
+      - file
+    communication_links:
+      Confluence:
+        target: confluence
+        description: >
+          Perimeter-authenticated HTTPS traffic forwarded from the Ingress
+          Controller to the backend application JVM.
+        protocol: https
+        authentication: none
+        authorization: end-user-identity-propagation
+        tags:
+          - path:mission
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - user-input
+          - human-session-credentials
+        data_assets_received:
+          - structured-confluence-data
+          - unstructured-confluence-data
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+      Keycloak Pod:
+        target: keycloak-authentication
+        description: >
+          Authentication traffic (human OIDC/SAML logins) forwarded from the
+          Ingress Controller to the Keycloak pod.
+        protocol: https
+        authentication: none
+        authorization: none
+        tags:
+          - path:identity
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - user-credentials
+        data_assets_received:
+          - human-session-credentials
+      Log Forwarding:
+        target: log-analytics-workspace
+        description: Asynchronous forwarding of stdout/stderr and audit trails.
+        protocol: https 
+        authentication: token 
+        authorization: technical-user 
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops 
+        data_assets_sent: 
+          - system-telemetry-logs
+        data_assets_received: 
+        #diagram_tweak_weight: 1
+        diagram_tweak_constraint: false
+
+  AKS CSI Driver:
+    id: aks-csi-driver
+    description: >
+      AKS Secrets Store CSI Driver DaemonSet. Retrieves credentials from Azure Key 
+      Vault and the K8s Secret Store, mounting them as ephemeral files into 
+      application pod volumes.
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: component 
+    technology: local-file-system
+    tags:
+      - sec:secrets-broker
+      - ops:trusted-base-image
+      - net:micro-segmented
+      - ops:read-only-fs
+      - ops:container-capabilities-restricted
+    internet: false
+    machine: container 
+    encryption: transparent
+    owner: Platform Team
+    confidentiality: confidential 
+    integrity: mission-critical 
+    availability: critical 
+    justification_cia_rating: >
+      Confidentiality (Confidential): Processes highly privileged credentials 
+      in plaintext memory before mounting them. 
+
+      Integrity (Mission-Critical): Acts as the root of trust for pod configuration. 
+      Tampering allows injection of rogue credentials.
+
+      Availability (Critical): Hard boot-time dependency. Driver failure 
+      prevents pod instantiation, halting the application.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - database-credentials
+      - blob-storage-credentials
+      - npe-session-credentials
+      - system-telemetry-logs
+    data_assets_stored:
+    data_formats_accepted:
+    communication_links:
+      Azure Key Vault Private Endpoint:
+        target: azure-key-vault-private-endpoint
+        description: HTTPS call via Managed Identity to retrieve database connection strings.
+        protocol: https
+        authentication: token
+        authorization: technical-user
+        tags:
+          - path:mission
+        vpn: false
+        ip_filtered: true
+        readonly: true
+        usage: business 
+        data_assets_sent:
+          - npe-session-credentials
+        data_assets_received: 
+          - database-credentials
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+      AKS Etcd Datastore:
+        target: aks-etcd-datastore
+        description: HTTPS call via Service Account Token to retrieve file store keys.
+        protocol: https
+        authentication: token 
+        authorization: technical-user 
+        tags:
+        vpn: false
+        ip_filtered: true
+        readonly: true
+        usage: business
+        data_assets_sent: 
+          - npe-session-credentials
+        data_assets_received:
+          - blob-storage-credentials
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+      Log Forwarding:
+        target: log-analytics-workspace
+        description: Asynchronous forwarding of stdout/stderr and audit trails.
+        protocol: https 
+        authentication: token 
+        authorization: technical-user 
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops 
+        data_assets_sent: 
+          - system-telemetry-logs
+        data_assets_received: 
+        #diagram_tweak_weight: 1
+        diagram_tweak_constraint: false
+
+  AKS Etcd Datastore:
+    id: aks-etcd-datastore
+    description: >
+      Internal etcd-backed secret storage for the AKS cluster. Managed by 
+      the Kubernetes control plane to supply native secrets to pods.
+    type: datastore 
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: component
+    technology: database
+    tags:
+      - sec:secrets-broker
+      - compliance:fips-validated
+      - icon:azure-database
+    internet: false
+    machine: serverless
+    encryption: data-with-asymmetric-shared-key
+    owner: Platform Team
+    confidentiality: strictly-confidential 
+    integrity: mission-critical 
+    availability: critical 
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): Hosts plaintext credentials required 
+      for pod operations. Mitigated natively by the AKS Key Management Service (KMS) 
+      plugin, which encrypts etcd data at rest using an Azure Key Vault customer-managed key.
+      
+      Integrity (Mission-Critical): Protection against unauthorized secret creation 
+      or modification is enforced via strict Kubernetes Role-Based Access Control 
+      (RBAC) bound to specific namespace Service Accounts.
+      
+      Availability (Critical): The etcd datastore is a foundational component of the 
+      AKS control plane. If the API server cannot retrieve secrets, workloads will fail 
+      to deploy or crash loop due to missing configuration mounts.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed: 
+      - blob-storage-credentials
+      - npe-session-credentials
+      - system-telemetry-logs
+    data_assets_stored: 
+      - blob-storage-credentials
+    data_formats_accepted:
+      - json
+      - serialization
+    communication_links:
+      Log Forwarding:
+        target: log-analytics-workspace
+        description: Asynchronous forwarding of stdout/stderr and audit trails.
+        protocol: https 
+        authentication: token 
+        authorization: technical-user 
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops 
+        data_assets_sent: 
+          - system-telemetry-logs
+        data_assets_received: 
+        #diagram_tweak_weight: 1
+        diagram_tweak_constraint: false
+
+
+  # ============================================================================
+  # 12. VIRTUAL DESKTOP INFRASTRUCTURE
+  # AVD session hosts providing remote access to the application.
+  # Source library: 05-tech-assets-lib/01-azure/12-vdi.yml
+  # ============================================================================
+
+  AVD Session Host:
+    id: avd-session-host
+    description: >
+      Azure Virtual Desktop (AVD) session host pool. Provides the remote, 
+      secure execution environment for mission users to interact with backend 
+      applications.
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: service
+    technology: desktop
+    tags:
+      - feature:vdi-path
+      - app:frontend-ui
+      - ops:host-agents-installed
+      - icon:azure-avd
+      - ops:stig-baseline
+      - ops:disk-encrypted
+    internet: false
+    machine: virtual 
+    encryption: transparent
+    owner: Platform Team
+    confidentiality: confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Confidential): The host processes decrypted CUI, proprietary 
+      attachments, and ephemeral session tokens in memory. A compromise exposes 
+      the active workspace of the user.
+      
+      Integrity (Critical): The host must remain pristine to ensure user commands 
+      are transmitted accurately and that malware is not injected into the 
+      downstream mission applications. A breach here allows an attacker to 
+      operate "as the user" within the IL5 boundary.
+      
+      Availability (Critical): The Session Host pool is the sole ingress mechanism 
+      for remote operators. A failure or Denial of Service (DoS) isolates the 
+      users from the centralized mission applications.
+    multi_tenant: false
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+      - structured-confluence-data
+      - unstructured-confluence-data
+      - human-session-credentials
+      - screen-buffer
+      - user-input
+      - system-telemetry-logs
+    data_assets_stored:
+    data_formats_accepted:
+    communication_links:
+      Azure Firewall Traffic:
+        target: azure-firewall
+        description: >
+          Internal VNet routing from the AVD Subnet to the Hub Firewall
+          for deep packet inspection before reaching the AKS cluster.
+        protocol: https
+        authentication: none
+        authorization: technical-user
+        tags:
+          - path:network
+        vpn: false
+        ip_filtered: true
+        readonly: false
+        usage: business 
+        data_assets_sent: 
+          - user-input
+          - human-session-credentials
+        data_assets_received:
+          - structured-confluence-data
+          - unstructured-confluence-data
+        #diagram_tweak_weight: 1
+        #diagram_tweak_constraint: true
+      Log Forwarding:
+        target: log-analytics-workspace
+        description: Asynchronous forwarding of stdout/stderr and audit trails.
+        protocol: https 
+        authentication: token 
+        authorization: technical-user 
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: devops 
+        data_assets_sent: 
+          - system-telemetry-logs
+        data_assets_received: 
+        #diagram_tweak_weight: 1
+        diagram_tweak_constraint: false
