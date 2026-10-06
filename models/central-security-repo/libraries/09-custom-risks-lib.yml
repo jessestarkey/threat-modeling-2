@@ -170,7 +170,7 @@ custom_risk_definitions:
 
   Hardcoded Credentials and Secrets Sprawl:
     id: hardcoded-credentials-secrets-sprawl
-    baseline_likelihood: frequent
+    baseline_likelihood: very-likely
     baseline_impact: high
     description: 'Credentials, API keys, or other secrets are embedded in source code, container images, or configuration files, and copies of them persist across git history, image layers, and build caches even after rotation.'
     impact: 'If this risk remains unmitigated, a discovered secret provides immediate authenticated access to the resource it protects, and is often found by automated scanning within hours of exposure.'
@@ -274,7 +274,7 @@ custom_risk_definitions:
   # --- 1.2 AUTHORIZATION ---
   Broken Object-Level Authorization (BOLA/IDOR):
     id: broken-object-level-authorization
-    baseline_likelihood: frequent
+    baseline_likelihood: very-likely
     baseline_impact: high
     description: 'The backend API does not verify that an authenticated user is authorized to access a specific object, allowing them to read, modify, or delete records belonging to other users or tenants by changing an identifier in the request.'
     impact: 'If this risk remains unmitigated, an authenticated user can access or modify records outside their own -- including other users'' or tenants'' data -- without needing any additional privilege escalation.'
@@ -929,7 +929,7 @@ custom_risk_definitions:
   # --- 4.1 INPUT HANDLING AND INJECTION ---
   Server-Side Template Injection and RCE:
     id: dynamic-code-rce
-    baseline_likelihood: frequent
+    baseline_likelihood: very-likely
     baseline_impact: very-high
     description: 'The application executes dynamic code, expressions, or templates built from user-supplied input, creating a server-side template injection vector.'
     impact: 'If this risk remains unmitigated, an attacker can achieve remote code execution and full compromise of the container running the application.'
@@ -965,7 +965,7 @@ custom_risk_definitions:
 
   Insecure Deserialization:
     id: insecure-deserialization
-    baseline_likelihood: frequent
+    baseline_likelihood: very-likely
     baseline_impact: very-high
     description: 'The asset deserializes objects from user-supplied or externally sourced data using a mechanism capable of instantiating arbitrary objects, such as Java native serialization or Python pickle.'
     impact: 'If this risk remains unmitigated, a crafted serialized payload can execute a gadget chain achieving remote code execution with the application''s own privileges.'
@@ -1371,7 +1371,7 @@ custom_risk_definitions:
   # --- 5.1 MITRE ATLAS (v5.x — 16 tactics, 84 techniques) ---
   'ATLAS: LLM Prompt Injection (Direct) and Jailbreak':
     id: atlas-direct-prompt-injection-jailbreak
-    baseline_likelihood: frequent
+    baseline_likelihood: very-likely
     baseline_impact: high
     description: 'The asset accepts free-form natural language input from users and forwards it to an LLM, which an adversary can use to override the system prompt or bypass safety guardrails through roleplay, encoding tricks, or adversarial prompt crafting.'
     impact: 'If this risk remains unmitigated, an adversary can extract system prompt secrets, bypass content guardrails, and coerce the model into unauthorized actions if it has tool access.'

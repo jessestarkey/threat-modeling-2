@@ -260,7 +260,7 @@ individual_risk_categories: # used for adding custom manually identified risks
     risks_identified:
       <b>Example Individual Risk</b> at <b>Some Technical Asset</b>:
         severity: critical # values: low, medium, elevated, high, critical
-        exploitation_likelihood: likely # values: unlikely, likely, very-likely, frequent
+        exploitation_likelihood: likely # values: unlikely, possible, likely, very-likely
         exploitation_impact: medium # values: low, medium, high, very-high
         data_breach_probability: probable # values: improbable, possible, probable
         data_breach_technical_assets: # list of technical asset IDs which might have data breach

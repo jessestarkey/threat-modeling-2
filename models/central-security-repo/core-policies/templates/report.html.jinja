@@ -235,22 +235,24 @@
     independently by each individual rule in one of two ways. Most built-in rules simply hardcode a fixed Likelihood
     for that vulnerability class. However, a small number of rules instead raise Likelihood when
     the asset's Relative Attacker Attractiveness (RAA) score crosses a threshold. Threagile then
-    combines the two impact and likelihood scores arithmetically where each Likelihood and Impact level carries a weight from 1
-    (lowest) to 4 (highest). The two weights are then multiplied, and the product is bucketed into a
-    Severity level, shown below for the pinned <code>threagile:0.9.1</code> engine this report
+    combines the two impact and likelihood scores arithmetically where each Likelihood and Impact level carries a
+    Fibonacci-spaced weight (1, 2, 3, 5 -- not a linear 1-4) rather than equal steps, since the real-world jump in
+    exploitability or consequence from the third tier to the fourth is bigger than the jump from the first to the
+    second. The two weights are then multiplied, and the product is bucketed into a
+    Severity level, shown below for the custom-built engine (<code>jessestarkey/threagile</code>) this report
     runs.
     <table class="severity-matrix">
       <caption>Threagile's built-in Severity matrix</caption>
-      <tr><th></th><th>Low (1)</th><th>Medium (2)</th><th>High (3)</th><th>Very-High (4)</th></tr>
+      <tr><th></th><th>Low (1)</th><th>Medium (2)</th><th>High (3)</th><th>Very-High (5)</th></tr>
       <tr><th>Unlikely (1)</th><td class="severity-low">Low</td><td class="severity-medium">Medium</td><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td></tr>
-      <tr><th>Likely (2)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-elevated">Elevated</td><td class="severity-elevated">Elevated</td></tr>
-      <tr><th>Very-Likely (3)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td></tr>
-      <tr><th>Frequent (4)</th><td class="severity-elevated">Elevated</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-critical">Critical</td></tr>
+      <tr><th>Possible (2)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td></tr>
+      <tr><th>Likely (3)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td></tr>
+      <tr><th>Very-Likely (5)</th><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td><td class="severity-critical">Critical</td></tr>
     </table>
     <br>
     </li>
     <li><strong>The model's custom risk-injection categories</strong> get their
-    Severity computed by a slightly different scoring rule instead of Threagile's. Each custom
+    Severity computed by an independently-maintained scoring rule rather than calling Threagile's own. Each custom
     category starts from an author-judged baseline Likelihood and baseline Impact that is grounded in
     CWE or OWASP data where a mapping exists and expert judgment where it doesn't. Those
     baselines are then adjusted for the specific asset each finding landed on. Likelihood gets +1 rating increase
@@ -262,22 +264,23 @@
     the asset's own rating on whichever specific CIA dimension the finding's STRIDE category
     threatens, rather than a flat maximum across all three. Impact gets an additional plus +1 if the model's overall
     Business Criticality is Critical or Mission-Critical, but only when the asset's own
-    CIA-driven adjustment hasn't already earned that same +1, to prevent a duplicative impact adjustment. 
-    The two scores then combine through a fixed lookup table rather than an
-    arithmetic formula, shown below.
+    CIA-driven adjustment hasn't already earned that same +1, to prevent a duplicative impact adjustment.
+    The two scores then combine through the same Fibonacci-weighted product-and-threshold rule as Threagile's own
+    built-in path above, shown below -- the two paths are kept independently computed and maintained by design (see
+    <code>docs/risk-methodology.md</code>), even where, as here, they currently land on the same matrix shape.
     <table class="severity-matrix">
       <caption>Custom-category Severity matrix</caption>
-      <tr><th></th><th>Low</th><th>Medium</th><th>High</th><th>Very-High</th></tr>
-      <tr><th>Unlikely</th><td class="severity-low">Low</td><td class="severity-low">Low</td><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td></tr>
-      <tr><th>Likely</th><td class="severity-low">Low</td><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td></tr>
-      <tr><th>Very-Likely</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-critical">Critical</td></tr>
-      <tr><th>Frequent</th><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td><td class="severity-critical">Critical</td></tr>
+      <tr><th></th><th>Low (1)</th><th>Medium (2)</th><th>High (3)</th><th>Very-High (5)</th></tr>
+      <tr><th>Unlikely (1)</th><td class="severity-low">Low</td><td class="severity-medium">Medium</td><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td></tr>
+      <tr><th>Possible (2)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td></tr>
+      <tr><th>Likely (3)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td></tr>
+      <tr><th>Very-Likely (5)</th><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td><td class="severity-critical">Critical</td></tr>
     </table>
     </li>
   </ul>
-  <p>Though the two rules differ and can score a similar looking finding differently,
-  both paths reach Severity the same general way, where Likelihood and Impact combine through a
-  fixed rule rather than a per-finding judgment call.</p>
+  <p>Though the two paths are computed independently and can diverge for a similar-looking finding (they consult
+  different Likelihood/Impact inputs even where the weighting and bucketing rule is now shared), both reach Severity
+  the same general way: Likelihood and Impact combine through a fixed rule rather than a per-finding judgment call.</p>
 </section>
 
 <section id="impact-analysis" style="page: content;">

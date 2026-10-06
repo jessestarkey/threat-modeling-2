@@ -18,7 +18,7 @@ SEVERITY_ORDER = ["low", "medium", "elevated", "high", "critical"]
 # custom categories with our own documented scoring logic -- not an attempt
 # to replicate Threagile's own (undisclosed, compiled-into-the-binary)
 # matrix.
-LIKELIHOOD_ORDER = ["unlikely", "likely", "very-likely", "frequent"]
+LIKELIHOOD_ORDER = ["unlikely", "possible", "likely", "very-likely"]
 IMPACT_ORDER = ["low", "medium", "high", "very-high"]
 
 # Business criticality values (see 00-threagile-field-reference.yml) that
@@ -93,40 +93,46 @@ STRIDE_TO_CIA_DIMENSION = {
     "denial-of-service": "availability",
 }
 
-# Likelihood (row) x Impact (column) -> Severity, as an explicit,
-# hand-authored lookup table rather than an arithmetic formula -- the way a
-# standard qualitative risk matrix is actually built. The rule behind it is a
-# plain diagonal band: rank each axis 0-3, sum the two ranks (0-6), and
-# bucket the sum into the five Severity levels (0-1 -> Low, 2 -> Medium,
-# 3 -> Elevated, 4 -> High, 5-6 -> Critical). This gives a genuinely balanced
-# spread across all five levels rather than concentrating in the top two --
-# an earlier version instead bumped Severity a level whenever Likelihood
-# *and* Impact were both at least moderately elevated at once, which read
-# right for any one cell in isolation but meant 10 of 16 cells landed on
-# High/Critical, and on a real CUI-heavy app (most of whose assets are
-# legitimately rated Confidential/Critical-or-higher, and whose findings are
-# mostly Likely-or-worse) that pushed 85-98% of all custom findings to
-# High/Critical and left the label unable to discriminate anything.
+# Likelihood x Impact -> Severity, via a weight-product-and-threshold
+# formula rather than a hand-authored rank-sum lookup table (an earlier
+# version of this file used the latter -- see git history). Switched to
+# keep this in lockstep with the same change made to Threagile's own
+# built-in CalculateSeverity() in the forked engine (pkg/types/model.go) --
+# both now score (likelihood, impact) identically in shape, even though
+# they remain two independent scoring paths by design (see
+# docs/risk-methodology.md's "Could the custom engine just adopt
+# Threagile's own formula?" section for why that independence itself is
+# kept). WEIGHT is Fibonacci-spaced (1, 2, 3, 5) rather than linear
+# (1, 2, 3, 4): the real-world jump in exploitability/consequence from
+# Likely to Very-Likely (or High to Very-High) is bigger than the jump
+# from Unlikely to Possible (or Low to Medium), so equal linear steps
+# understate it -- the same non-linear-tier-gap reasoning this file's own
+# RAA weight tables below already use for Confidentiality/Criticality
+# ranks. Validated against a real ~186-finding custom-risk run before
+# landing: this window produces one more distinct severity value across
+# the 16 likelihood x impact cells than linear weights do (10 vs 9), and
+# the one tie it breaks is a real one -- Likely x Likely (moderate on both
+# axes) no longer scores identically to Unlikely x VeryHigh (rare but
+# catastrophic), which linear weights conflated.
 #
-# One cell deliberately breaks the pure sum-6 rule: (Frequent, High) sits at
-# High, not Critical. Left at Critical (its literal sum-band position), it
-# alone made Critical read as ~20-25% of all custom findings on a real
-# CUI-heavy app -- far above what Critical means in ordinary vulnerability-
-# management practice (a small, urgent minority, typically well under 15%).
-# Critical is now reachable only where both axes are genuinely maxed
-# together (Very-likely/Frequent paired with Very-High, or Frequent paired
-# with High is no longer enough on its own), which brought Critical down to
-# 10-11% -- High absorbs the difference and becomes the largest single
-# tier, but that's the normal, expected shape for the second-most-severe
-# level in a right-skewed severity distribution, not a discrimination
-# problem the way an over-large Critical tier was.
-SEVERITY_MATRIX = [
-    # Low         Medium        High          Very-High
-    ["low",       "low",        "medium",     "elevated"],   # Unlikely
-    ["low",       "medium",     "elevated",   "high"],       # Likely
-    ["medium",    "elevated",   "high",       "critical"],   # Very-likely
-    ["elevated",  "high",       "high",       "critical"],   # Frequent
-]
+# Thresholds chosen to preserve the same shape the old hand-authored
+# matrix had rather than an arbitrary rescale: Low and Critical both stay
+# a single-cell minority (product 1, and product 25 -- Very-Likely x
+# Very-High, the one cell at both axes' true maximum), with Medium/
+# Elevated/High banding the 8 distinct values in between in the same
+# relative order: 1->Low, {2,3}->Medium, {4,5,6}->Elevated,
+# {9,10,15}->High, 25->Critical. No exception cell needed this time --
+# unlike the old rank-sum rule, Fibonacci's own non-linear spacing already
+# keeps Critical naturally rare (1 of 16 cells) without having to
+# hand-override one.
+WEIGHT = [1, 2, 3, 5]
+
+SEVERITY_THRESHOLDS = [
+    (1, "low"),
+    (3, "medium"),
+    (6, "elevated"),
+    (15, "high"),
+]  # anything above the last threshold is "critical"
 
 
 def _asset_cia_ranks(asset_data: dict) -> tuple:
@@ -394,7 +400,11 @@ def compute_impact(definition: dict, asset_data: dict, mission_critical_system: 
 
 
 def compute_severity(likelihood: str, impact: str) -> str:
-    return SEVERITY_MATRIX[LIKELIHOOD_ORDER.index(likelihood)][IMPACT_ORDER.index(impact)]
+    product = WEIGHT[LIKELIHOOD_ORDER.index(likelihood)] * WEIGHT[IMPACT_ORDER.index(impact)]
+    for threshold, severity in SEVERITY_THRESHOLDS:
+        if product <= threshold:
+            return severity
+    return "critical"
 
 
 def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
