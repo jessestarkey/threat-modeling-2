@@ -1692,7 +1692,7 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
     preserved) instead of raw pixel dimensions, for direct embedding at a
     known print size -- this SVG carries no Graphviz-dpi-derived internal
     transform the way Threagile's own output does, so plain viewBox-driven
-    scaling is safe here (see dot-wrapper/dot for that history).
+    scaling is safe here (see generate_report.py's own header for how the .gv source is obtained).
 
     confidentiality_by_label, if given, maps a node's rendered label text to
     a confidentiality level (see CONFIDENTIALITY_FILL) -- the data-asset

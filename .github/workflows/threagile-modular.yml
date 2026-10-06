@@ -68,7 +68,7 @@ jobs:
           # what keeps rendered text sized consistently with the label boxes
           # Graphviz computed. graphviz provides the `dot` binary
           # generate_report.py itself now needs (via threagile_dfd_to_html.py)
-          # to re-render the .gv files dot-wrapper captured during the
+          # to re-render the .gv files --keep-diagram-source-files writes during the
           # Threagile run, below.
           sudo apt-get install -y -qq --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 libffi-dev shared-mime-info fonts-liberation fonts-freefont-ttf graphviz
           # pypdf/reportlab/Pillow were trim_report.py's dependencies, from
@@ -110,39 +110,48 @@ jobs:
       - name: Inject Custom IL5 Risks
         run: python models/central-security-repo/core-policies/inject_risks.py merged_model.yml
 
+      - name: Build Custom Threagile Image
+        # Builds from jessestarkey/threagile (current master, not the
+        # pinned threagile/threagile:0.9.1 the baseline threat-modeling
+        # repo still uses) so --keep-diagram-source-files is available --
+        # that flag writes data-flow-diagram.gv/data-asset-diagram.gv
+        # directly into the output directory under their own predictable
+        # names, making the dot-wrapper PATH-shadowing trick unnecessary
+        # (see git history for how that worked before this migration).
+        # Docker's remote git context builds straight from the URL --
+        # Dockerfile.local (not the repo's default Dockerfile, which
+        # clones upstream threagile/threagile instead of building this
+        # checkout) builds from the fork's own current source, so a
+        # future Go-level edit here just needs this step rerun, not a
+        # separately maintained image pin elsewhere.
+        run: docker build -t threagile-custom:latest -f Dockerfile.local https://github.com/jessestarkey/threagile.git
+
       - name: Run Threagile
-        # Invoked directly (instead of threagile/run-threagile-action) so the
-        # dot-wrapper script can shadow Graphviz's dot binary via PATH and
-        # capture the .gv source Threagile discards after rendering -- see
-        # dot-wrapper/dot for why this needs a real docker run rather than a
-        # third-party action, which exposes no hook for this.
+        # Invoked directly (instead of threagile/run-threagile-action,
+        # which exposes no hook for the flags/mounts this needs) against
+        # the custom image built above, using the Cobra-based CLI that
+        # image ships (threagile analyze-model --model X --output Y, not
+        # the old threagile:0.9.1's flat -model/-output flags) plus
+        # --keep-diagram-source-files and --ignore-orphaned-risk-tracking
+        # (the latter needed because this engine hard-fails rather than
+        # warns on a risk_tracking wildcard that doesn't match anything in
+        # a given run -- a legitimate case, e.g. a wildcard category tag
+        # that happens not to fire on this particular app).
         #
-        # threagile/threagile:0.9.1 runs as a fixed non-root uid (1000),
-        # confirmed via `docker run --entrypoint sh ... -c id` -- NOT root,
-        # despite what the next step used to assume. On a real Linux runner
-        # that uid can't write into threagile/output (mkdir'd as the
-        # runner's own uid, default 755) or create a fontconfig cache under
-        # its image-baked $HOME=/ (also not writable by uid 1000) --
-        # "permission denied" on risks.json/*.png and repeated "Fontconfig
-        # error: No writable cache directories". Both invisible during local
-        # Docker Desktop (Windows) testing, which doesn't enforce Linux-style
-        # UID permission checks the same way -- this only ever surfaced on a
-        # real GitHub Actions run. chmod 777 the output dir so uid 1000 can
-        # write into it regardless of the runner's own uid; redirect HOME to
-        # /tmp (world-writable in the image, confirmed via `ls -ld /tmp`)
-        # rather than chasing which specific uid needs write access to it.
+        # The image runs as a non-root named user ("threagile", not a
+        # fixed numeric uid the way threagile:0.9.1 did) -- confirmed via
+        # Dockerfile.local's own `adduser`/`USER threagile` lines. Same
+        # permission problem as before on a real Linux runner: that user
+        # can't write into threagile/output (mkdir'd as the runner's own
+        # uid, default 755). chmod 777 the output dir so it can regardless
+        # of the runner's own uid.
         run: |
           mkdir -p threagile/output
           chmod 777 threagile/output
-          chmod +x models/central-security-repo/core-policies/dot-wrapper/dot
           docker run --rm \
             -v "${{ github.workspace }}:/app/work" \
-            -e DOT_GV_OUTPUT_DIR=/app/work/threagile/output \
-            -e HOME=/tmp \
-            -v "${{ github.workspace }}/models/central-security-repo/core-policies/dot-wrapper:/wrap" \
-            --entrypoint sh \
-            threagile/threagile:0.9.1 \
-            -c 'PATH=/wrap:$PATH /app/threagile -model /app/work/threagile_injected.yml -output /app/work/threagile/output'
+            threagile-custom:latest \
+            analyze-model --model /app/work/threagile_injected.yml --output /app/work/threagile/output --keep-diagram-source-files --ignore-orphaned-risk-tracking
 
       - name: Generate Report
         # The threagile container above runs as a different (non-root, see

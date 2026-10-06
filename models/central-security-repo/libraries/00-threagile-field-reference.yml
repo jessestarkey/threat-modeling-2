@@ -17,9 +17,22 @@
 # diagram_tweak_edge_layout enums each had genuine errors (wrong spellings,
 # fabricated values not present in the real schema, or missing real values)
 # and are now corrected and annotated below. This schema.json does NOT cover
-# individual_risk_categories/risks_identified in a way that was cross-checked
+# custom_risk_categories/risks_identified in a way that was cross-checked
 # here -- see 09-custom-risks-lib.yml's own header for that structure instead
 # of trusting an addition to this file for it.
+#
+# UPDATED for the custom-engine migration (jessestarkey/threagile, current
+# master as of this writing, not the pinned threagile:0.9.1 referenced
+# above): two enum values were confirmed renamed between that pinned
+# version and current master -- authorization's enduser-identity-
+# propagation is now end-user-identity-propagation, and encryption's
+# data-with-enduser-individual-key is now data-with-end-user-individual-
+# key -- both already corrected below. The top-level model field also
+# changed shape: what was individual_risk_categories (a dict keyed by
+# title) is now custom_risk_categories (a list, each entry carrying its
+# own explicit title field) -- inject_risks.py's output already targets
+# this new shape; this is a field-shape change, not an enum value, so it
+# has no entry of its own in the tables below.
 #
 # USAGE:
 #   Keep this file in your central security repo as a read-only reference.
@@ -364,7 +377,7 @@ technical_asset_fields:
       transparent:                      Transparent encryption (e.g., TDE, LUKS, Azure SSE with PMK).
       data-with-symmetric-shared-key:   Data encrypted with a symmetric shared key (e.g., AES with shared secret).
       data-with-asymmetric-shared-key:  Data encrypted with an asymmetric key pair (e.g., RSA, TLS at rest).
-      data-with-enduser-individual-key: Data encrypted with a per-user key (e.g., client-side encryption, E2EE).
+      data-with-end-user-individual-key: Data encrypted with a per-user key (e.g., client-side encryption, E2EE).
 
   owner:
     type: free text
@@ -528,7 +541,7 @@ communication_link_fields:
     values:
       none:                       No authorization enforced.
       technical-user:             Machine-to-machine service account authorization.
-      enduser-identity-propagation: The authenticated end-user identity is propagated and enforced.
+      end-user-identity-propagation: The authenticated end-user identity is propagated and enforced.
 
   tags:
     type: list of strings

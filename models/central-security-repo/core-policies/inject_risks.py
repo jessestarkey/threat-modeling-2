@@ -883,7 +883,24 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             inject("Rogue Access Point and Evil-Twin Credential Harvesting on Self-Managed Wireless", "Rogue AP Risk")
             inject("Missing Route Origin Validation on Self-Managed External Routing", "Missing RPKI Validation Risk")
 
-    # 5. Save the enriched YAML
+    # 5. Convert to this engine's custom_risk_categories schema: a list of
+    # category objects with an explicit 'title' field, not a dict keyed by
+    # title. Built up as a title-keyed dict above (model['individual_risk_
+    # categories']) purely for the setdefault()/lookup convenience in
+    # inject() -- that was also the literal field name and shape Threagile
+    # itself expected before this engine's custom_risk_categories rename
+    # (map -> list), but this engine now silently drops an unrecognized
+    # top-level key instead of erroring, so a model carrying the old key
+    # "works" end to end while generating zero custom findings. Convert
+    # right before writing, so inject()'s own logic above needs no change.
+    custom_categories_by_title = model.pop('individual_risk_categories')
+    model['custom_risk_categories'] = []
+    for title, category in custom_categories_by_title.items():
+        category = dict(category)
+        category['title'] = title
+        model['custom_risk_categories'].append(category)
+
+    # 6. Save the enriched YAML
     with open(output_path, 'w', encoding='utf-8') as file:
         yaml.dump(model, file, sort_keys=False, allow_unicode=True)
 

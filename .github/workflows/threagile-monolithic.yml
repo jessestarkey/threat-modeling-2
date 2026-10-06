@@ -47,7 +47,7 @@ jobs:
           # what keeps rendered text sized consistently with the label boxes
           # Graphviz computed. graphviz provides the `dot` binary
           # generate_report.py itself now needs (via threagile_dfd_to_html.py)
-          # to re-render the .gv files dot-wrapper captured during the
+          # to re-render the .gv files --keep-diagram-source-files writes during the
           # Threagile run, below.
           sudo apt-get install -y -qq --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 libffi-dev shared-mime-info fonts-liberation fonts-freefont-ttf graphviz
           # cairosvg isn't a runtime dependency -- see threagile-modular.yml's
@@ -61,32 +61,29 @@ jobs:
         # Assumes your files are named [app-name].yml inside that folder
         run: python models/central-security-repo/core-policies/inject_risks.py models/monolithic-apps-repo/${{ matrix.application }}.yml
 
+      - name: Build Custom Threagile Image
+        # See threagile-modular.yml's step of the same name for the full
+        # explanation -- mirrors it exactly.
+        run: docker build -t threagile-custom:latest -f Dockerfile.local https://github.com/jessestarkey/threagile.git
+
       - name: Run Threagile
-        # Invoked directly (instead of threagile/run-threagile-action) so the
-        # dot-wrapper script can shadow Graphviz's dot binary via PATH and
-        # capture the .gv source Threagile discards after rendering -- see
-        # dot-wrapper/dot for why this needs a real docker run rather than a
-        # third-party action, which exposes no hook for this. Mirrors
-        # threagile-modular.yml's step of the same name -- see that file's
-        # own comment here for why chmod 777 + HOME=/tmp are both needed
-        # (threagile/threagile:0.9.1 runs as a fixed non-root uid 1000,
-        # confirmed via `docker run --entrypoint sh ... -c id`, which can't
-        # otherwise write into a runner-owned output dir or its own
-        # image-baked $HOME=/ for fontconfig's cache -- only surfaces on a
-        # real Linux runner, invisible under local Docker Desktop/Windows
+        # Invoked directly (instead of threagile/run-threagile-action,
+        # which exposes no hook for the flags/mounts this needs) against
+        # the custom image built above. Mirrors threagile-modular.yml's
+        # step of the same name -- see that file's own comment here for
+        # the full explanation of --keep-diagram-source-files,
+        # --ignore-orphaned-risk-tracking, and why chmod 777 is still
+        # needed (the image's non-root "threagile" user can't otherwise
+        # write into a runner-owned output dir -- only surfaces on a real
+        # Linux runner, invisible under local Docker Desktop/Windows
         # testing).
         run: |
           mkdir -p threagile/output
           chmod 777 threagile/output
-          chmod +x models/central-security-repo/core-policies/dot-wrapper/dot
           docker run --rm \
             -v "${{ github.workspace }}:/app/work" \
-            -e DOT_GV_OUTPUT_DIR=/app/work/threagile/output \
-            -e HOME=/tmp \
-            -v "${{ github.workspace }}/models/central-security-repo/core-policies/dot-wrapper:/wrap" \
-            --entrypoint sh \
-            threagile/threagile:0.9.1 \
-            -c 'PATH=/wrap:$PATH /app/threagile -model /app/work/threagile_injected.yml -output /app/work/threagile/output'
+            threagile-custom:latest \
+            analyze-model --model /app/work/threagile_injected.yml --output /app/work/threagile/output --keep-diagram-source-files --ignore-orphaned-risk-tracking
 
       - name: Generate Report
         # The threagile container above runs as a different (non-root, see

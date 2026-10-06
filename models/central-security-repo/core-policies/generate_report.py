@@ -17,14 +17,15 @@ our own custom categories).
 
 The two diagrams are rendered by threagile_dfd_to_html.py's build_svg(),
 not embedded from Threagile's native PNG or its default Graphviz styling.
-Threagile discards its own DOT source after rendering and never exposes
-it; dot-wrapper/dot shadows the real `dot` binary (earlier in PATH) during
-the Threagile run to copy the classified .gv source aside before passing
-the call through untouched, writing it to $DOT_GV_OUTPUT_DIR as
-data-flow-diagram.gv / data-asset-diagram.gv. This script then re-renders
-those with our own restyled shapes/palette instead of Threagile's -- see
-threagile_dfd_to_html.py for the design tokens and dot-wrapper/dot for the
-interception details.
+Threagile normally discards its own DOT source after rendering and never
+exposes it; this custom engine build (jessestarkey/threagile, not the
+threagile:0.9.1 the baseline threat-modeling repo still pins) is invoked
+with --keep-diagram-source-files, which writes data-flow-diagram.gv /
+data-asset-diagram.gv directly into the output directory under those
+exact names -- no PATH-shadowing dot-wrapper trick needed (see git
+history for how that worked before this migration). This script then
+re-renders those with our own restyled shapes/palette instead of
+Threagile's -- see threagile_dfd_to_html.py for the design tokens.
 
 Usage:
   python generate_report.py --model threagile_injected.yml --output-dir threagile/output
