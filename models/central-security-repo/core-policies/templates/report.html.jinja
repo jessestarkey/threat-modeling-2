@@ -230,17 +230,20 @@
   from. This report draws on two separate rule sources, and each scores its findings differently:</p>
   <ul>
     <li><strong>Threagile's own built-in risk categories</strong> get their Severity computed by
-    Threagile itself. Impact comes from the affected asset's or communication link's defined
-    Confidentiality, Integrity, and Availability ratings, computed per rule. Likelihood is decided
-    independently by each individual rule in one of two ways. Most built-in rules simply hardcode a fixed Likelihood
-    for that vulnerability class. However, a small number of rules instead raise Likelihood when
-    the asset's Relative Attacker Attractiveness (RAA) score crosses a threshold. Threagile then
-    combines the two impact and likelihood scores arithmetically where each Likelihood and Impact level carries a
+    Threagile itself, using this report's own custom-built engine (<code>jessestarkey/threagile</code>),
+    a fork of upstream Threagile that edits both the Severity formula and most individual rules'
+    scoring. Each rule starts from its own author-judged baseline Likelihood and Impact. Most rules
+    then nudge that baseline using the same per-asset adjustment the custom categories below use:
+    Likelihood gets a Relative Attacker Attractiveness (RAA) and internet-reachability adjustment,
+    and Impact gets narrowed to the single CIA dimension the finding's STRIDE category actually
+    threatens where that fits (kept broader where a category's own documented Impact genuinely
+    spans more than one dimension). A minority of rules -- checks for missing model elements or
+    whole-model issues with no single asset to adjust for -- keep a flat baseline instead. Threagile
+    then combines the two scores arithmetically: each Likelihood and Impact level carries a
     Fibonacci-spaced weight (1, 2, 3, 5 -- not a linear 1-4) rather than equal steps, since the real-world jump in
     exploitability or consequence from the third tier to the fourth is bigger than the jump from the first to the
     second. The two weights are then multiplied, and the product is bucketed into a
-    Severity level, shown below for the custom-built engine (<code>jessestarkey/threagile</code>) this report
-    runs.
+    Severity level, shown below.
     <table class="severity-matrix">
       <caption>Threagile's built-in Severity matrix</caption>
       <tr><th></th><th>Low (1)</th><th>Medium (2)</th><th>High (3)</th><th>Very-High (5)</th></tr>

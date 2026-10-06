@@ -36,16 +36,26 @@ Severity its own way:
 
 | | Threagile's built-in categories | This repo's custom categories |
 |---|---|---|
-| Likelihood source | Hardcoded per rule, or RAA-threshold-gated for a few rules | Category's own author-judged baseline, adjusted per-asset |
-| Impact source | Asset's/link's own CIA ratings, computed per rule | Category's own author-judged baseline, adjusted per-asset |
-| Combination rule | Likelihood weight (1–4) × Impact weight (1–4), product bucketed | Explicit hand-authored Likelihood × Impact lookup table |
-| Where it runs | Inside the Threagile binary, undisclosed/compiled-in | `inject_risks.py`, before Threagile ever runs |
+| Likelihood source | Each rule's own hardcoded baseline, nudged by a shared RAA + internet-reachability delta (`computeLikelihood()` in the fork) | Category's own author-judged baseline, adjusted per-asset (`compute_likelihood()`) |
+| Impact source | Asset's/link's own CIA ratings (most rules narrowed to the single STRIDE-mapped dimension; some stay multi-dimensional by documented exception) | Category's own author-judged baseline, adjusted per-asset |
+| Combination rule | Fibonacci weight (1,2,3,5) product, bucketed by threshold | Same Fibonacci weight-product-and-threshold formula |
+| Where it runs | Inside the forked Threagile binary (`jessestarkey/threagile`) | `inject_risks.py`, before Threagile ever runs |
 | Enrichment text | `libraries/10-threagile-builtin-risks-lib.yml` | `libraries/09-custom-risks-lib.yml` |
+
+As of the built-in-rule standardization project, 31 of ~42 built-in rules share this shape with the
+custom engine almost exactly — a per-category/per-rule baseline, nudged by the same RAA/
+reachability delta and (where it fits) the same single-STRIDE-dimension Impact narrowing. 11 rules
+stay out of scope by design: 7 are model-authoring checks, not real vulnerabilities, and 4 are
+whole-model singleton checks ("does *any* asset have a vault") that have no single asset to anchor
+a per-asset delta on. See [Threagile's built-in risk categories](#threagiles-built-in-risk-categories)
+below for the full picture, and [Why two different engines score
+differently](#why-two-different-engines-score-differently) for why, even with the mechanism this
+aligned, the two paths still aren't one engine.
 
 Both paths land on the same five-level Severity scale — Low, Medium, Elevated, High, Critical —
 and both are shown through identical badges/columns in the report, but a similar-looking finding
-can score differently depending on which engine produced it. See
-[Why two different engines score differently](#why-two-different-engines-score-differently).
+can still score differently depending on which engine produced it, since each path still computes
+its own baseline and reads its own inputs independently.
 
 ## Relative Attacker Attractiveness (RAA)
 
@@ -126,26 +136,87 @@ in practice.
 
 ## Threagile's built-in risk categories
 
-Threagile's own ~36 built-in rules (Missing Authentication, SQL/NoSQL Injection, Missing WAF, and
+Threagile's own ~42 built-in rules (Missing Authentication, SQL/NoSQL Injection, Missing WAF, and
 so on) score entirely inside the engine binary itself — this repo builds that binary from
 `jessestarkey/threagile`, a fork of upstream Threagile, so unlike the baseline threat-modeling
-repo's pinned `threagile/threagile:0.9.1` image, two of the pieces described below (the weight
-table and the severity thresholds) are things this repo's own fork actually controls and has
-edited. Everything else about how a built-in rule decides its own Likelihood/Impact inputs remains
-upstream, closed logic this repo has no visibility into beyond what's observable from real runs and
-`threagile -explain-risk-rules`, and doesn't attempt to reproduce.
+repo's pinned `threagile/threagile:0.9.1` image, this repo's own fork actually controls and has
+edited not just the weight table and severity thresholds (below) but, as of the built-in-rule
+standardization project, most individual rules' own Likelihood/Impact scoring logic too. Everything
+else about a rule's *detection logic* (does this risk apply at all to this asset/link) remains
+upstream, closed logic this repo treats as given rather than second-guesses.
 
-What's known and confirmed by testing:
+**The standardization project.** 31 of the ~42 rules were brought onto the same per-asset-context
+shape the custom engine already used: a shared `computeLikelihood()`/`computeImpact()` pair of
+helpers (`pkg/risks/builtin/helpers.go` in the fork) mirroring `inject_risks.py`'s
+`compute_likelihood()`/`compute_impact()` almost exactly — same RAA delta, same
+internet-reachability check, same STRIDE-to-CIA-dimension mapping, same gated business-criticality
+bump. Each of the 31 rules keeps its own hardcoded value as its *baseline* (exactly the role
+`baseline_likelihood`/`baseline_impact` play in `09-custom-risks-lib.yml`) and calls the shared
+helper to nudge it per asset, rather than using the flat value for every asset the rule fires on.
+
+11 rules were deliberately left out of this and still use only their original, context-blind
+logic: 7 are model-authoring-mistake checks (`ModelFailurePossibleReason: true` — incomplete model,
+unnecessary assets, etc.), not real vulnerabilities a per-asset delta would mean anything for; 4 are
+whole-model singleton checks ("does *any* asset in the model have a vault/identity store/build
+pipeline") that have no single asset to anchor a delta on, the same reasoning
+`missing_cloud_hardening_rule.go`'s and `mixed_targets_on_shared_runtime_rule.go`'s own
+shared-runtime/trust-boundary-level risk paths document inline for why *they* also keep a flat
+baseline Likelihood even though they're otherwise in scope.
+
+**Impact narrowing.** For each of the 31 in-scope rules, the existing Impact check (most originally
+checked multiple CIA fields at once) was reviewed individually against its own category's STRIDE
+value and Impact text — narrowed to the single STRIDE-mapped dimension where the category's own
+text was genuinely single-dimension (e.g. `path-traversal` and `xml-external-entity`, both purely
+about *reading* files, narrowed from a Confidentiality-or-Integrity check to Confidentiality alone),
+left multi-dimensional with an inline comment explaining why where the category's own text spans
+more than one dimension (e.g. `sql-nosql-injection`'s own Impact text says an attacker can "steal
+*and modify*" data — the same accepted Confidentiality+Integrity pattern this file's own
+`STRIDE_TO_CIA_DIMENSION` discussion documents for spoofing above), and left untouched where the
+rule's own `moreRisky`/gate logic already folds in something a generic CIA check can't know about
+(e.g. `dos-risky-access-across-trust-boundary`'s VPN/IP-filtering/redundancy factors).
+
+**The 4 RAA-special-cased rules got an actual redesign, not just a wiring change.** Before this
+project, none of them used RAA as a Likelihood delta the way the custom engine always has:
+`missing-hardening` and `missing-network-segmentation` used RAA purely as an *existence gate*
+(the risk doesn't fire at all below a `raaLimit`/`raaLimitReduced` threshold); `unguarded-access-
+from-internet` and `unguarded-direct-datastore-access` used RAA as a flat *Impact* bump
+(`if dataStore.RAA > 40 { impact = MediumImpact }`) layered on top of an already-maximal, RAA-blind
+Likelihood. All four now run RAA through the shared `computeLikelihood()` delta like every other
+rule, consistent with the custom engine's own architecture (RAA affects how *likely* exploitation
+is, not how *severe* it is once it occurs):
+
+- For the two existence-gated rules, the gate itself is kept exactly as-is (that's a genuine
+  detection-logic question — "is this asset hardening-worthy/segmentation-worthy at all" — separate
+  from scoring). Since both gates' thresholds (55%/40% and 50%) already sit at or above
+  `computeLikelihood()`'s own 40% high threshold, every asset that reaches the gate also
+  automatically earns the RAA Likelihood bump — the two roles don't conflict, they're just no
+  longer the same mechanism doing both jobs at once.
+- For the two Impact-bump rules, RAA was removed from Impact entirely (Impact now depends only on
+  the asset's own CIA rating) and the previously-flat baseline Likelihood now goes through
+  `computeLikelihood()` instead — a real behavior change, confirmed against real test fixtures
+  (a genuinely low-RAA asset's Likelihood now gets pulled down a notch where it previously never
+  would have, and a high-RAA asset's severity bump now shows up on the Likelihood axis instead of
+  Impact).
+
+This whole project reused the mapping/weight/threshold constants `inject_risks.py` already defines
+(`RAA_LIKELIHOOD_THRESHOLD`/`RAA_LIKELIHOOD_LOW_THRESHOLD`/`STRIDE_TO_CIA_DIMENSION`/
+`CIA_RANK_TO_DELTA`) rather than inventing a second, slightly-different set of numbers in Go — the
+two files' own constants should be checked against each other if either is ever retuned (see
+[Keeping this in sync](#keeping-this-in-sync)).
+
+What's known and confirmed by testing, for the remaining upstream, closed detection-logic pieces
+of every rule:
 
 - **Impact** comes from the affected technical asset's (or communication link's) own
-  Confidentiality/Integrity/Availability ratings, computed per rule.
-- **Likelihood** is decided independently by each rule. Most rules simply hardcode a fixed
-  Likelihood for that vulnerability class. A small number of rules instead raise Likelihood when
-  the asset's RAA score (see [RAA](#relative-attacker-attractiveness-raa) above) crosses a
-  threshold — two of Threagile's four RAA-aware built-in rules (`unguarded-access-from-internet`,
-  `unguarded-direct-datastore-access`) use a flat 40% cutoff; the other two (`missing-hardening`,
-  `missing-network-segmentation`) use a two-tier `raaLimit`/`raaLimitReduced` pair instead. This
-  repo's own custom engine's RAA threshold (see
+  Confidentiality/Integrity/Availability ratings — as of the standardization above, usually
+  narrowed to a single dimension via the shared helper, per-rule as described.
+- **Likelihood**'s baseline is still decided independently by each rule (a hardcoded constant per
+  vulnerability class, or an existence-gate/RAA-dependent trigger for the 4 rules discussed above),
+  then nudged by the shared RAA + reachability delta for all 31 in-scope rules. Two of Threagile's
+  four originally-RAA-aware built-in rules (`unguarded-access-from-internet`,
+  `unguarded-direct-datastore-access`) used a flat 40% cutoff before this project; the other two
+  (`missing-hardening`, `missing-network-segmentation`) use a two-tier `raaLimit`/`raaLimitReduced`
+  pair instead. This repo's own custom engine's RAA threshold (see
   [§2](#2-the-likelihood-adjustment-raa-and-internet-reachability)) is deliberately set to match
   that 40% value.
 - **Severity** combines the two arithmetically: each Likelihood and Impact level carries a weight,
@@ -231,23 +302,41 @@ RAA already includes the asset's own CIA rating as its first term, plus the data
 handles, its technology role, and the pivoting effect — a strictly richer signal, not an additional
 one stacked alongside the old one.
 
-**Internet reachability.** Broader than a direct `zone:dmz` tag: `compute_internet_reachable_ids()`
-walks outbound `communication_links` from every `zone:dmz`-tagged asset, since most vulnerability
-classes pass straight through a WAF untouched, so an asset several hops behind one is still a
-realistic target. The walk passes through anything *not* tagged as a real application tier
-(`app:frontend-ui`/`app:backend-api`/`app:async-worker` — assumed to be plumbing: a firewall, a
-load balancer) but stops at the first real application asset it reaches, without expanding into
-*that* app's own downstream dependencies (a database, an internal service). An unbounded walk would
-converge toward "everything is internet-reachable" in any architecture with enough hops, defeating
-the point of the signal.
+**Internet reachability.** `net:internet-reachable` is an explicit, author-maintained tag, checked
+directly (`'net:internet-reachable' in tags`) — broader than a direct `zone:dmz` tag, since most
+vulnerability classes pass straight through a WAF untouched, so the real application behind an
+already-modeled gateway/ALB/WAF is still a realistic target even though it isn't the edge component
+itself (which already carries its own native `internet: true` field). An author applies this tag to
+whichever specific assets are actually known to be reachable — typically the real backend behind
+the gateway, not the gateway itself.
+
+This *was* a computed signal instead: `compute_internet_reachable_ids()` walked outbound
+`communication_links` from every `zone:dmz`-tagged asset, stopping at the first real application
+tier reached (`app:frontend-ui`/`app:backend-api`/`app:async-worker`, assumed to be plumbing
+otherwise) rather than expanding unboundedly. It was removed after being confirmed to produce real
+false positives in practice: a shared infrastructure hop with multiple independent inbound
+paths — e.g. one Ingress Controller serving both a DMZ-rooted login flow and an entirely separate,
+never-internet-facing internal flow — has no way in a plain graph walk to distinguish which of its
+own outbound edges continue the DMZ-originated flow versus which belong to an unrelated caller, so
+once any inbound edge marked the shared hop reachable, the walk indiscriminately marked *every* one
+of its outbound targets reachable too. Fixing that properly would mean tracking path provenance
+through shared nodes (per-edge tagging), which reintroduces a comparable maintenance burden to what
+an explicit tag already requires, without the walk's own upside of being cheap to audit. The
+explicit tag is therefore not just cheaper than the walk — it's more *correct*, not a
+completeness-for-effort tradeoff.
 
 This delta is **one-directional** by design: not being reachable is simply the ordinary case the
 category's own baseline already assumes, not a fact that should push Likelihood *below* baseline
 the way a genuinely low-RAA asset does.
 
-`zone:dmz` itself stays narrowly scoped to "this asset directly receives hostile traffic" (used
-by the Missing WAF and Dangling DNS checks, which must not broaden to match) — the reachability
-walk is a deliberately separate, broader signal built on top of it.
+`zone:dmz` itself stays narrowly scoped to "this asset directly receives hostile traffic" (used by
+the Missing WAF and Dangling DNS checks, which must not broaden to match) — `net:internet-reachable`
+is a deliberately separate, broader signal, manually applied rather than derived from it.
+
+As of the built-in-rule standardization (see [Why two different engines score
+differently](#why-two-different-engines-score-differently)), the forked engine's built-in rules
+check the same two signals directly: `technicalAsset.Internet || contains(technicalAsset.Tags,
+"net:internet-reachable")`, reusing a `contains()` helper already in `pkg/risks/builtin/helpers.go`.
 
 ### 3. The Impact adjustment: CIA rank and business criticality
 
@@ -360,32 +449,43 @@ without an exception cell.
 
 ## Why two different engines score differently
 
-As of the Fibonacci-weighting change (see [§4](#4-severity-combining-likelihood-and-impact)), both
-paths now share the same weight-product-and-threshold *formula* — this changed from an earlier
-state where the two used genuinely different mechanisms (Threagile's built-in weight product vs.
-this repo's own rank-sum lookup table). But the two paths still compute their Likelihood and Impact
-*inputs* to that shared formula completely independently, and still can, so a similar-looking
-finding from a built-in rule and a custom category can score differently even on the same asset:
+Two separate changes brought the engines closer together, in stages: first the Fibonacci-weighting
+change made both use the same weight-product-and-threshold Severity *formula* (see
+[§4](#4-severity-combining-likelihood-and-impact)); then the built-in-rule standardization project
+(see [Threagile's built-in risk categories](#threagiles-built-in-risk-categories)) made 31 of ~42
+built-in rules compute their Likelihood/Impact *inputs* to that formula the same *way* the custom
+engine does — a per-category/per-rule baseline nudged by a shared RAA + reachability delta
+(Likelihood) and, where it fits, a single-STRIDE-dimension narrowing (Impact). Despite that, a
+similar-looking finding from a built-in rule and a custom category can still score differently on
+the same asset, for reasons that survive both changes:
 
-- Threagile's built-in rules decide their own Likelihood per rule (mostly hardcoded per
-  vulnerability class, a few RAA-threshold-gated) and take Impact straight from the asset's/link's
-  raw CIA ratings.
-- This repo's custom engine starts from a category's own author-judged baseline for both axes, then
-  nudges each with its own distinct per-asset deltas (RAA + internet-reachability for Likelihood;
-  single-CIA-dimension + gated business-criticality for Impact — see
-  [§2](#2-the-likelihood-adjustment-raa-and-internet-reachability) and
-  [§3](#3-the-impact-adjustment-cia-rank-and-business-criticality)).
+- **The baselines themselves are still independent author judgments.** A built-in rule's hardcoded
+  Likelihood/Impact constant and a custom category's `baseline_likelihood`/`baseline_impact` in
+  `09-custom-risks-lib.yml` were set by different authors (upstream Threagile maintainers vs. this
+  repo's own) at different times, for categories that don't always map 1:1 even when they sound
+  similar.
+- **11 of the ~42 built-in rules stay out of the standardization entirely** (7 model-authoring
+  checks, 4 whole-model singleton checks — see [Threagile's built-in risk
+  categories](#threagiles-built-in-risk-categories)), so they never picked up the shared delta
+  mechanism at all and still score exactly as they did before any of this project's changes.
+- **Some in-scope rules deliberately keep a wider, multi-dimension Impact check** where their own
+  category text genuinely spans more than one CIA dimension (documented inline per rule, the same
+  accepted-tradeoff pattern `STRIDE_TO_CIA_DIMENSION`'s own spoofing discussion uses below) — so
+  "narrowed to one dimension" isn't a blanket rule even within the 31 standardized rules.
+- **Detection logic — whether a risk fires at all for a given asset — remains entirely
+  rule-specific and untouched** by this project; only the scoring of a risk that already fired was
+  brought into alignment.
 
-This is accepted, not treated as a bug to reconcile: adopting a shared formula *shape* for both was
-a deliberate joint design choice applied to each independently-maintained path at once — it is not
-the custom engine deferring to a pre-existing Threagile formula (see [Could the custom engine just
-adopt Threagile's own
-formula?](#could-the-custom-engine-just-adopt-threagiles-own-formula) below for why that
-framing still doesn't apply even now that the formula shape matches). The two paths remain
-structurally separate; only the mapping from (Likelihood weight × Impact weight) to a Severity
-label converged, and it converged because both were independently retuned toward the same
-properties (Critical and Low both genuine single-digit-percent minorities), not because one
-deferred to the other.
+This is accepted, not treated as a bug to reconcile: aligning the formula shape and, later, the
+delta mechanism were each a deliberate joint design choice applied to each independently-maintained
+path at once — not the custom engine deferring to a pre-existing Threagile formula (see [Could the
+custom engine just adopt Threagile's own
+formula?](#could-the-custom-engine-just-adopt-threagiles-own-formula) below for why that framing
+still doesn't apply even now that both the formula shape and most of the delta mechanism match).
+The two paths remain structurally separate — two different codebases, two different sets of
+authored baselines, two different rule counts in scope — even though a growing share of their
+*mechanism* now matches by convergent, separately-validated design rather than by one deferring to
+the other.
 
 ## Could the custom engine just adopt Threagile's own formula?
 
@@ -412,10 +512,22 @@ score differently](#why-two-different-engines-score-differently) above).
 weight table and thresholds converged because both were independently retuned toward the same
 target properties (Critical and Low each a genuine single-digit-percent minority, no hand-picked
 exception cell needed) and that happened to be the same destination for both, not because one
-engine's output was piped into or constrained by the other's. Each retains its own Likelihood/Impact
-computation entirely, and either could diverge again in the future (a new Fibonacci window, a
-different threshold recalibration) without requiring the other to follow, since nothing couples
-them beyond both currently choosing the same constants.
+engine's output was piped into or constrained by the other's. Either could diverge again in the
+future (a new Fibonacci window, a different threshold recalibration) without requiring the other to
+follow, since nothing couples them beyond both currently choosing the same constants.
+
+**The later built-in-rule standardization project went further than the formula shape, but still
+isn't a merge.** 31 of ~42 built-in rules now call shared Go helpers (`computeLikelihood()`/
+`computeImpact()` in the fork) that mirror `inject_risks.py`'s own `compute_likelihood()`/
+`compute_impact()` almost exactly — same RAA delta, same reachability check, same STRIDE-to-CIA
+mapping. This is real, intentional convergence of *mechanism*, not just formula shape — but each
+rule still supplies its own baseline (its original hardcoded constant, author-judged by upstream
+Threagile maintainers, not ported from this repo's own `09-custom-risks-lib.yml`), and
+`inject_risks.py` still can't call into the Go helpers or vice versa — they're the same *logic*,
+implemented twice, in two languages, because there is still no runtime bridge between the Python
+preprocessing step and the compiled binary it hands its output to. Keeping both copies in sync by
+hand (see [Keeping this in sync](#keeping-this-in-sync)) is the real cost this convergence took on
+in exchange for consistency — a cost worth re-examining if the two sets of constants ever drift.
 
 **Net:** the two paths now compute Severity through the same formula shape, by coincidence of a
 shared, separately-validated design choice — not because the custom engine started deferring to
@@ -427,11 +539,11 @@ about the Fibonacci change requires that to change going forward.
 
 | Topic | Where |
 |---|---|
-| Custom engine's full scoring logic | `models/central-security-repo/core-policies/inject_risks.py` — `compute_likelihood()`, `compute_impact()`, `compute_severity()`, `compute_raa_by_id()`, `compute_internet_reachable_ids()` |
+| Custom engine's full scoring logic | `models/central-security-repo/core-policies/inject_risks.py` — `compute_likelihood()`, `compute_impact()`, `compute_severity()`, `compute_raa_by_id()` (the Internet-reachability signal is the manual `net:internet-reachable` tag now, not a function — `compute_internet_reachable_ids()` was removed; see git history) |
 | RAA formula's own weight tables | Same file — `CONF_ASSET`, `CRIT_ASSET`, `CONF_PROCESSED_OR_STORED`, `CRIT_PROCESSED_OR_STORED`, `CONF_TRANSFERRED`, `CRIT_TRANSFERRED`, `QTY_FACTOR`, `RAA_TECHNOLOGY_MULTIPLIER` |
 | Current threshold/weight constants | Same file — `RAA_LIKELIHOOD_THRESHOLD`, `RAA_LIKELIHOOD_LOW_THRESHOLD`, `CIA_RANK_TO_DELTA`, `STRIDE_TO_CIA_DIMENSION`, `WEIGHT`, `SEVERITY_THRESHOLDS` |
 | Per-category baseline Likelihood/Impact | `models/central-security-repo/libraries/09-custom-risks-lib.yml` — each entry's `baseline_likelihood`/`baseline_impact` |
-| Threagile's own built-in categories | This repo's fork, `jessestarkey/threagile` (built via `Dockerfile.local`) — `pkg/types/risk_exploitation_likelihood.go`/`risk_exploitation_impact.go` for the weight tables, `pkg/types/model.go`'s `CalculateSeverity()` for the thresholds; everything else about a built-in rule's own Likelihood/Impact logic stays closed upstream source, cross-referenced against `threagile -explain-risk-rules` and real local runs |
+| Threagile's own built-in categories | This repo's fork, `jessestarkey/threagile` (built via `Dockerfile.local`) — `pkg/types/risk_exploitation_likelihood.go`/`risk_exploitation_impact.go` for the weight tables, `pkg/types/model.go`'s `CalculateSeverity()` for the thresholds, `pkg/risks/builtin/helpers.go`'s `computeLikelihood()`/`computeImpact()` for the shared per-asset delta logic now used by 31 of ~42 rules, and each individual `pkg/risks/builtin/*_rule.go` file for that rule's own baseline value and detection logic (the one piece that stays closed-upstream in spirit even though this repo's fork can technically see and edit it) |
 | Built-in category enrichment text | `models/central-security-repo/libraries/10-threagile-builtin-risks-lib.yml` |
 | The condensed, report-facing version of this document | `models/central-security-repo/core-policies/templates/report.html.jinja`'s Methodology section |
 | Broader repo/pipeline architecture | `CLAUDE.md` |
@@ -447,3 +559,12 @@ explaining the "why." The report's own condensed Methodology section
 (`templates/report.html.jinja`) should be checked for the same drift at the same time — the two
 are meant to describe the same underlying logic at two different levels of depth, not diverge from
 each other.
+
+**Since the built-in-rule standardization, there's a second, cross-repo version of this problem.**
+`inject_risks.py`'s `RAA_LIKELIHOOD_THRESHOLD`/`RAA_LIKELIHOOD_LOW_THRESHOLD`/
+`CIA_RANK_TO_DELTA`/`STRIDE_TO_CIA_DIMENSION` and the fork's `pkg/risks/builtin/helpers.go`
+constants of the same shape are two independent copies of the same logic in two different
+repositories and languages, kept in sync by hand, not by either repo importing the other. If either
+file's constants change, check the other and this document together — a drift here wouldn't throw
+an error anywhere, it would just quietly make the two engines disagree again on something they're
+currently deliberately aligned on.
