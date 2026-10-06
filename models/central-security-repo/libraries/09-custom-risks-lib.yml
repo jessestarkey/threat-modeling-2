@@ -1,0 +1,76 @@
+# ==============================================================================
+# CUSTOM IL5 RISK DEFINITIONS: 09-custom-risks-lib.yml
+# ==============================================================================
+# Authoritative content for every custom (non-Threagile-native) risk category
+# that inject_risks.py can inject into a model's individual_risk_categories,
+# keyed by the same tag triggers documented in 03-tags-lib.yml.
+#
+# USAGE:
+#   inject_risks.py loads this file and scans each technical asset's `tags`
+#   list against its own hardcoded if-chain, injecting a deep copy of the
+#   matching entry below into individual_risk_categories, then recording one
+#   risks_identified entry per matching asset.
+#
+#   Each entry MUST include an (empty) `risks_identified: {}` map — the
+#   loader hard-fails at startup if any entry is missing it.
+#
+# ADDING A NEW RISK:
+#   1. Add an entry below with: id, description, impact, asvs, cheat_sheet,
+#      action, mitigation, references, risk_assessment, false_positives,
+#      function, stride, risks_identified: {}
+#   2. If it's triggered by a new tag, document that tag in 03-tags-lib.yml.
+#   3. Wire an `if 'tag:name' in tags: inject("<this entry's key>", "<short
+#      title>", "<severity>")` line into the tag-scanning loop in
+#      inject_risks.py.
+#
+# STRUCTURE:
+#   Entries are grouped into sections numbered `D.S` (domain D, section S
+#   within it, `# --- D.S NAME ---`), under 10 numbered `# DOMAIN D: NAME`
+#   banners — purely for human navigation, in both cases: neither the
+#   numbering nor the domain grouping has any runtime effect; Threagile
+#   and inject_risks.py only ever look up an entry by its dict key, never
+#   by position. Domains are named, ORDERED, and NESTED after SABER
+#   (github.com's security-framework repo, an internal DoD-oriented
+#   reference we ran a gap analysis against): its chapter sequence is
+#   Identity, Device and Infrastructure, Network and Environment,
+#   Application, AI, Data, Detection, Response, Recovery, Governance,
+#   Risk, Compliance, and ours tracks it domain-for-domain in the same
+#   order, with one deliberate omission: SABER's own org-level Compliance
+#   chapter, and most of its Governance chapter, are absent (that content
+#   is org-level, not per-asset, and was screened out during the gap
+#   analysis rather than represented as a near-empty domain here) --
+#   domain 10 below is still named Governance, matching SABER's own short
+#   name, but is scoped narrowly to the one governance-flavored slice that
+#   *is* per-asset and did survive the gap analysis: risk acceptance and
+#   policy exceptions. Cross-Domain Solutions and Software Supply Chain
+#   are sections, not domains of their own — nested inside Network and
+#   Environment and Application respectively, matching exactly where
+#   SABER's own document nests them (CDS as outcome NE-2.10 inside
+#   04-saber-network-and-environment.md; supply-chain content inside
+#   05-saber-application.md) rather than being pulled out as standalone
+#   domains the way an earlier pass here had them. Secrets and
+#   Cryptography sits under Data (6.2), not Application, for the same
+#   reason: SABER's own encryption/key-management content (DA-2/DA-3)
+#   lives in 07-saber-data.md, not its Application chapter, even though
+#   an earlier pass here had filed it under Application by habit:
+#     1  Identity ........................... 1.1-1.2
+#     2  Device and Infrastructure ........... 2.1-2.2
+#     3  Network and Environment ............. 3.1-3.2 (3.1 self-managed segmentation, 3.2 CDS)
+#     4  Application .......................... 4.1-4.5 (4.5 software supply chain / CI-CD)
+#     5  Artificial Intelligence .............. 5.1-5.3
+#     6  Data ................................ 6.1-6.2 (6.1 governance/lifecycle, 6.2 secrets/crypto)
+#     7  Detection ............................ 7.1
+#     8  Response ............................. 8.1
+#     9  Recovery ............................. 9.1
+#     10 Governance ........................... 10.1 (risk acceptance and policy exceptions only)
+#
+#   Sections 1.1, 1.2, 2.2, and 3.1 each carry a small cluster of entries
+#   triggered by an mgmt:self-managed-* tag rather than firing on every
+#   app: identity/PAM/hardware/network content that's a platform-inherited
+#   control for an app in the enterprise-managed landing zone (excluded
+#   from firing by default) but a real per-asset gap for an app that
+#   manages that infrastructure itself. See 03-tags-lib.yml's
+#   "SELF-MANAGED INFRASTRUCTURE TAGS" section for the full mgmt:* family.
+# ==============================================================================
+
+custom_risk_definitions: {}

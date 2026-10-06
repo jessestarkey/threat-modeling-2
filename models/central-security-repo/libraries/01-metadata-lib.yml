@@ -1,0 +1,59 @@
+# ==============================================================================
+# METADATA QUESTION LIBRARY: 01-metadata-lib.yml
+# ==============================================================================
+# This library contains the SSP question blocks for the Threagile metadata
+# file (01-metadata.yml). It is not submitted to Threagile directly.
+#
+# USAGE:
+#   1. Review your system's technical asset tags and machine types.
+#   2. For each domain with a matching trigger tag, copy the entire block
+#      under `questions:` directly into the `questions:` section of your
+#      01-metadata.yml file.
+#   3. Answer every question conversationally: explain HOW the capability
+#      is implemented, WHICH tool/control enforces it, and HOW it is
+#      verified. If a question doesn't apply, state "N/A" and explain why.
+#
+# STRUCTURE:
+#   Same 9-domain SABER structure as 02-abuse-and-reqs-lib.yml (see that
+#   file's header for the full reasoning), with the same triggers: list
+#   per domain -- copied verbatim from that file rather than re-derived,
+#   so a domain's applicability decision is made once, not twice.
+#
+#   Questions are grouped by CAPABILITY, not by individual ASVS/AISVS/NIST
+#   ID -- a developer thinks in terms of "how do we do authentication,"
+#   not "does the application satisfy ASVS 6.4." An earlier revision had
+#   one question per 02-abuse-and-reqs-lib.yml security_requirement key
+#   (157 questions total), each phrased as "Does the application meet the
+#   <topic> requirement?" -- mechanically traceable, but monotonous and
+#   too tied to the standard's own numbering for a conversational
+#   interview, whether the answerer is a developer or their agent. This
+#   revision collapses related IDs into one natural-language question per
+#   real capability (e.g. all of V6.1-V6.8 become one authentication
+#   question), cutting 157 questions down to 35. Each question carries a
+#   trailing comment listing the exact security_requirement IDs it covers
+#   -- consult those entries in 02-abuse-and-reqs-lib.yml (or the app's
+#   own 02-abuse-and-reqs.yml) for the precise numbered sub-criteria
+#   before answering; the question itself is deliberately not an
+#   enumeration of them.
+#
+#   Applicability is already fully decided by the triggers: tag match one
+#   level up -- this file's questions are attestation/implementation
+#   questions ("how do you do X, verified how?"), not applicability-gating
+#   questions ("do you have X at all?"); asking that again inside a
+#   section that only exists because the tag already matched would be
+#   circular.
+#
+# DOMAIN QUICK-REFERENCE (see 02-abuse-and-reqs-lib.yml for full sourcing
+# detail per domain):
+#   IDENTITY                   ASVS V6, V7, V8, V9, V10, NIST SP 800-53 (AC-2(6), AC-2(7))
+#   DEVICE AND INFRASTRUCTURE  NIST SP 800-53 (CM, SI, SC, AC, PE families)
+#   NETWORK AND ENVIRONMENT    ASVS V12, NIST SP 800-53 (SC-7, AC-18, AC-3, AC-4(6/9/19/25), AU-9, SI-3, SI-7, SC-31, MP-8, CA-3)
+#   APPLICATION                ASVS V1, V2, V3, V4, V5, V13, V15, V17
+#   ARTIFICIAL INTELLIGENCE    AISVS C1-C10, C11.1-C11.3
+#   DATA                       ASVS V11, V14
+#   DETECTION                  ASVS V16, AISVS C11.4, C12
+#   RESPONSE                   NIST SP 800-53 (IR family)
+#   RECOVERY                   NIST SP 800-53 (CP family, plus SA-9, AC-5, SC-12)
+# ==============================================================================
+
+categories: []

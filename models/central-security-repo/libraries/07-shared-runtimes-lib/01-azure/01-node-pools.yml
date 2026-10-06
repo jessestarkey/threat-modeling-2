@@ -1,0 +1,24 @@
+# ==============================================================================
+# ENTERPRISE SHARED RUNTIMES LIBRARY: [ENVIRONMENT NAME] Baseline
+# Environment Level: [e.g., DoD IL5 / Azure Government]
+# Maintainer: Enterprise Architecture & Security Engineering
+#
+# PURPOSE:
+# This library defines the underlying compute infrastructure (e.g., AKS
+# Worker Nodes, AVD Host Pools) where multiple technical assets execute
+# concurrently. It is critical for modeling the risks of container breakout,
+# lateral movement, and shared resource exhaustion.
+#
+# USAGE INSTRUCTIONS (The "Lego Block" Method):
+# 1. Do NOT reference this file directly in your pipeline's merge command.
+# 2. Verify you are using the correct library for your deployment environment
+#    (e.g., do not use the Seg1 library for a Seg2 deployment).
+# 3. SELECT the specific shared compute environments utilized by your
+#    architecture and COPY their YAML definitions into your local
+#    '07-shared-runtimes.yml'.
+# 4. Do NOT modify the core security tags (e.g., ops:stig-baseline) or the
+#    descriptions of the platform compute nodes, as these are required to
+#    prove host-level hardening to the pipeline risk engine.
+# ==============================================================================
+
+shared_runtimes: {}

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }}</title>
+</head>
+<body>
+
+<section class="title-page" style="page: title;">
+  <div class="title-band"></div>
+  <h1 class="report-title">{{ title }}</h1>
+  <p class="report-subtitle">Threat Model Report</p>
+  <hr class="title-rule">
+  <table class="title-meta">
+    <tr><th>Date</th><td>{{ date }}</td></tr>
+    <tr><th>Author</th><td>{{ author.get('name', '') }}{% if author.get('role') %} ({{ author.role }}){% endif %}</td></tr>
+    <tr><th>Business Criticality</th><td>{{ business_criticality | capitalize }}</td></tr>
+  </table>
+</section>
+
+<section class="toc" style="page: toc;">
+  <h1>Table of Contents</h1>
+  <ul class="toc-list">
+    <li class="toc-l0"><a href="#methodology">Part I: Application Profile</a><span class="toc-fill"></span><a class="toc-page" href="#methodology"></a></li>
+    <li class="toc-l1"><a href="#methodology">Threagile Methodology</a><span class="toc-fill"></span><a class="toc-page" href="#methodology"></a></li>
+    <li class="toc-l1"><a href="#executive-summary">Executive Summary</a><span class="toc-fill"></span><a class="toc-page" href="#executive-summary"></a></li>
+    <li class="toc-l1"><a href="#data-flow-diagram">Data-Flow Diagram</a><span class="toc-fill"></span><a class="toc-page" href="#data-flow-diagram"></a></li>
+    <li class="toc-l1"><a href="#data-asset-diagram">Data Asset Diagram</a><span class="toc-fill"></span><a class="toc-page" href="#data-asset-diagram"></a></li>
+    <li class="toc-l1"><a href="#security-requirements">Security Requirements</a><span class="toc-fill"></span><a class="toc-page" href="#security-requirements"></a></li>
+    <li class="toc-l1"><a href="#abuse-cases">Abuse Cases</a><span class="toc-fill"></span><a class="toc-page" href="#abuse-cases"></a></li>
+    <li class="toc-l1"><a href="#open-questions">Open Questions</a><span class="toc-fill"></span><a class="toc-page" href="#open-questions"></a></li>
+    <li class="toc-l1"><a href="#model-failures">Potential Model Failures</a><span class="toc-fill"></span><a class="toc-page" href="#model-failures"></a></li>
+
+    <li class="toc-l0"><a href="#impact-methodology">Part II: Application Risks</a><span class="toc-fill"></span><a class="toc-page" href="#impact-methodology"></a></li>
+    <li class="toc-l1"><a href="#impact-methodology">Risk Methodology</a><span class="toc-fill"></span><a class="toc-page" href="#impact-methodology"></a></li>
+    <li class="toc-l1"><a href="#impact-analysis">Severity Analysis of {{ remaining_finding_count }} Open Risks in {{ remaining_categories | length }} Categories</a><span class="toc-fill"></span><a class="toc-page" href="#impact-analysis"></a></li>
+    <li class="toc-l1"><a href="#accepted-risks">Severity Analysis of {{ accepted_finding_count }} Accepted Risks in {{ accepted_categories | length }} Categories</a><span class="toc-fill"></span><a class="toc-page" href="#accepted-risks"></a></li>
+    <li class="toc-l1"><a href="#closed-risks">Severity Analysis of {{ closed_finding_count }} Closed Risks in {{ closed_categories | length }} Categories</a><span class="toc-fill"></span><a class="toc-page" href="#closed-risks"></a></li>
+    <li class="toc-l1"><a href="#risks-by-category">Identified Risks by Vulnerability Category</a><span class="toc-fill"></span><a class="toc-page" href="#risks-by-category"></a></li>
+    {% for group in all_domain_groups %}
+    <li class="toc-l2"><a href="#domain-{{ group.slug }}">{{ group.domain }}</a><span class="toc-fill"></span><a class="toc-page" href="#domain-{{ group.slug }}"></a></li>
+    {% endfor %}
+
+    <li class="toc-l0"><a href="#tag-listing">Part III: Application Components</a><span class="toc-fill"></span><a class="toc-page" href="#tag-listing"></a></li>
+    <li class="toc-l1"><a href="#tag-listing">Tag Listing</a><span class="toc-fill"></span><a class="toc-page" href="#tag-listing"></a></li>
+    <li class="toc-l1"><a href="#data-assets">Data Assets</a><span class="toc-fill"></span><a class="toc-page" href="#data-assets"></a></li>
+    <li class="toc-l1"><a href="#technical-assets">Technical Assets</a><span class="toc-fill"></span><a class="toc-page" href="#technical-assets"></a></li>
+    <li class="toc-l1"><a href="#out-of-scope-assets">Out of Scope Assets</a><span class="toc-fill"></span><a class="toc-page" href="#out-of-scope-assets"></a></li>
+    <li class="toc-l1"><a href="#trust-boundaries">Trust Boundaries</a><span class="toc-fill"></span><a class="toc-page" href="#trust-boundaries"></a></li>
+    <li class="toc-l1"><a href="#shared-runtimes">Shared Runtimes</a><span class="toc-fill"></span><a class="toc-page" href="#shared-runtimes"></a></li>
+    <li class="toc-l1"><a href="#disclaimer">Disclaimer</a><span class="toc-fill"></span><a class="toc-page" href="#disclaimer"></a></li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<!-- PART 1: APPLICATION PROFILE                                  -->
+<!-- ============================================================ -->
+
+<section id="methodology" style="page: content;">
+  <h1>Part I: Application Profile</h1>
+  <h2 class="section-heading">Threagile Methodology</h2>
+  <p>This report was produced using <strong>Threagile</strong>, an open-source, model-driven threat
+  modeling engine. The system's architecture, technical assets, trust boundaries, data flows, and
+  data assets, is described as structured data rather than drawn free-hand, and Threagile analyzes
+  that model against a library of risk rules to systematically identify where the architecture
+  doesn't meet expected security properties. This model's own custom risk-injection engine extends
+  that analysis with additional risk categories built for this organization's specific compliance
+  and hardening requirements.</p>
+</section>
+
+<section id="executive-summary" style="page: content;">
+  <h2 class="section-heading">Executive Summary</h2>
+  <p>What this system does, how it's built, and where its identified risks currently stand.</p>
+
+  <h2>Business Criticality</h2>
+  <p>This model is rated <strong>{{ business_criticality | capitalize }}</strong>.</p>
+  <table class="asset-table">
+    <tr><th>Level</th><th>Meaning</th></tr>
+    <tr><td>Archive</td><td>Legacy or read-only reference system. Outage causes no operational impact.</td></tr>
+    <tr><td>Operational</td><td>Administrative or back-office tool. Outage is a minor inconvenience.</td></tr>
+    <tr><td>Important</td><td>Required for specific project execution. Outage degrades a specific group.</td></tr>
+    <tr><td>Critical</td><td>Essential daily enterprise tool. Outage causes widespread productivity disruption.</td></tr>
+    <tr><td>Mission-Critical</td><td>Warfighting or core operational system. Outage causes immediate mission failure.</td></tr>
+  </table>
+
+  <h2>Application Overview</h2>
+  <p>{{ management_summary_comment }}</p>
+
+  <table class="summary-counts">
+    <tr>
+      <th>Severity</th>
+      {% for status in ['unchecked', 'in-progress', 'in-discussion', 'mitigated', 'accepted', 'false-positive'] %}
+      <th>{{ status | replace('-', ' ') | capitalize }}</th>
+      {% endfor %}
+      <th>Total</th>
+    </tr>
+    {% for sev in severity_order %}
+    {% set by_status = stats.get(sev, {}) %}
+    <tr>
+      <td class="severity-{{ sev }}">{{ sev | capitalize }}</td>
+      {% for status in ['unchecked', 'in-progress', 'in-discussion', 'mitigated', 'accepted', 'false-positive'] %}
+      <td>{{ by_status.get(status, 0) }}</td>
+      {% endfor %}
+      <td>{{ by_status.values() | sum }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  {% if business_overview.description %}
+  <h2>Business Overview</h2>
+  {% for para in business_overview.description.split('\n') if para.strip() %}<p>{{ para.strip() }}</p>{% endfor %}
+  {% endif %}
+  {% if technical_overview.description %}
+  <h2>Technical Overview</h2>
+  {% for para in technical_overview.description.split('\n') if para.strip() %}<p>{{ para.strip() }}</p>{% endfor %}
+  {% endif %}
+</section>
+
+<section id="data-flow-diagram" style="page: content;">
+  <h2 class="section-heading">Data-Flow Diagram</h2>
+  <p>This diagram visually depicts every technical asset, trust boundary, and communication link contained in the application model. 
+  Small icons in a node's or boundary's corner call out specific application components or
+  cloud services where tagged (see Tag Listing). This page is a fixed-size overview. For a
+  full-resolution, zoomable version, see the accompanying <code>data-flow-diagram.html</code>
+  (or <code>.svg</code>) file included alongside this report.</p>
+  <div class="diagram">{{ data_flow_diagram | safe }}</div>
+</section>
+
+<section id="data-asset-diagram" style="page: content;">
+  <h2 class="section-heading">Data Asset Diagram</h2>
+  <p>This diagram maps each data asset to every technical asset that sends, receives, or stores it. Both data
+  assets and technical assets are shaded by their own Confidentiality level (see Data Assets). A
+  solid edge indicates that the data asset is stored by that technical asset whereas a dashed edge depicts it is
+  processed by or transits through that asset without being persisted there. This page is a
+  fixed-size overview. For a full-resolution, zoomable version, see the accompanying
+  <code>data-asset-diagram.html</code> (or <code>.svg</code>) file included alongside this
+  report.</p>
+  <div class="diagram">{{ data_asset_diagram | safe }}</div>
+</section>
+
+<section id="security-requirements" style="page: content;">
+  <h2 class="section-heading">Security Requirements</h2>
+  <p>This section covers the mandatory controls and constraints for the application model. Entries are sourced from
+  OWASP ASVS/AISVS or NIST SP 800-53, categorized by security domain, and rendered as tables.</p>
+  {% for group in security_requirement_domain_groups %}
+  <h2 class="domain-heading">{{ group.domain }}</h2>
+  {% for req in group.entries %}
+  <h3 class="category-heading">{{ req.title }}</h3>
+  {% if req.rows %}
+  <table class="svs-table">
+    <thead><tr><th class="svs-num">#</th><th>Description</th><th class="svs-level">Level</th></tr></thead>
+    <tbody>
+      {% for row in req.rows %}
+      <tr><td class="svs-num">{{ row.num }}</td><td>{{ row.description }}</td><td class="svs-level level-{{ row.level }}">{{ row.level }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>{{ req.text }}</p>
+  {% endif %}
+  {% endfor %}
+  {% endfor %}
+</section>
+
+<section id="abuse-cases" style="page: content;">
+  <h2 class="section-heading">Abuse Cases</h2>
+  <p>This section describes misuse scenarios in the application model, which includes concrete attacker
+  goals the architecture and its stated Security Requirements were designed against. Entries are categorized
+  by the same domain outlined in the previous section.
+  Any tailored entries not recognized under a domain fall under Uncategorized.</p>
+  {% for group in abuse_case_domain_groups %}
+  <h2 class="domain-heading">{{ group.domain }}</h2>
+  {% for ac_title, ac_text in group.entries %}
+  <h3 class="category-heading">{{ ac_title }}</h3>
+  <p>{{ ac_text }}</p>
+  {% endfor %}
+  {% endfor %}
+</section>
+
+<section id="open-questions" style="page: content;">
+  <h2 class="section-heading">Open Questions</h2>
+  <p>This section describes how the modeled application implements its security requirements through a
+  question and answer format. The same domain categorization continues as laid out in previous sections.
+  Any tailored entries not associated with a domain fall under Uncategorized.</p>
+  {% for group in question_domain_groups %}
+  <h2 class="domain-heading">{{ group.domain }}</h2>
+  {% for q_title, q_text in group.entries %}
+  <h3 class="category-heading">{{ q_title }}</h3>
+  <p>{{ q_text }}</p>
+  {% endfor %}
+  {% endfor %}
+</section>
+
+<section id="model-failures" style="page: content;">
+  <h2 class="section-heading">Potential Model Failures</h2>
+  <p>This section describes model failure findings from Threagile's model-consistency rules such as unreferenced or unnecessary assets,
+  or incomplete boundary/link content. This does not indicate an architecture risk, but rather flags
+  problems in how the model itself was authored and should be resolved by correcting the model,
+  not by adding mitigating controls.</p>
+  {% if model_failure_categories %}
+  {% for cat in model_failure_categories %}
+  <h2>{{ cat.title }}</h2>
+  {% for f in cat.findings %}
+  <div class="finding">
+    <h3><span class="severity-badge severity-{{ f.severity }}">{{ f.severity | upper }}</span> {{ f.title }}</h3>
+    <p><strong>Asset:</strong> {{ f.most_relevant_technical_asset or '—' }}</p>
+    {% if f.action %}<p><strong>Action:</strong> {{ f.action | safe }}</p>{% endif %}
+    {% if f.mitigation %}<p><strong>Mitigation:</strong> {{ f.mitigation | safe }}</p>{% endif %}
+  </div>
+  {% endfor %}
+  {% endfor %}
+  {% else %}
+  <p>No model-failure findings in this run.</p>
+  {% endif %}
+</section>
+
+<!-- ============================================================ -->
+<!-- PART 2: APPLICATION RISKS                                    -->
+<!-- ============================================================ -->
+
+<section id="impact-methodology" style="page: content;">
+  <h1>Part II: Application Risks</h1>
+  <h2 class="section-heading">Risk Methodology</h2>
+  <p>This section describes the methodology in how each risk is categorized. Every finding gets a Severity rating on a five-level scale:
+  <span class="severity-low">Low</span> &lt; <span class="severity-medium">Medium</span> &lt;
+  <span class="severity-elevated">Elevated</span> &lt; <span class="severity-high">High</span> &lt;
+  <span class="severity-critical">Critical</span>, and is shown throughout this report via the colored
+  Severity column and badges. Severity is always derived from a Likelihood score and an Impact
+  score for that finding, but how those two scores get computed depends on where the finding came
+  from. This report draws on two separate rule sources, and each scores its findings differently:</p>
+  <ul>
+    <li><strong>Threagile's own built-in risk categories</strong> get their Severity computed by
+    Threagile itself. Impact comes from the affected asset's or communication link's defined
+    Confidentiality, Integrity, and Availability ratings, computed per rule. Likelihood is decided
+    independently by each individual rule in one of two ways. Most built-in rules simply hardcode a fixed Likelihood
+    for that vulnerability class. However, a small number of rules instead raise Likelihood when
+    the asset's Relative Attacker Attractiveness (RAA) score crosses a threshold. Threagile then
+    combines the two impact and likelihood scores arithmetically where each Likelihood and Impact level carries a weight from 1
+    (lowest) to 4 (highest). The two weights are then multiplied, and the product is bucketed into a
+    Severity level, shown below for the pinned <code>threagile:0.9.1</code> engine this report
+    runs.
+    <table class="severity-matrix">
+      <caption>Threagile's built-in Severity matrix</caption>
+      <tr><th></th><th>Low (1)</th><th>Medium (2)</th><th>High (3)</th><th>Very-High (4)</th></tr>
+      <tr><th>Unlikely (1)</th><td class="severity-low">Low</td><td class="severity-medium">Medium</td><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td></tr>
+      <tr><th>Likely (2)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-elevated">Elevated</td><td class="severity-elevated">Elevated</td></tr>
+      <tr><th>Very-Likely (3)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td></tr>
+      <tr><th>Frequent (4)</th><td class="severity-elevated">Elevated</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-critical">Critical</td></tr>
+    </table>
+    <br>
+    </li>
+    <li><strong>The model's custom risk-injection categories</strong> get their
+    Severity computed by a slightly different scoring rule instead of Threagile's. Each custom
+    category starts from an author-judged baseline Likelihood and baseline Impact that is grounded in
+    CWE or OWASP data where a mapping exists and expert judgment where it doesn't. Those
+    baselines are then adjusted for the specific asset each finding landed on. Likelihood gets +1 rating increase
+    if the asset's own RAA score is at or above 40%, and another +1 if the asset is
+    internet-exposed via the <code>net:internet-reachable</code> tag. RAA is computed
+    independently here, replicating Threagile's own RAA formula (asset and data sensitivity, data
+    volume, a technology-type multiplier, and a "pivoting" effect where an asset inherits some
+    attractiveness from whatever it can reach). Impact gets a -1, 0, or +1 adjustment from
+    the asset's own rating on whichever specific CIA dimension the finding's STRIDE category
+    threatens, rather than a flat maximum across all three. Impact gets an additional plus +1 if the model's overall
+    Business Criticality is Critical or Mission-Critical, but only when the asset's own
+    CIA-driven adjustment hasn't already earned that same +1, to prevent a duplicative impact adjustment. 
+    The two scores then combine through a fixed lookup table rather than an
+    arithmetic formula, shown below.
+    <table class="severity-matrix">
+      <caption>Custom-category Severity matrix</caption>
+      <tr><th></th><th>Low</th><th>Medium</th><th>High</th><th>Very-High</th></tr>
+      <tr><th>Unlikely</th><td class="severity-low">Low</td><td class="severity-low">Low</td><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td></tr>
+      <tr><th>Likely</th><td class="severity-low">Low</td><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td></tr>
+      <tr><th>Very-Likely</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-critical">Critical</td></tr>
+      <tr><th>Frequent</th><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td><td class="severity-critical">Critical</td></tr>
+    </table>
+    </li>
+  </ul>
+  <p>Though the two rules differ and can score a similar looking finding differently,
+  both paths reach Severity the same general way, where Likelihood and Impact combine through a
+  fixed rule rather than a per-finding judgment call.</p>
+</section>
+
+<section id="impact-analysis" style="page: content;">
+  <h2 class="section-heading">Severity Analysis of {{ remaining_finding_count }} Open Risks in {{ remaining_categories | length }} Categories</h2>
+  <p>This section covers Open risk items, which are marked unchecked, in-progress, or in-discussion.
+  These are risks that have been neither mitigated nor accepted.</p>
+
+  {% for group in remaining_domain_groups %}
+  <h2 class="domain-heading">{{ group.domain }}</h2>
+  {% for cat in group.categories %}
+  <h3 class="category-heading"><a href="#cat-{{ cat.slug }}">{{ cat.title }}</a></h3>
+  <table class="compact-risk-table">
+    <tr><th>Severity</th><th>Asset</th><th>Status</th></tr>
+    {% for f in cat.findings %}
+    <tr>
+      <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
+      <td>{{ f.most_relevant_technical_asset or '—' }}</td>
+      <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endfor %}
+  {% endfor %}
+</section>
+
+<section id="accepted-risks" style="page: content;">
+  <h2 class="section-heading">Severity Analysis of {{ accepted_finding_count }} Accepted Risks in {{ accepted_categories | length }} Categories</h2>
+  <p>This section covers accepted risks, which are findings where the underlying vulnerability is still present in the
+  architecture, but a documented decision was made to tolerate it rather than remediate it. 
+  Each risk acceptance contains a justification, ticket reference, reviewer, and date.</p>
+  {% if accepted_categories %}
+  {% for group in accepted_domain_groups %}
+  <h2 class="domain-heading">{{ group.domain }}</h2>
+  {% for cat in group.categories %}
+  <h3 class="category-heading"><a href="#cat-{{ cat.slug }}">{{ cat.title }}</a></h3>
+  <table class="compact-risk-table">
+    <tr><th>Severity</th><th>Asset</th><th>Justification</th><th>Ticket</th><th>Checked By</th><th>Date</th></tr>
+    {% for f in cat.findings %}
+    <tr>
+      <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
+      <td>{{ f.most_relevant_technical_asset or '—' }}</td>
+      <td>{{ f.justification or '—' }}</td>
+      <td>{{ f.ticket or '—' }}</td>
+      <td>{{ f.checked_by or '—' }}</td>
+      <td>{{ f.closed_date or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endfor %}
+  {% endfor %}
+  {% else %}
+  <p>No accepted risks in this run.</p>
+  {% endif %}
+</section>
+
+<section id="closed-risks" style="page: content;">
+  <h2 class="section-heading">Severity Analysis of {{ closed_finding_count }} Closed Risks in {{ closed_categories | length }} Categories</h2>
+  <p>This section covers closed risks, which are mitigated or false-positive findings. Here, the underlying vulnerability is either
+  fixed or was never a real exposure in the first place. Each risk mitigation has a justification, reviewer, and date that come from that finding's
+  <code>risk_tracking</code> entry.</p>
+  {% if closed_categories %}
+  {% for group in closed_domain_groups %}
+  <h2 class="domain-heading">{{ group.domain }}</h2>
+  {% for cat in group.categories %}
+  <h3 class="category-heading"><a href="#cat-{{ cat.slug }}">{{ cat.title }}</a></h3>
+  <table class="compact-risk-table">
+    <tr><th>Severity</th><th>Asset</th><th>Status</th><th>Justification</th><th>Checked By</th><th>Date</th></tr>
+    {% for f in cat.findings %}
+    <tr>
+      <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
+      <td>{{ f.most_relevant_technical_asset or '—' }}</td>
+      <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
+      <td>{{ f.justification or '—' }}</td>
+      <td>{{ f.checked_by or '—' }}</td>
+      <td>{{ f.closed_date or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endfor %}
+  {% endfor %}
+  {% else %}
+  <p>No closed risks in this run.</p>
+  {% endif %}
+</section>
+
+<section id="risks-by-category" style="page: content;">
+  <h2 class="section-heading">Identified Risks by Vulnerability Category</h2>
+  <p>This section identifies every risk finding detail and is categorized by its assigned security domain.</p>
+  {% for group in all_domain_groups %}
+  <h2 id="domain-{{ group.slug }}" class="domain-heading">{{ group.domain }}</h2>
+  {% for cat in group.categories %}
+  <div id="cat-{{ cat.slug }}" class="category-block">
+
+    {% if cat.shared %}
+    {# Every finding in this category agrees on STRIDE/function/CWE/action/
+       mitigation -- the vulnerability class itself -- so that's shown once
+       here instead of once per asset. True whenever a category has one
+       finding (trivially) or several that agree; the whole section uses
+       this one shape by default, with the non-uniform branch below as the
+       exception rather than the rule. Severity/likelihood/impact/status
+       stay broken out per asset in the table below even on categories
+       where those also happen to be identical everywhere (rather than
+       switching to a flat asset list there) -- a deliberate visual-
+       consistency choice: every collapsed category has the same shape, so
+       a reader always finds severity/likelihood/impact/status in the same
+       place, right after the heading -- no severity badge on the heading
+       itself, since severity is now always a table column, never
+       restated in two places. Each row keeps its own finding-
+       {{ synthetic_id }} anchor so the Severity Analysis / Closed Risks
+       tables' jump-links still resolve. #}
+    <div class="finding">
+      <h3 class="category-heading">{{ cat.title }}</h3>
+      <table class="finding-meta">
+        <tr>
+          <td><strong>STRIDE:</strong> {{ cat.shared.stride }}</td>
+          <td><strong>Function:</strong> {{ cat.shared.function }}</td>
+          <td><strong>CWE:</strong> {{ cat.shared.cwe }}</td>
+        </tr>
+      </table>
+      <table class="compact-risk-table">
+        <tr><th>Severity</th><th>Asset</th><th>Likelihood</th><th>Impact Rating</th><th>Status</th></tr>
+        {% for f in cat.findings %}
+        <tr id="finding-{{ f.synthetic_id }}">
+          <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
+          <td>{{ f.most_relevant_technical_asset or '—' }}</td>
+          <td>{{ f.exploitation_likelihood | capitalize }}</td>
+          <td>{{ f.exploitation_impact | capitalize }}</td>
+          <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% if cat.enrichment %}
+      <p><strong>Description:</strong> {{ cat.enrichment.description }}</p>
+      <p><strong>Impact:</strong> {{ cat.enrichment.impact }}</p>
+      {% endif %}
+      {% if cat.shared.action %}<p><strong>Action:</strong> {{ cat.shared.action | safe }}</p>{% endif %}
+      {% if cat.shared.mitigation %}<p><strong>Mitigation:</strong> {{ cat.shared.mitigation | safe }}</p>{% endif %}
+      {% if cat.enrichment %}
+      {% if cat.enrichment.asvs %}<p><strong>ASVS:</strong> {{ cat.enrichment.asvs }}</p>{% endif %}
+      {% if cat.enrichment.cheat_sheet %}<p><strong>Cheat Sheet:</strong> {{ cat.enrichment.cheat_sheet }}</p>{% endif %}
+      {% if cat.enrichment.risk_assessment %}<p><strong>Risk Assessment:</strong> {{ cat.enrichment.risk_assessment }}</p>{% endif %}
+      {% if cat.enrichment.false_positives %}<p><strong>False Positives:</strong> {{ cat.enrichment.false_positives }}</p>{% endif %}
+      {% if cat.enrichment.detection_logic %}<p><strong>Detection Logic:</strong> {{ cat.enrichment.detection_logic }}</p>{% endif %}
+      {% if cat.enrichment.references %}<p><strong>References:</strong> {{ cat.enrichment.references }}</p>{% endif %}
+      {% endif %}
+    </div>
+    {% else %}
+    {# A single-finding category is always cat.shared (see _shared_fields()'s
+       docstring) so this branch is now reached only when a category has
+       multiple findings that genuinely don't agree on STRIDE/function/CWE/
+       action/mitigation -- a different vulnerability class per asset, not
+       just different scoring. Each finding keeps its own heading -- but
+       only the first carries the category-heading class (PDF bookmark +
+       description/impact), rather than repeating category background
+       once per asset the way the old standalone category title used to.
+       Same table-first, no-badge-in-heading shape as the branch above,
+       just one row per finding's own block instead of one row per asset
+       inside a single shared block. #}
+    {% for f in cat.findings %}
+    <div id="finding-{{ f.synthetic_id }}" class="finding">
+      <h3{% if loop.first %} class="category-heading"{% endif %}>{{ f.title }}</h3>
+      <table class="finding-meta">
+        <tr>
+          <td><strong>STRIDE:</strong> {{ f.stride }}</td>
+          <td><strong>Function:</strong> {{ f.function }}</td>
+          <td><strong>CWE:</strong> {{ f.cwe }}</td>
+        </tr>
+      </table>
+      <table class="compact-risk-table">
+        <tr><th>Severity</th><th>Asset</th><th>Likelihood</th><th>Impact Rating</th><th>Status</th></tr>
+        <tr>
+          <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
+          <td>{{ f.most_relevant_technical_asset or '—' }}</td>
+          <td>{{ f.exploitation_likelihood | capitalize }}</td>
+          <td>{{ f.exploitation_impact | capitalize }}</td>
+          <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
+        </tr>
+      </table>
+      {% if loop.first and cat.enrichment %}
+      <p><strong>Description:</strong> {{ cat.enrichment.description }}</p>
+      <p><strong>Impact:</strong> {{ cat.enrichment.impact }}</p>
+      {% endif %}
+      {% if f.action %}<p><strong>Action:</strong> {{ f.action | safe }}</p>{% endif %}
+      {% if f.mitigation %}<p><strong>Mitigation:</strong> {{ f.mitigation | safe }}</p>{% endif %}
+      {% if loop.first and cat.enrichment %}
+      {% if cat.enrichment.asvs %}<p><strong>ASVS:</strong> {{ cat.enrichment.asvs }}</p>{% endif %}
+      {% if cat.enrichment.cheat_sheet %}<p><strong>Cheat Sheet:</strong> {{ cat.enrichment.cheat_sheet }}</p>{% endif %}
+      {% if cat.enrichment.risk_assessment %}<p><strong>Risk Assessment:</strong> {{ cat.enrichment.risk_assessment }}</p>{% endif %}
+      {% if cat.enrichment.false_positives %}<p><strong>False Positives:</strong> {{ cat.enrichment.false_positives }}</p>{% endif %}
+      {% if cat.enrichment.detection_logic %}<p><strong>Detection Logic:</strong> {{ cat.enrichment.detection_logic }}</p>{% endif %}
+      {% if cat.enrichment.references %}<p><strong>References:</strong> {{ cat.enrichment.references }}</p>{% endif %}
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% endfor %}
+</section>
+
+<!-- ============================================================ -->
+<!-- PART 3: APPLICATION COMPONENTS                                -->
+<!-- ============================================================ -->
+
+<section id="tag-listing" style="page: content;">
+  <h1>Part III: Application Components</h1>
+  <h2 class="section-heading">Tag Listing</h2>
+  <p>This section lists every tag that is applied in this model, its meaning, and how often.</p>
+  <table class="tag-table">
+    <tr><th>Tag</th><th>Meaning</th><th>Usage Count</th></tr>
+    {% for tag in tags %}
+    <tr>
+      <td><code>{{ tag.name }}</code></td>
+      <td>{{ tag.description }}</td>
+      <td>{{ tag.usage_count }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section id="data-assets" style="page: content;">
+  <h2 class="section-heading">Data Assets</h2>
+  <p>This section outlines the information the application model processes or stores, independent of which technical asset
+  touches it. Each entry records who's accountable for it (<strong>Owner</strong>), roughly how
+  much of it exists (<strong>Quantity</strong>), where it comes from (<strong>Origin</strong>),
+  and its Confidentiality/Integrity/Availability ratings, defined below.</p>
+
+  <h2>Confidentiality</h2>
+  <table class="asset-table">
+    <tr><th>Level</th><th>Meaning</th></tr>
+    <tr><td>Public</td><td>No confidentiality requirement. Freely shareable.</td></tr>
+    <tr><td>Internal</td><td>Internal to the organization. Not for public release.</td></tr>
+    <tr><td>Restricted</td><td>Limited distribution within the organization. Need-to-know basis.</td></tr>
+    <tr><td>Confidential</td><td>Sensitive business or personal data. Restricted by policy.</td></tr>
+    <tr><td>Strictly-Confidential</td><td>Highest sensitivity. CUI, classified, or regulated data.</td></tr>
+  </table>
+
+  <h2>Integrity &amp; Availability</h2>
+  <p>Both Integrity and Availability use the same five-level scale, applied to what happens if the asset is respectively
+  modified (Integrity) or made unavailable (Availability). Technical Assets (next section) reuses
+  this same scale, applied to the asset itself rather than a specific payload.</p>
+  <table class="asset-table">
+    <tr><th>Level</th><th>If modified (Integrity)</th><th>If unavailable (Availability)</th></tr>
+    <tr><td>Archive</td><td>Historical/reference data. Modification has minimal impact.</td><td>Minimal operational impact.</td></tr>
+    <tr><td>Operational</td><td>Operational data. Modification causes limited disruption.</td><td>Causes limited disruption.</td></tr>
+    <tr><td>Important</td><td>Important data. Modification causes significant disruption.</td><td>Causes significant disruption.</td></tr>
+    <tr><td>Critical</td><td>Critical data. Modification causes major mission impact.</td><td>Causes major mission impact.</td></tr>
+    <tr><td>Mission-Critical</td><td>Modification causes immediate mission failure.</td><td>Causes immediate mission failure.</td></tr>
+  </table>
+
+  {% for a in data_assets %}
+  <div class="asset-node">
+    <h3>{{ a.title }}</h3>
+    <table class="finding-meta">
+      <tr>
+        <td><strong>Owner:</strong> {{ a.owner }}</td>
+        <td><strong>Quantity:</strong> {{ a.quantity }}</td>
+        <td><strong>Origin:</strong> {{ a.origin }}</td>
+      </tr>
+      <tr>
+        <td><strong>Confidentiality:</strong> <span class="cia-badge conf-{{ a.confidentiality }}">{{ a.confidentiality }}</span></td>
+        <td><strong>Integrity:</strong> <span class="cia-badge ia-{{ a.integrity }}">{{ a.integrity }}</span></td>
+        <td><strong>Availability:</strong> <span class="cia-badge ia-{{ a.availability }}">{{ a.availability }}</span></td>
+      </tr>
+    </table>
+    {% if a.description %}<p>{{ a.description }}</p>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+
+<section id="technical-assets" style="page: content;">
+  <h2 class="section-heading">Technical Assets</h2>
+  <p>This section depicts every component in the application model's architecture, with its own risk-relevant attributes:
+  <strong>Type</strong> (external-entity, process, or datastore), <strong>Technology</strong>
+  (its specific technical classification), <strong>Machine</strong> (physical, virtual,
+  container, or serverless), and <strong>Encryption</strong>. Confidentiality, Integrity, and
+  Availability use the same five-level scale defined in Data Assets, applied here to the asset
+  itself rather than a specific payload.</p>
+  <p>Relative Attacker Attractiveness (RAA) is a score Threagile computes for each asset, which
+  factors in its exposure, size, and CIA ratings, and estimates how appealing a target it is
+  relative to the rest of the model. Threagile's own risk rules use RAA as an input to their
+  likelihood scoring, so it helps explain why some findings are rated more severely than others.</p>
+  {% macro raa_badge(raa) -%}
+  {%- if raa is none -%}
+  —
+  {%- else -%}
+  {%- set band = 'critical' if raa >= 80 else 'high' if raa >= 60 else 'elevated' if raa >= 40 else 'medium' if raa >= 20 else 'low' -%}
+  <span class="raa-badge raa-{{ band }}">{{ raa | round | int }}</span>
+  {%- endif -%}
+  {%- endmacro %}
+  {% for a in technical_assets %}
+  <div class="asset-node">
+    <h3>{{ a.title }}</h3>
+    <table class="finding-meta">
+      <tr>
+        <td><strong>Type:</strong> {{ a.type }}</td>
+        <td><strong>Technology:</strong> {{ a.technology }}</td>
+        <td><strong>Machine:</strong> {{ a.machine }}</td>
+      </tr>
+      <tr>
+        <td><strong>Encryption:</strong> {{ a.encryption }}</td>
+        <td><strong>Confidentiality:</strong> <span class="cia-badge conf-{{ a.confidentiality }}">{{ a.confidentiality }}</span></td>
+        <td><strong>Integrity:</strong> <span class="cia-badge ia-{{ a.integrity }}">{{ a.integrity }}</span></td>
+      </tr>
+      <tr>
+        <td><strong>Availability:</strong> <span class="cia-badge ia-{{ a.availability }}">{{ a.availability }}</span></td>
+        <td><strong>RAA:</strong> {{ raa_badge(a.raa) }}</td>
+        <td></td>
+      </tr>
+    </table>
+    {% if a.description %}<p>{{ a.description }}</p>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+
+<section id="out-of-scope-assets" style="page: content;">
+  <h2 class="section-heading">Out of Scope Assets</h2>
+  {% if out_of_scope_assets %}
+  <p>This section lists the assets that are excluded from the threat model's accreditation boundary and their
+  justification for exclusion.</p>
+  {% for a in out_of_scope_assets %}
+  <h2>{{ a.title }}</h2>
+  <p>{{ a.justification_out_of_scope }}</p>
+  {% endfor %}
+  {% else %}
+  <p>No technical assets in this model are marked out of scope.</p>
+  {% endif %}
+</section>
+
+<section id="trust-boundaries" style="page: content;">
+  <h2 class="section-heading">Trust Boundaries</h2>
+  <p>This section lists every network, cluster, and namespace boundary in the model, nested to match the
+  architecture, along with the associated tags and technical assets.</p>
+  {% macro boundary(b, depth=0) %}
+  <div class="boundary-node" style="margin-left: {{ depth * 20 }}px;">
+    <h3>{{ b.title }} <span class="boundary-type">({{ b.type }})</span></h3>
+    <p>{{ b.description }}</p>
+    {% if b.tags %}<p class="tag-list">{% for t in b.tags %}<code>{{ t }}</code> {% endfor %}</p>{% endif %}
+    {% if b.assets %}<p><strong>Assets inside:</strong> {{ b.assets | join(', ') }}</p>{% endif %}
+  </div>
+  {% for child in b.children %}{{ boundary(child, depth + 1) }}{% endfor %}
+  {% endmacro %}
+  {% for root in trust_boundary_tree %}{{ boundary(root) }}{% endfor %}
+</section>
+
+<section id="shared-runtimes" style="page: content;">
+  <h2 class="section-heading">Shared Runtimes</h2>
+  <p>This section contains compute platforms, such as a shared Kubernetes cluster, that host multiple technical assets
+  that don't otherwise share a trust boundary. Relevant for blast-radius analysis if the platform
+  itself is compromised.</p>
+  {% for rt in shared_runtimes %}
+  <div class="runtime-node">
+    <h3>{{ rt.title }}</h3>
+    <p>{{ rt.description }}</p>
+    {% if rt.tags %}<p class="tag-list">{% for t in rt.tags %}<code>{{ t }}</code> {% endfor %}</p>{% endif %}
+    {% if rt.assets %}<p><strong>Assets running:</strong> {{ rt.assets | join(', ') }}</p>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+
+<section id="disclaimer" style="page: content;">
+  <h2 class="section-heading">Disclaimer</h2>
+  <p>This report was generated by an automated threat-modeling process (Threagile, augmented with
+  a custom risk-injection engine) and represents a point-in-time architectural analysis based
+  on the model provided. It is intended to support, not replace, manual security review, penetration
+  testing, and continuous monitoring. Identified risks should be triaged and tracked to resolution
+  through the organization's standard risk-management process.</p>
+</section>
+
+</body>
+</html>

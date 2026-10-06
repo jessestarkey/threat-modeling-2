@@ -1,0 +1,64 @@
+# ==============================================================================
+# THREAGILE BUILT-IN RISK REFERENCE: 10-threagile-builtin-risks-lib.yml
+# ==============================================================================
+# Live dependency, read directly by generate_report.py -- same tier as
+# 09-custom-risks-lib.yml (see central-security-repo's CLAUDE.md section for
+# the live-dependency/reference-catalog distinction). Not read by
+# inject_risks.py: this file never injects anything, it only supplies the
+# same enrichment content (description/impact/asvs/cheat_sheet/
+# risk_assessment/false_positives) for Threagile's OWN built-in risk
+# categories that 09-custom-risks-lib.yml supplies for our custom ones --
+# so "Identified Risks by Vulnerability Category" and the Risk Category
+# Reference section can show a real Description/Impact for a built-in
+# finding (e.g. Missing Authentication, SQL/NoSQL Injection) instead of
+# just Action/Mitigation from risks.xlsx.
+#
+# PROVENANCE -- this content is NOT authored by us. It is Threagile's own
+# risk-rule text, extracted from the pinned `threagile/threagile:0.9.1`
+# Docker image (internal version string: 1.0.0 / 20240730113903) via two
+# sources:
+#   - description: `docker run --entrypoint sh threagile/threagile:0.9.1
+#     -c "/app/threagile -explain-risk-rules"` -- plain CLI text, no
+#     extraction artifacts.
+#   - impact / asvs / cheat_sheet / risk_assessment / false_positives:
+#     Threagile's own native report.pdf (the one this pipeline otherwise
+#     discards in favor of generate_report.py's own render -- see
+#     CLAUDE.md) renders all of these per category; parsed out via a
+#     one-time PyMuPDF text-extraction pass across native reports for all
+#     4 modular apps plus Threagile's own `-create-example-model`, since
+#     no single model's findings exercise every built-in rule. Spot-
+#     checked for the PDF font-encoding mojibake this same extraction
+#     technique hit in trim_report.py's era (none found in Threagile's own
+#     built-in text, which is plain-ASCII prose without the em-dashes that
+#     triggered it in our own custom-risk text elsewhere).
+#   - cheat_sheet is Threagile's own short cheat-sheet slug (e.g.
+#     "Cross_Site_Scripting_Prevention_Cheat_Sheet"), expanded here to the
+#     actual OWASP Cheat Sheet Series URL following that project's own
+#     naming convention.
+#
+# COVERAGE -- all 35 built-in categories that aren't purely model-authoring
+# failures (missing-build-infrastructure and missing-identity-store ARE
+# included -- they're real risk categories in our pipeline, not in
+# MODEL_FAILURE_CATEGORY_IDS; the 7 actual model-failure IDs are excluded
+# since they render in "Potential Model Failures" and never consult this
+# file). 32 of the 35 came from the same real-model/example-model sources
+# described above; the remaining 3 -- container-platform-escape,
+# missing-identity-provider-isolation, service-registry-poisoning -- never
+# fired in any of those, since none of our 4 real apps or Threagile's own
+# example model happen to include a container-platform, identity-provider-
+# sharing-a-boundary, or service-registry asset. Rather than leave those 3
+# without enrichment, a small handcrafted probe model
+# (threagile-builtin-probe-model.yml, kept in this directory for
+# reproducibility -- not a real app, never merged into any pipeline)
+# exists solely to contain exactly those 3 asset types so all 35 rules
+# would fire somewhere; extracted from its own native report.pdf the same
+# way as everything else in this file.
+#
+# MAINTENANCE -- this file only needs regenerating if the pinned Threagile
+# image version changes (a version bump could reword or add/remove rules).
+# It is never hand-edited; re-run the extraction against the new image
+# instead of patching entries here piecemeal, since the whole point is
+# that this is Threagile's own upstream text, not ours to author.
+# ==============================================================================
+
+builtin_risks: {}

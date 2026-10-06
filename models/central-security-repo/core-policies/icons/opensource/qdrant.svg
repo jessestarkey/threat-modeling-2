@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64px" height="64px" viewBox="0 0 64 64" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Qdrant</title>
+    <g id="Icon-Architecture-BG/48/OpenSource" fill="#DC244C">
+        <rect id="Rectangle" x="0" y="0" width="64" height="64"></rect>
+    </g>
+    <g transform="translate(14.000,14.000) scale(1.5)" fill="#FFFFFF">
+            <path d="m12 16.5 3.897-2.25v-4.5L12 7.5 8.103 9.75v4.5zM1.607 18 12 24l3.897-2.25v-4.5L12 19.5l-6.495-3.75v-7.5L12 4.5l6.495 3.75v15L22.393 21V6L12 0 1.607 6Z"/>
+    </g>
+</svg>

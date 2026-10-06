@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64px" height="64px" viewBox="0 0 64 64" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>HashiCorp Vault</title>
+    <g id="Icon-Architecture-BG/48/OpenSource" fill="#FFEC6E">
+        <rect id="Rectangle" x="0" y="0" width="64" height="64"></rect>
+    </g>
+    <g transform="translate(14.000,14.000) scale(1.5)" fill="#000000">
+        <path d="M0 0l11.955 24L24 0zm13.366 4.827h1.393v1.38h-1.393zm-2.77 5.569H9.22V8.993h1.389zm0-2.087H9.22V6.906h1.389zm0-2.086H9.22V4.819h1.389zm2.087 6.263h-1.377V11.08h1.388zm0-2.09h-1.377V8.993h1.388zm0-2.087h-1.377V6.906h1.388zm0-2.086h-1.377V4.819h1.388zm.683.683h1.393v1.389h-1.393zm0 3.475V8.993h1.389v1.388Z"/>
+    </g>
+</svg>

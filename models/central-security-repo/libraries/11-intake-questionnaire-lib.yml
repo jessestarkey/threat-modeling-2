@@ -1,0 +1,87 @@
+# ==============================================================================
+# INTAKE QUESTIONNAIRE LIBRARY: 11-intake-questionnaire-lib.yml
+# ==============================================================================
+# This is a facilitation tool for a security engineer to use IN CONVERSATION
+# with a developer, before any Threagile authoring begins. It is not
+# submitted to Threagile directly, and unlike every other numbered library
+# in this directory, it is never copied into any of the 8 canonical app
+# fragment files either -- there is no "questionnaire" section in
+# 01-metadata.yml or anywhere else in a Threagile model. Its only output is
+# a decision: which tags from 03-tags-lib.yml actually apply to this
+# application. That tag list is then what the app author applies to the
+# technical assets they author in 05-tech-assets.yml, which is what
+# actually determines which 01-metadata-lib.yml and 02-abuse-and-reqs-
+# lib.yml domain blocks get copied in later. This file exists because that
+# discovery step previously had no tooling of its own -- a security
+# engineer or app author had to read all ~150 tags in 03-tags-lib.yml
+# directly and self-assess, which is a much harder task than answering a
+# guided set of plain-language questions about what the application
+# actually does.
+#
+# USAGE:
+#   1. Walk through the relevant domain sections with the developer as a
+#      conversation, not a form -- skip sections that are obviously
+#      irrelevant (e.g. skip Artificial Intelligence entirely for an app
+#      with no AI/ML surface at all).
+#   2. A plain question's value is the tag that answering "yes" implies.
+#      A GATE question (see STRUCTURE below) is a mapping instead of a
+#      plain string -- answer it first, and only continue into its
+#      `then:` block if the answer is yes. Record the resulting tag list
+#      yourself; this file has nothing to fill in and nothing to copy
+#      into a model file.
+#   3. Once the tag list is settled, apply those tags to the appropriate
+#      technical assets in 05-tech-assets.yml. That in turn determines
+#      which 01-metadata-lib.yml questions and 02-abuse-and-reqs-lib.yml
+#      abuse cases/security requirements are actually relevant to copy in.
+#
+# STRUCTURE:
+#   Same 9-domain SABER structure as 01-metadata-lib.yml and
+#   02-abuse-and-reqs-lib.yml, for the same reason those two share it: one
+#   consistent domain vocabulary across every artifact in this pipeline.
+#   Unlike those two files, there's no triggers: list here -- a domain
+#   section's own presence isn't gated by anything, since discovering
+#   which tags apply is the whole point of asking. A tag used as a trigger
+#   in more than one of those files' domains (e.g. feature:admin-panel
+#   triggers both Identity and Application, machine:container triggers
+#   both Device and Infrastructure and Detection) is asked only once here,
+#   under whichever domain it's asked first in this file's own order --
+#   asking a developer the same plain-language question twice under two
+#   different headings would be a worse conversation, not a more thorough
+#   one. These questions cover the 63 unique tags actually used as a
+#   trigger somewhere across those two files; tags that only ever appear
+#   as a *suppression* tag (confirming a mitigation already in place,
+#   e.g. ops:stig-baseline, crypto:hsm-backed) aren't discovery questions
+#   and aren't included here.
+#
+#   Most questions are a plain "question": "-> tag" pair. A handful cover
+#   two tags at once with "-> tag_a OR tag_b" instead, wherever the two
+#   tags are mutually exclusive states of the same underlying question --
+#   an asset is a container or a VM, not both; a CDS role is on the low
+#   side or the high side, not both; a non-standard AI deployment is on
+#   physically-accessible edge hardware or in an air-gapped enclave, not
+#   both. Asking those as one either/or question is one question a
+#   developer answers once, not two they're asked to separately rule in
+#   or out.
+#
+#   A handful of questions are GATE questions instead, where a "no" makes
+#   several other questions moot -- the cross-domain-solution roles only
+#   matter at all if a CDS is involved anywhere, and the specific AI
+#   training/agent/RAG sub-questions only matter if that broader
+#   capability exists in the first place. A gate is a mapping with a
+#   `then:` block holding the dependent questions, asked only on "yes":
+#
+#     "Gate question, itself worth a tag": {tag: "-> some:tag", then: {...}}
+#     "Pure routing question, no tag of its own": {then: {...}}
+#
+#   Three gates (the self-managed identity/access question under
+#   Identity, the CDS involvement question under Network and
+#   Environment, and the non-standard AI deployment question under
+#   Artificial Intelligence) exist purely to route the conversation and
+#   don't themselves map to a tag -- don't record one for them. Every
+#   other gate does double as an ordinary tag-yielding question in its
+#   own right (e.g. ai:training-pipeline, ai:agent-orchestrator,
+#   ai:rag-pipeline, ops:requires-backup) on top of unlocking its
+#   follow-ups.
+# ==============================================================================
+
+categories: []

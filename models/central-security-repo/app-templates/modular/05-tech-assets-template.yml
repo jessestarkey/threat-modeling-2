@@ -1,0 +1,140 @@
+# ==============================================================================
+# APPLICATION ARCHITECTURE & DATA FLOWS: technical_assets
+# Maintainer: Application Development Team
+#
+# PURPOSE:
+# This file defines the specific computing nodes, processes, and datastores 
+# that comprise your application's architecture. It explicitly maps the 
+# 'communication_links' (data flows) between components to generate the 
+# final Data Flow Diagram (DFD) and Security Risk Report.
+#
+# USAGE INSTRUCTIONS (The "Hybrid Assembly" Method):
+# 1. OPEN the relevant file(s) under
+#    libraries/05-tech-assets-lib/{provider}/*.yml for your cloud provider.
+# 2. SELECT and COPY the mandatory platform infrastructure components your
+#    application utilizes (e.g., 'Azure Firewall', 'Application Gateway (WAF)',
+#    'Nginx Ingress Pod', 'Azure Key Vault'), INCLUDING the library file's own
+#    numbered section header comment above each block (e.g.
+#    "# 2. IDENTITY AND ACCESS") -- keep assets grouped under the same
+#    numbered heading they came from, in the library's own order, rather than
+#    a flat undifferentiated list. See OUTPUT FORMAT below.
+# 3. PASTE the copied platform components below, organized by section. Do NOT
+#    modify their core security tags (e.g., ops:, net:), 'machine' types, or
+#    CIA justifications.
+# 4. CREATE your own application-specific assets (e.g., your backend API pods,
+#    frontend web servers, or standalone VMs) alongside the platform
+#    infrastructure -- group these under a section heading too, even if it's
+#    a custom one not from the library (e.g. "AI APPLICATION WORKLOADS").
+# 5. ADD the required 'data_assets_processed' and 'data_assets_stored' arrays
+#    to ALL components (both platform and custom) to reflect the specific data
+#    your application handles.
+# 6. WIRE your architecture together by defining 'communication_links'. Ensure
+#    every link explicitly lists the 'data_assets_sent' and 'received'.
+#
+# OUTPUT FORMAT (copy the library's own section header verbatim):
+#
+#   # ============================================================================
+#   # 2. IDENTITY AND ACCESS
+#   # Identity providers and identity stores for human and NPE authentication.
+#   # Source library: 05-tech-assets-lib/{provider}/02-identity-and-access.yml
+#   # ============================================================================
+#
+#   Some Technical Asset:
+#     ...
+#
+# AI ASSISTANCE (optional):
+#   Provide this template, the libraries/05-tech-assets-lib/{provider}/*.yml
+#   files for your cloud provider, 03-tags-lib.yml (for tagging each asset
+#   accurately), and a description of your application's architecture to an
+#   AI assistant, and ask it to select the applicable platform components and
+#   draft your custom application-specific assets and communication links,
+#   preserving each library file's own numbered section header above the
+#   blocks taken from it (and adding a descriptive heading for custom,
+#   non-library assets). Review the output for accuracy before committing.
+# ==============================================================================
+
+technical_assets:
+
+  # ============================================================================
+  # <N>. <SECTION NAME FROM THE LIBRARY FILE, e.g. "2. IDENTITY AND ACCESS">
+  # <one-line description copied from the library file's own header comment>
+  # Source library: 05-tech-assets-lib/{provider}/<matching-file>.yml
+  # ============================================================================
+
+  Some Technical Asset:
+    id: some-component
+    description: Some Description
+    type: process # values: external-entity, process, datastore
+    usage: business # values: business, devops
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: component # values: system, service, application, component
+    technology: web-service-rest # values: see help
+    tags:
+      - some-tag
+      - some-other-tag
+    internet: false
+    machine: virtual # values: physical, virtual, container, serverless
+    encryption: none # values: none, transparent, data-with-symmetric-shared-key, data-with-asymmetric-shared-key, data-with-enduser-individual-key
+    owner: Some Owner
+    confidentiality: confidential # values: public, internal, restricted, confidential, strictly-confidential
+    integrity: critical # values: archive, operational, important, critical, mission-critical
+    availability: critical # values: archive, operational, important, critical, mission-critical
+    justification_cia_rating: Some Justification
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: true
+    data_assets_processed: # sequence of IDs to reference
+      - some-data
+    data_assets_stored: # sequence of IDs to reference
+    data_formats_accepted: # sequence of formats like: json, xml, serialization, file, csv
+      - xml
+    communication_links:
+      Some Traffic:
+        target: some-other-component
+        description: Some Description
+        protocol: https # values: see help
+        authentication: none # values: none, credentials, session-id, token, client-certificate, two-factor
+        authorization: none # values: none, technical-user, enduser-identity-propagation
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: business # values: business, devops
+        data_assets_sent: # sequence of IDs to reference
+          - some-data
+        data_assets_received: # sequence of IDs to reference
+
+
+  Some Other Technical Asset:
+    id: some-other-component
+    description: Some Description
+    type: process # values: external-entity, process, datastore
+    usage: business # values: business, devops
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: component # values: system, service, application, component
+    technology: web-service-rest # values: see help
+    tags:
+      - some-tag
+      - some-other-tag
+    internet: false
+    machine: virtual # values: physical, virtual, container, serverless
+    encryption: none # values: none, transparent, data-with-symmetric-shared-key, data-with-asymmetric-shared-key, data-with-enduser-individual-key
+    owner: Some Owner
+    confidentiality: confidential # values: public, internal, restricted, confidential, strictly-confidential
+    integrity: critical # values: archive, operational, important, critical, mission-critical
+    availability: critical # values: archive, operational, important, critical, mission-critical
+    justification_cia_rating: Some Justification
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: true
+    data_assets_processed: # sequence of IDs to reference
+      - some-data
+    data_assets_stored: # sequence of IDs to reference
+    data_formats_accepted: # sequence of formats like: json, xml, serialization, file, csv
+      - xml
+    communication_links:
+

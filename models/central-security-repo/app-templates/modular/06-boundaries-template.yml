@@ -1,0 +1,66 @@
+# ==============================================================================
+# NETWORK TOPOLOGY & SEGMENTATION: trust_boundaries
+# Maintainer: Application Development Team
+#
+# PURPOSE:
+# This file defines the network architecture, subnets, and logical perimeters 
+# (e.g., Kubernetes Namespaces) for your application. It explicitly groups your 
+# 'technical_assets' to generate accurate cross-boundary security risks.
+#
+# USAGE INSTRUCTIONS (The "Network Nesting" Method):
+# 1. OPEN the relevant file(s) under
+#    libraries/06-boundaries-lib/{provider}/*.yml for your cloud provider.
+# 2. SELECT and COPY the mandatory platform network boundaries your application
+#    utilizes (e.g., 'System Environment', 'Prod VNet', 'Prod AKS Cluster'),
+#    INCLUDING the library file's own numbered section header comment above
+#    each block (e.g. "# 7. AKS CLUSTERS") -- keep boundaries grouped under
+#    the same numbered heading they came from, in the library's own order,
+#    rather than a flat undifferentiated list. See OUTPUT FORMAT below.
+# 3. PASTE the copied platform boundaries below, organized by section. Do NOT
+#    modify their core security tags (e.g., zone:, scope:), or 'type'
+#    definitions.
+# 4. CREATE your own application-specific boundaries (e.g., your dedicated
+#    Kubernetes Namespace) -- group these under a section heading too, even
+#    if it's a custom one not from the library.
+# 5. NEST your application boundaries logically. (e.g., Ensure your custom
+#    AKS Namespace is listed in the 'trust_boundaries_nested' array of the
+#    'Prod AKS Cluster').
+# 6. ASSIGN your technical assets to the correct boundary by adding their
+#    IDs to the 'technical_assets_inside' array of the appropriate block.
+#
+# OUTPUT FORMAT (copy the library's own section header verbatim):
+#
+#   # ============================================================================
+#   # 7. AKS CLUSTERS
+#   # <one-line description copied from the library file's own header comment>
+#   # Source library: 06-boundaries-lib/{provider}/07-aks-clusters.yml
+#   # ============================================================================
+#
+#   Some Trust Boundary:
+#     ...
+#
+# AI ASSISTANCE (optional):
+#   Provide this template, the libraries/06-boundaries-lib/{provider}/*.yml
+#   files for your cloud provider, and your completed 05-tech-assets.yml to
+#   an AI assistant, and ask it to select the applicable platform boundaries,
+#   nest them correctly, and assign your technical assets to the right one --
+#   preserving each library file's own numbered section header above the
+#   blocks taken from it. Review the output for accuracy before committing.
+# ==============================================================================
+
+trust_boundaries:
+
+  # ============================================================================
+  # <N>. <SECTION NAME FROM THE LIBRARY FILE, e.g. "7. AKS CLUSTERS">
+  # <one-line description copied from the library file's own header comment>
+  # Source library: 06-boundaries-lib/{provider}/<matching-file>.yml
+  # ============================================================================
+
+  Some Trust Boundary:
+    id: some-network
+    description: Some Description
+    type: network-dedicated-hoster # values: see help
+    tags:
+    technical_assets_inside: # sequence of IDs to reference
+      - some-component
+    trust_boundaries_nested: # sequence of IDs to reference

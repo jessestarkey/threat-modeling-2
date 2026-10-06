@@ -1,0 +1,32 @@
+# ==============================================================================
+# ENTERPRISE TECHNICAL ASSET LIBRARY: [ENVIRONMENT NAME]
+# Environment Level: [e.g., DoD IL5 / AWS GovCloud (US)]
+# Maintainer: Enterprise Architecture & Security Engineering
+#
+# PURPOSE:
+# This library provides the pre-configured, STIG-compliant infrastructure
+# components (e.g., Firewalls, Ingress Controllers, IdPs) authorized for use
+# specifically within this target environment.
+#
+# USAGE INSTRUCTIONS (The "Lego Block" Method):
+# 1. Do NOT reference this file directly in your pipeline's merge command.
+# 2. Verify you are using the correct library for your deployment environment
+#    (e.g., do not use the Seg1 library for a Seg2 deployment).
+# 3. SELECT the specific infrastructure components required by your architecture
+#    and COPY their YAML definitions into your local '05-tech-assets.yml'.
+# 4. CREATE your application-specific assets (e.g., custom pods, VMs) alongside
+#    the copied infrastructure.
+# 5. ADD 'data_assets_processed' and 'data_assets_stored' arrays to the copied
+#    infrastructure components to reflect the specific data your app sends through them.
+# 6. WIRE your architecture together by adding 'communication_links' to the
+#    copied components, pointing them to your application assets (and vice versa).
+# 7. Do NOT modify the core security tags (e.g., ops:, net:), the 'machine'
+#    type, or the CIA justifications on the infrastructure assets. These are
+#    required for automated compliance auditing by the pipeline risk engine.
+# ==============================================================================
+
+  # ============================================================================
+  # 1. EXTERNAL ENTITIES (Out of Scope)
+  # Assets representing users and endpoints outside the ATO boundary.
+  # Set out_of_scope: true and add justification_out_of_scope.
+  # ============================================================================

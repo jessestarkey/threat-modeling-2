@@ -1,0 +1,28 @@
+# ==============================================================================
+# ENTERPRISE TRUST BOUNDARIES LIBRARY: [ENVIRONMENT NAME]
+# Environment Level: [e.g., DoD IL5 / Azure Government]
+# Maintainer: Enterprise Architecture & Security Engineering
+#
+# PURPOSE:
+# This library provides the pre-defined, Zero Trust network architecture 
+# (e.g., VNets, Subnets, AKS Namespaces) authorized for use specifically 
+# within this target environment's Accreditation Boundary.
+#
+# USAGE INSTRUCTIONS (The "Lego Block" Method): 
+# 1. Do NOT reference this file directly in your pipeline's merge command.
+# 2. Verify you are using the correct library for your deployment environment 
+#    (e.g., do not use the Seg1 library for a Seg2 deployment).
+# 3. SELECT the specific network and platform boundaries required by your 
+#    architecture and COPY their YAML definitions into your local 
+#    '06-boundaries.yml'.
+# 4. NEST your application-specific boundaries (e.g., your custom Kubernetes 
+#    namespaces or dedicated subnets) inside the appropriate copied platform 
+#    boundaries (e.g., inside the 'Platform Prod AKS Cluster').
+# 5. ASSIGN your technical assets to the correct boundary by adding their 
+#    IDs to the 'technical_assets_inside' array of the appropriate block.
+# 6. Do NOT modify the core security tags (e.g., zone:, mgmt:), the 'type', 
+#    or the descriptions of the platform boundaries. These are required to 
+#    calculate accurate cross-boundary risk severity in the pipeline engine.
+# ==============================================================================
+
+trust_boundaries: {}

@@ -1,0 +1,163 @@
+name: Enterprise Modular Threat Model Analysis
+
+on:
+  push:
+    paths:
+      - 'models/modular-apps-repo/**' # Triggers on ANY app update
+      - 'models/central-security-repo/core-policies/*' # Triggers on policy updates
+  workflow_dispatch:
+
+jobs:
+  discover_apps:
+    # Lists models/modular-apps-repo/*/ so a new app folder is picked
+    # up by CI the moment it lands, with no separate step of remembering
+    # to edit a hardcoded matrix list here -- that gap is exactly why
+    # exposed-ai-chat sat untested in CI long enough for a mis-bodied
+    # fragment file (see 364525a) to go unnoticed.
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.list.outputs.apps }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - id: list
+        run: |
+          apps=$(find models/modular-apps-repo -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "apps=$apps" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Validate Modular Models
+        # Matrix-independent by design -- runs over every app folder this
+        # job just discovered, not just the ones already known-good enough
+        # to be in a matrix. Structural bugs like the mis-bodied
+        # 08-risk-tracking-template.yml (364525a) or the two dangling
+        # asset-id references found while auditing the central library
+        # (850c4fb) are exactly the class of thing this catches before a
+        # multi-minute Threagile/WeasyPrint run ever starts.
+        run: |
+          pip install pyyaml==6.0.3
+          python models/central-security-repo/core-policies/validate_model.py
+
+  modular_job:
+    needs: discover_apps
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        application: ${{ fromJSON(needs.discover_apps.outputs.apps) }}
+      fail-fast: false # Continues even if one app fails
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update -qq
+          # fonts-freefont-ttf provides FreeSans, the font
+          # threagile_dfd_to_html.py's build_svg() draws diagram labels in --
+          # matching it explicitly (rather than via the "Verdana" alias) is
+          # what keeps rendered text sized consistently with the label boxes
+          # Graphviz computed. graphviz provides the `dot` binary
+          # generate_report.py itself now needs (via threagile_dfd_to_html.py)
+          # to re-render the .gv files dot-wrapper captured during the
+          # Threagile run, below.
+          sudo apt-get install -y -qq --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 libffi-dev shared-mime-info fonts-liberation fonts-freefont-ttf graphviz
+          # pypdf/reportlab/Pillow were trim_report.py's dependencies, from
+          # before this workflow migrated to generate_report.py -- none of
+          # inject_risks.py/generate_report.py/threagile_dfd_to_html.py
+          # import them, so they're dropped here rather than pinned dead
+          # weight. cairosvg isn't a runtime dependency either -- the one
+          # vendored icon (so far) whose SVG WeasyPrint can't render
+          # correctly (_icon_data_uri_raster's WeasyPrint gradientTransform
+          # workaround, for the PDF-embedded diagram only) is now a
+          # pre-rasterized <name>-print.png sitting next to the source SVG,
+          # baked in once rather than converted via cairosvg on every run;
+          # the standalone SVG/HTML files keep the original vendored SVG
+          # unchanged either way.
+          # Versions pinned for reproducibility -- an IL5 threat model
+          # report should be regenerable identically later, not silently
+          # different because a dependency moved on.
+          pip install pyyaml==6.0.3 jinja2==3.1.6 weasyprint==68.1 openpyxl==3.1.5
+          sudo wget https://github.com/mikefarah/yq/releases/download/v4.53.6/yq_linux_amd64 -O /usr/bin/yq
+          sudo chmod +x /usr/bin/yq
+
+      - name: Merge Modular YAML
+        # Stitches the central baseline with the specific app in the matrix
+        # Merges the YAML files and automates the time stamp. Named
+        # explicitly rather than globbing *.yml -- a stray or misnamed file
+        # in the app's folder used to get silently merged in (or a real
+        # fragment silently left out if it didn't match the glob) with no
+        # error either way; this is exactly the bug class a mis-bodied
+        # 08-risk-tracking-template.yml slipped through as. Naming the 8
+        # canonical fragments means a stray file is simply never read, and
+        # a missing/renamed one fails loudly (yq errors: file not found)
+        # instead of silently under-merging.
+        run: |
+          yq eval-all '. as $item ireduce ({}; . * $item )' \
+          models/modular-apps-repo/${{ matrix.application }}/{01-metadata,02-abuse-and-reqs,03-tags,04-data-assets,05-tech-assets,06-boundaries,07-shared-runtimes,08-risk-tracking}.yml > merged_model.yml
+          yq eval '.date = "'$(date +%Y-%m-%d)'"' -i merged_model.yml
+
+
+      - name: Inject Custom IL5 Risks
+        run: python models/central-security-repo/core-policies/inject_risks.py merged_model.yml
+
+      - name: Run Threagile
+        # Invoked directly (instead of threagile/run-threagile-action) so the
+        # dot-wrapper script can shadow Graphviz's dot binary via PATH and
+        # capture the .gv source Threagile discards after rendering -- see
+        # dot-wrapper/dot for why this needs a real docker run rather than a
+        # third-party action, which exposes no hook for this.
+        #
+        # threagile/threagile:0.9.1 runs as a fixed non-root uid (1000),
+        # confirmed via `docker run --entrypoint sh ... -c id` -- NOT root,
+        # despite what the next step used to assume. On a real Linux runner
+        # that uid can't write into threagile/output (mkdir'd as the
+        # runner's own uid, default 755) or create a fontconfig cache under
+        # its image-baked $HOME=/ (also not writable by uid 1000) --
+        # "permission denied" on risks.json/*.png and repeated "Fontconfig
+        # error: No writable cache directories". Both invisible during local
+        # Docker Desktop (Windows) testing, which doesn't enforce Linux-style
+        # UID permission checks the same way -- this only ever surfaced on a
+        # real GitHub Actions run. chmod 777 the output dir so uid 1000 can
+        # write into it regardless of the runner's own uid; redirect HOME to
+        # /tmp (world-writable in the image, confirmed via `ls -ld /tmp`)
+        # rather than chasing which specific uid needs write access to it.
+        run: |
+          mkdir -p threagile/output
+          chmod 777 threagile/output
+          chmod +x models/central-security-repo/core-policies/dot-wrapper/dot
+          docker run --rm \
+            -v "${{ github.workspace }}:/app/work" \
+            -e DOT_GV_OUTPUT_DIR=/app/work/threagile/output \
+            -e HOME=/tmp \
+            -v "${{ github.workspace }}/models/central-security-repo/core-policies/dot-wrapper:/wrap" \
+            --entrypoint sh \
+            threagile/threagile:0.9.1 \
+            -c 'PATH=/wrap:$PATH /app/threagile -model /app/work/threagile_injected.yml -output /app/work/threagile/output'
+
+      - name: Generate Report
+        # The threagile container above runs as a different (non-root, see
+        # the previous step) uid than this step, so output files it created
+        # need to come back under this step's own uid before Python here can
+        # freely read/write/replace them (e.g. generate_report.py deleting
+        # the now-superseded .png diagrams).
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" threagile/output
+          python models/central-security-repo/core-policies/generate_report.py \
+            --model threagile_injected.yml --output-dir threagile/output
+
+      - name: Archive Results
+        uses: actions/upload-artifact@v4
+        with:
+          # Use the matrix name so you get separate downloads for each app!
+          name: ${{ matrix.application }}-threagile-report
+          path: threagile/output

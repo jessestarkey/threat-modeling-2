@@ -1,0 +1,9 @@
+  # ============================================================================
+  # 6a. CROSS-DOMAIN SOLUTION INTERFACES
+  # Low-side components interfacing with an external UCDMO-approved CDS.
+  # ============================================================================
+  
+  # These assets model the LOW-SIDE application's interface with an external,
+  # UCDMO-approved CDS. The CDS itself is outside the ATO boundary and is
+  # modeled as an external entity. Apply cds: tags to trigger CDS-specific
+  # risk injections. See 03-authoritative-tags.yml for tag definitions.

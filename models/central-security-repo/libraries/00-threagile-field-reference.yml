@@ -1,0 +1,681 @@
+# ==============================================================================
+# THREAGILE FIELD REFERENCE: 00-threagile-field-reference.yml
+# ==============================================================================
+# Authoritative enum values and field options for every key in a Threagile
+# model YAML. Source: pkg.go.dev/github.com/threagile/threagile/model
+# (model package constants, v0.9.1 / master branch types.go)
+#
+# CORRECTED 2026-09-11: the enum lists below were never actually checked
+# against a real Threagile run -- a model using "binary-protocol-encrypted"
+# (this file's own former listed value) was rejected outright by the pinned
+# threagile:0.9.1 image ("unknown 'protocol' of technical asset..."). Every
+# enum in this file was then re-verified against that same pinned image's
+# own bundled JSON schema (`docker run --rm --entrypoint cat
+# threagile/threagile:0.9.1 /app/schema.json`), which is generated from the
+# real Go enum constants and is a strictly more reliable source than
+# secondhand recollection of pkg.go.dev. The protocol, technology, and
+# diagram_tweak_edge_layout enums each had genuine errors (wrong spellings,
+# fabricated values not present in the real schema, or missing real values)
+# and are now corrected and annotated below. This schema.json does NOT cover
+# individual_risk_categories/risks_identified in a way that was cross-checked
+# here -- see 09-custom-risks-lib.yml's own header for that structure instead
+# of trusting an addition to this file for it.
+#
+# USAGE:
+#   Keep this file in your central security repo as a read-only reference.
+#   When authoring any Threagile model file, consult this document to find
+#   valid values for any enum field. Fields marked (free text) accept any
+#   string value. Fields marked (bool) accept: true / false. If in doubt,
+#   the schema.json extraction command above is the fastest way to verify
+#   any field on this pinned version directly rather than trust a copy.
+#
+# STRUCTURE OF THIS FILE:
+#   01-metadata.yml         — top-level model fields
+#   02-abuse-and-reqs.yml   — abuse_cases / security_requirements
+#   04-data-assets.yml      — data_assets fields
+#   05a-tech-assets.yml      — technical_assets fields
+#   05b-comm-links.yml       — communication_links fields (nested under tech assets)
+#   06-trust-boundaries.yml — trust_boundaries fields
+#   07-shared-runtimes.yml  — shared_runtimes fields
+#   08-risk-tracking.yml    — risk_tracking fields
+# ==============================================================================
+
+
+# ==============================================================================
+# 01-METADATA.YML  —  top-level model fields
+# ==============================================================================
+
+metadata_fields:
+
+  threagile_version:
+    type: string
+    notes: Semver string. Current supported value is "1.0.0".
+
+  title:
+    type: free text
+
+  date:
+    type: string
+    notes: ISO 8601 date (YYYY-MM-DD). Pipeline typically overwrites this.
+
+  author:
+    fields:
+      name: free text
+      homepage: free text (optional URL)
+
+  management_summary_comment:
+    type: free text
+    notes: Appears on page 1 of the PDF report. Intended for the AO/CISO audience.
+
+  business_criticality:
+    type: enum
+    values:
+      archive:          Legacy or read-only reference system. Outage causes no operational impact.
+      operational:      Administrative or back-office tool. Outage is a minor inconvenience.
+      important:        Required for specific project execution. Outage degrades a specific group.
+      critical:         Essential daily enterprise tool. Outage causes widespread productivity disruption.
+      mission-critical: Warfighting or core operational system. Outage causes immediate mission failure.
+
+  business_overview:
+    fields:
+      description: free text
+      images:       list of image filename strings (optional)
+
+  technical_overview:
+    fields:
+      description: free text
+      images:       list of image filename strings (optional)
+
+  questions:
+    type: map
+    notes: >
+      Flat map of question string → answer string. Both key and value are free text.
+      Unanswered questions (empty string value) appear as findings in the report.
+
+  tags_available:
+    type: list of strings
+    notes: >
+      Master allowlist of every tag that may be applied anywhere in the model.
+      Any tag used on an asset, boundary, or runtime that is not in this list
+      causes a validation error at parse time.
+
+  diagram_tweak_edge_layout:
+    type: enum
+    notes: >
+      Verified against the pinned threagile:0.9.1 image's own /app/schema.json
+      -- the previous version of this entry (spline/polyline/ortho/line/compound)
+      didn't match and was never runtime-tested.
+    values:
+      "":       Unset (default Graphviz edge routing)
+      spline:   Curved edges
+      polyline: Straight multi-segment edges
+      ortho:    Right-angle edges
+      false:    Edge routing disabled
+      curved:   Curved routing (distinct from spline's spline-fitting)
+
+  diagram_tweak_suppress_edge_labels:
+    type: bool
+
+  diagram_tweak_layout_left_to_right:
+    type: bool
+
+  diagram_tweak_nodesep:
+    type: integer
+    notes: Node separation in pixels.
+
+  diagram_tweak_ranksep:
+    type: integer
+    notes: Rank separation in pixels.
+
+  diagram_tweak_invisible_connections_between_assets:
+    type: list of asset ID pairs
+    notes: Forces layout adjacency without drawing a visible edge.
+
+  diagram_tweak_same_rank_assets:
+    type: list of asset ID lists
+    notes: Forces listed assets onto the same diagram rank.
+
+
+# ==============================================================================
+# 02-ABUSE-AND-REQS.YML  —  abuse cases and security requirements
+# ==============================================================================
+
+abuse_and_reqs_fields:
+
+  abuse_cases:
+    type: map
+    notes: >
+      Flat map of title string → description string (free text block scalar).
+      Title becomes the key; value is the abuse case narrative.
+
+  security_requirements:
+    type: map
+    notes: >
+      Flat map of title string → requirement string (free text block scalar).
+      Title becomes the key; value is the requirement narrative.
+
+
+# ==============================================================================
+# 04-DATA-ASSETS.YML  —  data_assets
+# ==============================================================================
+
+data_asset_fields:
+
+  id:
+    type: string
+    notes: Unique identifier used to reference this asset from technical assets and comm links.
+
+  description:
+    type: free text
+
+  usage:
+    type: enum
+    values:
+      business:    Data is processed as part of the primary business or mission function.
+      devops:      Data is used for development, operations, or build pipeline purposes only.
+
+  tags:
+    type: list of strings
+    notes: Must be a subset of tags_available defined in metadata.
+
+  origin:
+    type: free text
+    notes: Where the data originates (e.g., "End User", "Third-Party Provider").
+
+  owner:
+    type: free text
+
+  quantity:
+    type: enum
+    notes: Volume of data records. Affects attacker attractiveness scoring.
+    values:
+      very-few:   Fewer than ~10 records
+      few:        ~10–100 records
+      many:       ~100–1000 records
+      very-many:  More than ~1000 records
+
+  confidentiality:
+    type: enum
+    notes: Affects risk severity calculations and attacker attractiveness.
+    values:
+      public:               No confidentiality requirement. Freely shareable.
+      internal:             Internal to the organization. Not for public release.
+      restricted:           Limited distribution within the organization. Need-to-know basis.
+      confidential:         Sensitive business or personal data. Restricted by policy.
+      strictly-confidential: Highest sensitivity. CUI, classified, or regulated data.
+
+  integrity:
+    type: enum
+    notes: Importance of data correctness. Affects risk severity calculations.
+    values:
+      archive:          Historical/reference data. Modification has minimal impact.
+      operational:      Operational data. Modification causes limited disruption.
+      important:        Important data. Modification causes significant disruption.
+      critical:         Critical data. Modification causes major mission impact.
+      mission-critical: Mission-critical data. Modification causes immediate mission failure.
+
+  availability:
+    type: enum
+    notes: Importance of data being accessible. Uses the same scale as integrity.
+    values:
+      archive:          Data unavailability has minimal operational impact.
+      operational:      Unavailability causes limited disruption.
+      important:        Unavailability causes significant disruption.
+      critical:         Unavailability causes major mission impact.
+      mission-critical: Unavailability causes immediate mission failure.
+
+  justification_cia_rating:
+    type: free text
+    notes: Narrative explaining why the CIA values were assigned. Appears in the report.
+
+
+# ==============================================================================
+# 05a-TECH-ASSETS.YML  —  technical_assets
+# ==============================================================================
+
+technical_asset_fields:
+
+  id:
+    type: string
+    notes: Unique identifier. Used in trust boundaries, shared runtimes, and comm links.
+
+  description:
+    type: free text
+
+  type:
+    type: enum
+    values:
+      external-entity:  Out-of-scope actor or system (e.g., end user, external API).
+      process:          An in-scope application, service, or running process.
+      datastore:        A database, file store, cache, or persistent storage system.
+
+  usage:
+    type: enum
+    values:
+      business:  Asset serves the primary business or mission function.
+      devops:    Asset is used for development, build, or operations pipelines only.
+
+  used_as_client_by_human:
+    type: bool
+    notes: True if a human directly interacts with this asset (e.g., a browser, desktop app).
+
+  out_of_scope:
+    type: bool
+    notes: >
+      True marks the asset as outside the ATO boundary for risk calculation purposes.
+      Useful for modeling external dependencies and third-party services.
+
+  justification_out_of_scope:
+    type: free text
+    notes: Required explanation when out_of_scope is true.
+
+  size:
+    type: enum
+    values:
+      system:      An entire system or platform (e.g., an ERP, a cloud environment).
+      service:     A distinct deployed service (e.g., a microservice, a SaaS product).
+      application: A single application instance.
+      component:   A library, module, or sub-component within an application.
+
+  technology:
+    type: enum
+    notes: >
+      The primary technical classification. Affects which built-in risk rules fire.
+      Use tags for specific product names (e.g., tag "nginx" alongside technology "reverse-proxy").
+    values:
+      unknown-technology:        Technology type is not specified or unknown.
+      client-system:             A generic external client system.
+      browser:                   A web browser client.
+      desktop:                   A desktop application client.
+      mobile-app:                A mobile application client.
+      devops-client:             A DevOps tool acting as a client (e.g., CI runner, deployment agent).
+      web-server:                A static or simple web server (e.g., Apache httpd, Nginx serving static content).
+      web-application:           A full web application serving dynamic HTML (e.g., Confluence, SharePoint).
+      application-server:        A JEE or equivalent application server (e.g., JBoss, WebLogic, Tomcat).
+      database:                  A relational or NoSQL database (e.g., PostgreSQL, MySQL, MongoDB, Cosmos DB).
+      file-server:               A file serving system (e.g., NFS, CIFS, FTP server).
+      local-file-system:         A local filesystem used by the application process.
+      erp:                       An Enterprise Resource Planning system.
+      cms:                       A Content Management System.
+      web-service-rest:          A REST API web service.
+      web-service-soap:          A SOAP web service.
+      ejb:                       An Enterprise Java Bean component.
+      search-index:              A search index (e.g., Elasticsearch, Solr, Azure AI Search).
+      search-engine:             A search engine platform (distinct from the index itself).
+      service-registry:          A service discovery registry (e.g., Consul, Eureka, etcd).
+      reverse-proxy:             A reverse proxy or ingress controller (e.g., Nginx, HAProxy, Traefik).
+      load-balancer:             A load balancer (e.g., Azure Load Balancer, AWS ALB, F5).
+      build-pipeline:            A CI/CD build pipeline (e.g., GitHub Actions, Jenkins, Azure Pipelines).
+      sourcecode-repository:     A source code version control system (e.g., GitHub, GitLab, Bitbucket).
+      artifact-registry:         A container or package registry (e.g., ACR, Artifactory, Iron Bank).
+      code-inspection-platform:  A SAST or code quality platform (e.g., SonarQube, Semgrep, Checkmarx).
+      monitoring:                A monitoring, observability, or logging platform (e.g., Datadog, Splunk, Azure Monitor).
+      ldap-server:               An LDAP directory server (e.g., Active Directory, OpenLDAP).
+      container-platform:        A container orchestration platform (e.g., AKS, EKS, OpenShift).
+      batch-processing:          A batch or scheduled job processing system.
+      event-listener:            An event-driven listener or consumer (e.g., Azure Function, Lambda trigger).
+      identity-provider:         An Identity Provider or authorization server (e.g., Keycloak, Okta, Entra ID).
+      identity-store-ldap:       An identity store backed by LDAP.
+      identity-store-database:   An identity store backed by a database.
+      tool:                      A generic internal tool or utility.
+      cli:                       A command-line interface tool.
+      task:                      A scheduled or one-off task/job.
+      function:                  A serverless function (e.g., Azure Function, AWS Lambda).
+      gateway:                   An API gateway (e.g., Azure API Management, Kong, AWS API Gateway).
+      iot-device:                An IoT or embedded device.
+      message-queue:             A message broker or queue (e.g., Azure Service Bus, RabbitMQ, Kafka).
+      stream-processing:         A stream processing platform (e.g., Azure Event Hubs, Apache Flink).
+      service-mesh:              A service mesh control/data plane (e.g., Istio, Linkerd).
+      data-lake:                 A data lake storage platform (e.g., Azure Data Lake, S3).
+      report-engine:             A reporting or BI engine (e.g., Power BI, SSRS, Tableau).
+      ai:                        An AI or ML model serving system or inference endpoint.
+      mail-server:               An email server or relay (e.g., Exchange, Postfix, SendGrid).
+      vault:                     A secrets management system (e.g., Azure Key Vault, HashiCorp Vault).
+      hsm:                       A Hardware Security Module.
+      waf:                       A Web Application Firewall (e.g., Azure App Gateway WAF, Cloudflare WAF).
+      ids:                       An Intrusion Detection System.
+      ips:                       An Intrusion Prevention System.
+      scheduler:                 A job or task scheduler (e.g., Azure Scheduler, cron).
+      mainframe:                 A mainframe computer system.
+      block-storage:             A block storage service (e.g., Azure Managed Disk, AWS EBS).
+      library:                   A software library or SDK component.
+
+  tags:
+    type: list of strings
+    notes: Must be a subset of tags_available defined in metadata.
+
+  internet:
+    type: bool
+    notes: True if the asset is directly reachable from the public internet.
+
+  machine:
+    type: enum
+    values:
+      physical:    Bare-metal physical hardware.
+      virtual:     A virtual machine (IaaS VM, e.g., Azure VM, EC2).
+      container:   A containerized workload (e.g., AKS pod, Docker container).
+      serverless:  A serverless or PaaS component (e.g., Azure Function, managed database).
+
+  encryption:
+    type: enum
+    notes: Encryption applied to data stored or processed by this asset.
+    values:
+      none:                             No encryption in use.
+      transparent:                      Transparent encryption (e.g., TDE, LUKS, Azure SSE with PMK).
+      data-with-symmetric-shared-key:   Data encrypted with a symmetric shared key (e.g., AES with shared secret).
+      data-with-asymmetric-shared-key:  Data encrypted with an asymmetric key pair (e.g., RSA, TLS at rest).
+      data-with-enduser-individual-key: Data encrypted with a per-user key (e.g., client-side encryption, E2EE).
+
+  owner:
+    type: free text
+
+  confidentiality:
+    type: enum
+    notes: Highest confidentiality of data this asset processes or stores. Same values as data assets.
+    values:
+      public | internal | restricted | confidential | strictly-confidential
+
+  integrity:
+    type: enum
+    notes: Importance of this asset's integrity to mission. Same values as data assets.
+    values:
+      archive | operational | important | critical | mission-critical
+
+  availability:
+    type: enum
+    notes: Importance of this asset's availability to mission. Same values as data assets.
+    values:
+      archive | operational | important | critical | mission-critical
+
+  justification_cia_rating:
+    type: free text
+
+  multi_tenant:
+    type: bool
+    notes: True if this asset serves multiple distinct organizational tenants from a shared deployment.
+
+  redundant:
+    type: bool
+    notes: True if this asset has redundant instances (active-active or active-passive).
+
+  custom_developed_parts:
+    type: bool
+    notes: >
+      True if any custom-developed code runs in this asset's process space.
+      Affects the firing of code-related built-in risk rules.
+
+  data_assets_processed:
+    type: list of data asset IDs
+    notes: Data assets that this asset reads, transforms, or operates on (not necessarily stored).
+
+  data_assets_stored:
+    type: list of data asset IDs
+    notes: Data assets that this asset persists to disk or durable storage.
+
+  data_formats_accepted:
+    type: list of enums
+    notes: File or data formats this asset parses. Affects built-in file-parsing risk rules.
+    values:
+      json:    JSON structured data
+      xml:     XML documents (XXE risk)
+      serialization: Binary serialized objects (deserialization risk)
+      file:    Generic file uploads
+      csv:     CSV or delimited flat files
+
+  communication_links:
+    type: map
+    notes: >
+      Nested map of outbound connections from this asset to other assets.
+      Key is the link name (free text). See communication_links section below.
+
+  diagram_tweak_order:
+    type: integer
+    notes: Controls the ordering of this asset in the generated diagram.
+
+
+# ==============================================================================
+# 05b-COMM-LINKS  —  communication_links (nested under technical_assets)
+# ==============================================================================
+
+communication_link_fields:
+
+  target:
+    type: technical asset ID
+    notes: The ID of the destination technical asset for this communication link.
+
+  description:
+    type: free text
+
+  protocol:
+    type: enum
+    notes: >
+      The network protocol used for this communication. Affects encryption and
+      risk rules. Verified directly against the pinned threagile:0.9.1 image's
+      own /app/schema.json after a prior version of this list
+      (binary-protocol-encrypted) was rejected outright by a real render --
+      several other entries below were wrong the same way and had never
+      actually been runtime-tested. Extract it yourself to re-verify against
+      a future pinned version: `docker run --rm --entrypoint cat
+      threagile/threagile:<tag> /app/schema.json`.
+    values:
+      unknown-protocol:       Protocol is unknown or unspecified.
+      http:                   Unencrypted HTTP (triggers cleartext risk rules).
+      https:                  HTTPS (TLS-encrypted HTTP).
+      ws:                     Unencrypted WebSocket.
+      wss:                    TLS-encrypted WebSocket.
+      reverse-proxy-web-protocol:      Generic reverse proxy web traffic.
+      reverse-proxy-web-protocol-encrypted: Encrypted reverse proxy web traffic.
+      mqtt:                   MQTT (IoT messaging). No separate "-encrypted" variant exists.
+      jdbc:                   JDBC database connection (unencrypted).
+      jdbc-encrypted:         JDBC database connection over TLS.
+      odbc:                   ODBC database connection (unencrypted).
+      odbc-encrypted:         ODBC database connection over TLS.
+      sql-access-protocol:    Generic SQL access protocol (unencrypted).
+      sql-access-protocol-encrypted: SQL access protocol over TLS.
+      nosql-access-protocol:  Generic NoSQL access protocol (unencrypted).
+      nosql-access-protocol-encrypted: NoSQL access protocol over TLS.
+      binary:                 Generic binary protocol (unencrypted).
+      binary-encrypted:       Generic binary protocol over TLS. Also the closest
+                               schema-valid catch-all for protocols with no
+                               dedicated entry (e.g. RDP).
+      text:                   Generic text protocol (unencrypted).
+      text-encrypted:         Generic text protocol over TLS.
+      ssh:                    SSH (encrypted administrative access).
+      ssh-tunnel:             SSH tunnel for port forwarding.
+      smtp:                   SMTP email (unencrypted).
+      smtp-encrypted:         SMTP over TLS (SMTPS or STARTTLS).
+      pop3:                   POP3 email retrieval (unencrypted).
+      pop3-encrypted:         POP3 over TLS.
+      imap:                   IMAP email (unencrypted).
+      imap-encrypted:         IMAP over TLS.
+      ftp:                    FTP file transfer (unencrypted).
+      ftps:                   FTP over TLS.
+      sftp:                   SSH File Transfer Protocol (encrypted).
+      scp:                    Secure Copy Protocol (encrypted).
+      ldap:                   LDAP directory access (unencrypted).
+      ldaps:                  LDAP over TLS.
+      jms:                    Java Message Service (unencrypted).
+      nfs:                    Network File System (unencrypted).
+      smb:                    SMB/CIFS file sharing (unencrypted).
+      smb-encrypted:          SMB over encryption.
+      local-file-access:      Local filesystem access, or a local same-host
+                               process invocation with no network hop
+                               (no dedicated IPC/process-invocation value exists).
+      nrpe:                   Nagios Remote Plugin Executor.
+      xmpp:                   XMPP messaging (unencrypted).
+      iiop:                   IIOP (CORBA, unencrypted).
+      iiop-encrypted:         IIOP over TLS.
+      jrmp:                   Java Remote Method Protocol (unencrypted).
+      jrmp-encrypted:         JRMP over TLS.
+      in-process-library-call: In-process function/library call (no network).
+      container-spawning:     Container orchestration spawning link.
+
+  authentication:
+    type: enum
+    notes: Authentication mechanism used on this communication link.
+    values:
+      none:                     No authentication.
+      credentials:              Username and password credentials.
+      session-id:               Session cookie or session token.
+      token:                    Bearer token (e.g., JWT, OAuth access token).
+      client-certificate:       Mutual TLS client certificate.
+      two-factor:               Multi-factor authentication enforced.
+      externalized:             Authentication is delegated to an external system not modeled on this link (e.g., enforced upstream by a gateway/mesh).
+
+  authorization:
+    type: enum
+    notes: Authorization model applied to requests on this link.
+    values:
+      none:                       No authorization enforced.
+      technical-user:             Machine-to-machine service account authorization.
+      enduser-identity-propagation: The authenticated end-user identity is propagated and enforced.
+
+  tags:
+    type: list of strings
+    notes: Must be a subset of tags_available defined in metadata.
+
+  vpn:
+    type: bool
+    notes: True if this link traverses a VPN tunnel.
+
+  ip_filtered:
+    type: bool
+    notes: True if this link is restricted by IP allowlist at the network layer.
+
+  readonly:
+    type: bool
+    notes: True if this link only carries read operations (no writes or mutations).
+
+  usage:
+    type: enum
+    values:
+      business: Link carries business or mission data.
+      devops:   Link is used for DevOps, build, or operational tooling only.
+
+  data_assets_sent:
+    type: list of data asset IDs
+    notes: Data assets sent from the source asset to the target over this link.
+
+  data_assets_received:
+    type: list of data asset IDs
+    notes: Data assets received by the source asset from the target over this link.
+
+  diagram_tweak_weight:
+    type: integer
+    notes: Controls edge weight/thickness in the generated diagram.
+
+  diagram_tweak_constraint:
+    type: bool
+    notes: If false, this edge does not constrain diagram layout ranking.
+
+
+# ==============================================================================
+# 06-TRUST-BOUNDARIES.YML  —  trust_boundaries
+# ==============================================================================
+
+trust_boundary_fields:
+
+  id:
+    type: string
+    notes: Unique identifier. Referenced in nested trust_boundaries_nested lists.
+
+  description:
+    type: free text
+
+  type:
+    type: enum
+    notes: >
+      The network or organizational type of this boundary.
+      Affects which built-in risk rules fire for assets crossing the boundary.
+    values:
+      network-on-prem:                  On-premises network segment.
+      network-dedicated-hoster:         Dedicated hosted network (e.g., colocation, dedicated Azure region).
+      network-virtual-lan:              Virtual LAN (VLAN) segment.
+      network-cloud-provider:           Top-level cloud provider boundary (e.g., Azure Government tenant).
+      network-cloud-security-group:     Cloud network security group or VNet (e.g., Azure VNet, NSG, subnet).
+      network-policy-namespace-isolation: Kubernetes namespace with NetworkPolicy enforcement.
+      execution-environment:            A shared execution environment (e.g., same OS, same JVM).
+
+  tags:
+    type: list of strings
+    notes: Must be a subset of tags_available defined in metadata.
+
+  technical_assets_inside:
+    type: list of technical asset IDs
+    notes: Assets directly contained within this boundary (one level, not nested).
+
+  trust_boundaries_nested:
+    type: list of trust boundary IDs
+    notes: Child boundaries nested inside this boundary.
+
+
+# ==============================================================================
+# 07-SHARED-RUNTIMES.YML  —  shared_runtimes
+# ==============================================================================
+
+shared_runtime_fields:
+
+  id:
+    type: string
+    notes: Unique identifier for this shared runtime.
+
+  description:
+    type: free text
+
+  tags:
+    type: list of strings
+    notes: Must be a subset of tags_available defined in metadata.
+
+  technical_assets_running:
+    type: list of technical asset IDs
+    notes: >
+      Assets sharing this underlying compute runtime (e.g., containers sharing
+      the same AKS worker node pool). Used by the mixed-targets-on-shared-runtime
+      risk rule to flag high-sensitivity assets co-located with lower-sensitivity ones.
+
+
+# ==============================================================================
+# 08-RISK-TRACKING  —  risk_tracking
+# ==============================================================================
+# Risk tracking entries are typically auto-generated by Threagile and then
+# manually updated. Format:
+#
+#   risk_tracking:
+#     <risk-id>@<asset-id>:
+#       status: ...
+#       justification: ...
+#       ticket: ...
+#       date: ...
+#       checked_by: ...
+#
+# The risk-id and asset-id are Threagile-generated identifiers visible in
+# the generated report. Wildcards (*) are supported in place of asset-id.
+# ==============================================================================
+
+risk_tracking_fields:
+
+  status:
+    type: enum
+    values:
+      unchecked:     Default. Risk has not been reviewed.
+      in-discussion: Risk is being evaluated by the team.
+      accepted:      Risk has been formally accepted by the AO. No remediation planned.
+      in-progress:   Remediation is actively underway.
+      mitigated:     Remediation has been completed and verified.
+      false-positive: Finding does not apply to this system. Justification required.
+
+  justification:
+    type: free text
+    notes: Required for accepted and false-positive statuses. Appears in the report.
+
+  ticket:
+    type: free text
+    notes: Optional reference to a POA&M, Jira ticket, or other tracking system ID.
+
+  date:
+    type: string
+    notes: ISO 8601 date (YYYY-MM-DD) of the most recent status update.
+
+  checked_by:
+    type: free text
+    notes: Name or ID of the person who last reviewed or updated this tracking entry.

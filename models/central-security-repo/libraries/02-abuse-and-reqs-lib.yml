@@ -1,0 +1,122 @@
+# ==============================================================================
+# ABUSE CASE AND SECURITY REQUIREMENT LIBRARY: 02-abuse-and-reqs-lib.yml
+# ==============================================================================
+# This library contains modular abuse case and security requirement blocks
+# organized by SABER domain. It is not submitted to Threagile directly.
+#
+# USAGE:
+#   1. Review your system's technical asset tags and machine types.
+#   2. For each domain with a matching trigger tag, copy the entire block
+#      under `abuse_cases:` and `security_requirements:` directly into
+#      your 02-abuse-and-reqs.yml file.
+#
+# STRUCTURE:
+#   One entry per SABER domain (same framework/ordering as
+#   09-custom-risks-lib.yml -- see that file's header) -- no sub-category
+#   layer beneath the domain anymore (an earlier revision had lettered
+#   sub-categories, A/B/I/J/etc., each with its own triggers; each domain
+#   now carries a single combined `triggers:` list instead, the union of
+#   what its former sub-categories used). There's also no separate
+#   "Baseline" bucket outside the domain structure -- that content
+#   (encoding, validation, session, authorization, secure communication,
+#   configuration, secure coding -- universal regardless of any one
+#   feature tag) is redistributed into whichever domain it thematically
+#   fits. That makes a domain's `triggers:` list an imperfect gate in
+#   places, but this is a human-curated reference an app author selects
+#   from, not a live dependency, so the imprecision is harmless.
+#
+#   Every SABER domain is now represented except most of Governance
+#   (org-level risk-acceptance/policy-exception content, out of scope for
+#   this per-asset file). Device and Infrastructure, Response, and
+#   Recovery draw from NIST SP 800-53 Rev 5 rather than ASVS/AISVS, since
+#   neither OWASP standard covers infrastructure, incident response, or
+#   backup/DR at all -- see SECURITY REQUIREMENTS SOURCING below for how
+#   that content differs in shape from the ASVS/AISVS-sourced domains.
+#
+# SECURITY REQUIREMENTS SOURCING:
+#   Two source standards feed this file, in two different shapes:
+#
+#   ASVS/AISVS-sourced domains (Identity, most of Network and
+#   Environment, Application, Artificial Intelligence, Data, most of
+#   Detection) come from OWASP ASVS 5.0.0
+#   (docs/OWASP_Application_Security_Verification_Standard_5.0.0_en.pdf)
+#   and OWASP AISVS 1.0 (docs/AISVS-1.0.pdf), one entry per ASVS/AISVS
+#   *subsection* (e.g. `V6.2: Password Security`), keyed to that
+#   subsection's own native ID and verbatim title. Each subsection's
+#   individual requirements are one `|`-delimited row per line:
+#   `<item #> | <verbatim requirement text> | <Level>` -- matching the
+#   standard's own table column order (#, Description, Level). This is
+#   plain delimited text, not YAML structure, since Threagile's schema
+#   (00-threagile-field-reference.yml) requires a flat string here and
+#   this library must stay copy-pasteable into an app's own
+#   02-abuse-and-reqs.yml. A future generate_report.py pass is expected
+#   to parse this shape into an actual HTML table at render time -- see
+#   that script's header once that lands. Every one of ASVS 5.0's 345
+#   requirements and AISVS 1.0's 191 requirements (536 total) is
+#   represented exactly once.
+#
+#   NIST-sourced domains (Device and Infrastructure, Response, Recovery,
+#   plus the self-managed-network entries inside Network and Environment)
+#   come from NIST SP 800-53 Rev 5 (docs/SP_800-53_v5_1-derived-OSCAL.pdf)
+#   instead, in a different, plain-prose shape: unlike ASVS/AISVS this
+#   isn't an exhaustive per-subsection extraction of the whole catalog --
+#   800-53 has ~1000 controls across every IT security domain, the large
+#   majority with no bearing on an application team's own threat model
+#   (it's written for system owners across the full control spectrum, not
+#   app developers specifically), so pulling every control the way ASVS's
+#   345 requirements were pulled would bury this file in content no app
+#   team could act on. Instead, each entry is a hand-authored MUST
+#   statement -- carried over from an earlier hand-authored revision of
+#   this same content (see git history), now re-titled with the specific
+#   NIST SP 800-53 control ID it implements and citing that control by ID
+#   and name in the body -- selected because it already had a matching
+#   abuse case here, a matching risk category in 09-custom-risks-lib.yml,
+#   or both. `abuse_cases` in these domains follow the same control-ID
+#   naming; more than one abuse case or requirement can cite the same
+#   control ID where multiple scenarios/statements share it.
+#
+#   `abuse_cases` in the ASVS/AISVS-sourced domains stay hand-authored too,
+#   not derived from either standard's text, but their titles adopt the
+#   same subsection naming as security_requirements (e.g. `V8.3:
+#   Horizontal Privilege Escalation (IDOR)`), keyed to whichever
+#   subsection the scenario most specifically exercises, and ordered to
+#   match security_requirements' own subsection order below them. Not
+#   every subsection has a paired abuse case, and a few subsections pair
+#   with more than one.
+#
+# DOMAIN QUICK-REFERENCE:
+#   IDENTITY                   ASVS V6, V7, V8, V9, V10, NIST SP 800-53 (AC-2(6), AC-2(7))
+#     Triggers: feature:oauth-oidc-provider, feature:saml-sp, feature:password-reset, feature:multi-tenancy,
+#               feature:admin-panel, mgmt:self-managed-identity, mgmt:self-managed-pam
+#   DEVICE AND INFRASTRUCTURE  NIST SP 800-53 (CM, SI, SC, AC, PE families)
+#     Triggers: machine:container, machine:virtual, mgmt:self-managed-hardware
+#   NETWORK AND ENVIRONMENT    ASVS V12, NIST SP 800-53 (SC-7, AC-18, AC-3,
+#                              AC-4(6/9/19/25), AU-9, SI-3, SI-7, SC-31, MP-8, CA-3)
+#     Triggers: net:tls-terminator, zone:dmz, mgmt:self-managed-network,
+#               cds:low-side-submitter, cds:low-side-receiver, cds:low-side-broker,
+#               cds:high-side-submitter, cds:high-side-receiver, cds:high-side-broker
+#   APPLICATION                ASVS V1, V2, V3, V4, V5, V13, V15, V17
+#     Triggers: feature:file-upload-processing, feature:import-export, feature:pdf-generation,
+#               risk:malware-vector, feature:dynamic-code-execution, feature:public-api-endpoint,
+#               feature:graphql-endpoint, feature:search-index, feature:webhook-receiver,
+#               feature:websocket, feature:ugc-rendering, feature:deserialization,
+#               feature:admin-panel, feature:email-sending, feature:background-jobs,
+#               feature:third-party-plugins
+#   ARTIFICIAL INTELLIGENCE    AISVS C1-C10, C11.1-C11.3
+#     Triggers: ai:user-prompt-input, ai:indirect-prompt-input, ai:llm-endpoint, ai:rag-pipeline,
+#               ai:agent-orchestrator, ai:plugin-tool-use, ai:ot-adjacent-output, ai:third-party-model-api,
+#               ai:model-serving, ai:model-registry, ai:training-pipeline, ai:dataset-store,
+#               ai:agent-framework, ai:eval-pipeline, ai:on-device-inference, ai:air-gapped-model-delivery,
+#               ai:rag-ingest-pipeline, ai:agent-memory, ai:model-exfil-risk, ai:multi-agent-boundary
+#   DATA                       ASVS V11, V14
+#     Triggers: storage:persistent, storage:vault, data:external-feed-ingest, data:release-candidate,
+#               feature:import-export, cds:high-side-submitter, cds:high-side-broker, data:pii
+#   DETECTION                  ASVS V16, AISVS C11.4, C12
+#     Triggers: feature:public-api-endpoint, machine:container, ai:observability-stack
+#   RESPONSE                   NIST SP 800-53 (IR family)
+#     Triggers: zone:dmz, sec:secrets-broker
+#   RECOVERY                   NIST SP 800-53 (CP family, plus SA-9, AC-5, SC-12)
+#     Triggers: ops:requires-backup, ops:vendor-hosted-service
+# ==============================================================================
+
+categories: []

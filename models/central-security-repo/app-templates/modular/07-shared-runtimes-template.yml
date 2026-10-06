@@ -1,0 +1,63 @@
+# ==============================================================================
+# COMPUTE INFRASTRUCTURE: shared_runtimes
+# Maintainer: Application Development Team
+#
+# PURPOSE:
+# This file defines the underlying physical or virtual compute nodes that host 
+# your application's workloads. It is critical for modeling the risks of 
+# container breakout, lateral movement, and shared resource exhaustion.
+#
+# USAGE INSTRUCTIONS (The "Host Mapping" Method):
+# 1. OPEN the relevant file(s) under
+#    libraries/07-shared-runtimes-lib/{provider}/*.yml for your cloud provider.
+# 2. SELECT and COPY the mandatory compute nodes your application runs on
+#    (e.g., 'AKS Worker Node Pool', 'AVD Session Host Pool'), INCLUDING the
+#    library file's own numbered section header comment above each block
+#    (e.g. "# 1. AKS NODE POOLS") -- keep runtimes grouped under the same
+#    numbered heading they came from, in the library's own order, rather
+#    than a flat undifferentiated list. See OUTPUT FORMAT below.
+# 3. PASTE the copied platform runtimes below, organized by section. Do NOT
+#    modify their core security tags (e.g., ops:), as these are required for
+#    automated compliance auditing.
+# 4. ASSIGN every custom container/pod defined in your '05-tech-assets.yml'
+#    to the appropriate shared runtime by adding its ID to the
+#    'technical_assets_running' array.
+# 5. Do NOT list Serverless PaaS services (e.g., Azure Key Vault, Managed
+#    Postgres) in these runtimes, as they operate on abstracted,
+#    provider-managed infrastructure.
+#
+# OUTPUT FORMAT (copy the library's own section header verbatim):
+#
+#   # ============================================================================
+#   # 1. AKS NODE POOLS
+#   # <one-line description copied from the library file's own header comment>
+#   # Source library: 07-shared-runtimes-lib/{provider}/01-node-pools.yml
+#   # ============================================================================
+#
+#   Some Shared Runtime:
+#     ...
+#
+# AI ASSISTANCE (optional):
+#   Provide this template, the libraries/07-shared-runtimes-lib/{provider}/*.yml
+#   files for your cloud provider, and your completed 05-tech-assets.yml to
+#   an AI assistant, and ask it to select the applicable compute nodes and
+#   assign every container/pod to the right one -- preserving each library
+#   file's own numbered section header above the blocks taken from it.
+#   Review the output for accuracy before committing.
+# ==============================================================================
+
+shared_runtimes:
+
+  # ============================================================================
+  # <N>. <SECTION NAME FROM THE LIBRARY FILE, e.g. "1. AKS NODE POOLS">
+  # <one-line description copied from the library file's own header comment>
+  # Source library: 07-shared-runtimes-lib/{provider}/<matching-file>.yml
+  # ============================================================================
+
+  Some Shared Runtime:
+    id: some-runtime
+    description: Some Description
+    tags:
+    technical_assets_running: # sequence of IDs to reference
+      - some-component
+      - some-other-component

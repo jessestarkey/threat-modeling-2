@@ -1,0 +1,178 @@
+threagile_version: 1.0.0
+
+# ==============================================================================
+# REQUIREMENTS-ONLY TEMPLATE
+# ==============================================================================
+# For running the requirements-gathering phase (questions, abuse cases,
+# security requirements) through this repo's report pipeline BEFORE the
+# data-flow diagram / technical architecture exists yet. Fill in
+# questions/abuse_cases/security_requirements for real; leave everything
+# else in this file exactly as-is (see "DO NOT DELETE" below) until you're
+# ready to start designing the actual architecture, at which point switch
+# to monolithic-template.yml (or the modular app-templates) instead.
+#
+# WHY THE PLACEHOLDER ASSETS EXIST -- DO NOT DELETE:
+# The pinned threagile:0.9.1 binary crashes outright on a model with zero
+# technical_assets ("runtime error: integer divide by zero") and again
+# with one technical_asset but zero data_assets ("runtime error: index
+# out of range") -- confirmed by direct testing, not documented anywhere
+# upstream. trust_boundaries, shared_runtimes, tags_available,
+# individual_risk_categories, and risk_tracking are all safe to leave
+# genuinely empty, also confirmed by testing -- only technical_assets and
+# data_assets need at least one entry each to keep Threagile from
+# panicking. "Placeholder Component"/"Placeholder Data" below exist
+# solely to satisfy that floor; their field values are arbitrary and
+# don't need to mean anything yet.
+#
+# WHAT TO EXPECT IN THE RENDERED REPORT:
+# Open Questions, Abuse Cases, and Security Requirements render fully and
+# correctly, each on its own page -- exactly like a fully-designed model.
+# Diagrams still render (as a single trivial box). Potential Model
+# Failures will show 2-3 expected, harmless findings ("Unknown
+# Technology," "Unnecessary Data Asset," "Unnecessary Technical Asset")
+# flagging that the placeholders aren't wired to anything real -- these
+# disappear on their own once real assets replace the placeholders, and
+# aren't something to fix or waive in the meantime.
+#
+# NEXT STEP: once you're ready to design the actual architecture, delete
+# "Placeholder Component" and "Placeholder Data" below, pull real content
+# from the central libraries (03-tags-lib.yml, 04-data-assets-lib/*.yml,
+# 05-tech-assets-lib/{provider}/*.yml, 06-boundaries-lib/{provider}/*.yml,
+# 07-shared-runtimes-lib/{provider}/*.yml) the way monolithic-template.yml
+# describes, and carry this file's own questions/abuse_cases/
+# security_requirements content forward into the real model -- none of
+# that needs to be re-written.
+# ==============================================================================
+
+
+title: Requirements-Only Model Stub
+
+date: 2020-03-31
+
+author:
+  name: John Doe
+  homepage: www.example.com
+
+
+management_summary_comment: >
+  Requirements-gathering phase for [system name] -- architecture not yet
+  designed. This report covers Open Questions, Abuse Cases, and Security
+  Requirements only; Technical Assets, Data Assets, and Trust Boundaries
+  below are placeholders (see this file's own header).
+
+business_criticality: important # values: archive, operational, important, critical, mission-critical
+
+
+business_overview:
+  description: Some more <i>demo text</i> here and even images...
+  images:
+#    - custom-image-1.png: Some dummy image 1
+
+
+technical_overview:
+  description: Architecture not yet designed -- this section will be filled in once the data-flow diagram exists.
+  images:
+
+
+
+questions: # simply use "" as answer to signal "unanswered"
+  Some question without an answer?: ""
+  Some question with an answer?: >
+    Some answer
+
+
+
+abuse_cases:
+  Some Abuse Case: >
+    Some Description
+
+
+security_requirements:
+  Some Security Requirement: Some Description
+
+
+
+# Tags can be used for anything, it's just a tag. Leave this empty during
+# the requirements-only phase -- there's nothing to tag yet. Once real
+# technical_assets/data_assets replace the placeholders below, populate
+# this from 03-tags-lib.yml the way monolithic-template.yml describes
+# (Threagile fails at runtime if a tag used on an asset isn't listed
+# here).
+tags_available:
+
+
+
+data_assets:
+
+  # DO NOT DELETE while technical_assets below still contains only
+  # Placeholder Component -- see this file's own header. Delete this
+  # entry (and add your real data assets) once you start designing the
+  # actual architecture.
+  Placeholder Data:
+    id: placeholder-data
+    description: Placeholder data asset -- real data flows not yet designed.
+    usage: business
+    origin: TBD
+    owner: TBD
+    quantity: few
+    confidentiality: internal
+    integrity: operational
+    availability: operational
+    justification_cia_rating: Placeholder pending architecture design.
+
+
+
+technical_assets:
+
+  # DO NOT DELETE while data_assets above still contains only Placeholder
+  # Data -- see this file's own header. Delete this entry (and add your
+  # real technical assets) once you start designing the actual
+  # architecture.
+  Placeholder Component:
+    id: placeholder-component
+    description: Placeholder technical asset -- real architecture not yet designed.
+    type: process # values: external-entity, process, datastore
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: component
+    technology: unknown-technology
+    tags:
+    internet: false
+    machine: virtual
+    encryption: none
+    owner: TBD
+    confidentiality: internal
+    integrity: operational
+    availability: operational
+    justification_cia_rating: Placeholder pending architecture design.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: false
+    data_assets_processed:
+    data_assets_stored:
+    data_formats_accepted:
+    communication_links:
+
+
+
+# Safe to leave empty during the requirements-only phase -- confirmed by
+# testing, Threagile does not require any trust boundary to exist.
+trust_boundaries:
+
+
+
+# Safe to leave empty during the requirements-only phase.
+shared_runtimes:
+
+
+
+# Safe to leave empty during the requirements-only phase -- there's
+# nothing yet for a custom risk to be about.
+individual_risk_categories:
+
+
+
+# Safe to leave empty during the requirements-only phase.
+risk_tracking:

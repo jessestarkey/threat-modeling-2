@@ -1,0 +1,49 @@
+# ==============================================================================
+# Abuse Cases and Security Requirements
+# Source library: 02-abuse-and-reqs-lib.yml
+# ==============================================================================
+#
+# HOW TO COMPOSE THIS FILE:
+#   1. Open 02-abuse-and-reqs-lib.yml and review the `triggers` list for each
+#      category.
+#   2. If any trigger tag or machine type is present in your technical assets,
+#      copy that category's abuse cases and security requirements into the
+#      sections below.
+#   3. Always include cat-baseline regardless of your system profile.
+#   4. Copy only the `title` and `text` fields — do not include IDs, triggers,
+#      or any other library metadata in this file.
+#
+# CATEGORY QUICK-REFERENCE:
+#   cat-baseline          Always required
+#   cat-file-processing   feature:file-upload-processing, feature:import-export,
+#                         feature:pdf-generation, risk:malware-vector
+#   cat-public-api        feature:public-api-endpoint, feature:graphql-endpoint,
+#                         feature:search-index, feature:webhook-receiver
+#   cat-auth-flows        feature:oauth-oidc-provider, feature:saml-sp,
+#                         feature:password-reset, feature:multi-tenancy
+#   cat-container         machine: container
+#   cat-vm                machine: virtual
+#   cat-ai-inference      ai:user-prompt-input, ai:indirect-prompt-input,
+#                         ai:llm-endpoint, ai:rag-pipeline,
+#                         ai:agent-orchestrator, ai:plugin-tool-use
+#   cat-ai-supply-chain   ai:model-serving, ai:model-registry,
+#                         ai:training-pipeline, ai:dataset-store,
+#                         ai:agent-framework, ai:eval-pipeline
+#
+# OUTPUT FORMAT (paste blocks from the library as-is):
+#
+#   Title of Abuse Case: >
+#     As an attacker...
+#
+#   Title of Requirement: >
+#     The system MUST...
+#
+# AI ASSISTANCE (optional):
+#   Provide this template, the library file, and your full system model to an
+#   AI assistant and ask it to select and compose the applicable blocks. Review
+#   the output for accuracy before committing.
+# ==============================================================================
+
+abuse_cases:
+
+security_requirements:

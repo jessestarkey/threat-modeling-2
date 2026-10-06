@@ -1,0 +1,35 @@
+# ==============================================================================
+# TAG TAXONOMY: 03-tags-lib.yml
+# ==============================================================================
+# The full set of tags available across technical assets, communication
+# links, trust boundaries, shared runtimes, and data assets in this
+# framework — classification tags, and the feature:*/ops:*/net:*/cds:*/
+# exception:*/ai:*/icon:* namespaces. Every tag inject_risks.py's
+# tag-scanning if-chain checks for should be documented here, though (see
+# LIVE DEPENDENCY below) inject_risks.py does not actually read this file.
+#
+# USAGE:
+#   1. Review your system's technical asset tags and machine types.
+#   2. Copy the tags that apply to your app's assets into your own
+#      03-tags.yml under tags_available — Threagile fails at runtime
+#      ("missing referenced tag in overall tag list") if a tag used on an
+#      asset isn't declared there. Trim to what you actually use; don't
+#      paste the whole list.
+#   3. Each tag's trailing comment documents its meaning and, where
+#      relevant, which inject_risks.py trigger(s) it feeds.
+#
+# LIVE DEPENDENCY, unlike every other file in this directory except
+# 09-custom-risks-lib.yml: generate_report.py's load_tag_descriptions()
+# re-reads this file directly at report-render time (a regex line-scan, not
+# yaml.safe_load, since each tag's description lives in a trailing comment
+# that plain YAML parsing discards) to source the description text shown in
+# the report's Tag Listing section. Editing a tag's comment here changes
+# every future report's output immediately — no per-app copy step involved,
+# unlike every other reference-catalog library file. inject_risks.py's own
+# tag matching, by contrast, is hardcoded literal string checks in its own
+# if-chain (`if 'tag:name' in tags: inject(...)`) — it never opens this
+# file, so keeping its checks in sync with what's documented here is a
+# human convention to maintain, not something enforced at runtime.
+# ==============================================================================
+
+tags_available: []

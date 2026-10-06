@@ -1,0 +1,55 @@
+#!/bin/sh
+# Shadows the real Graphviz `dot` binary (this script's directory must sit
+# earlier in PATH than /usr/bin) so we can capture Threagile's DOT source.
+# Threagile writes it to a /dev/shm temp file, renders it via
+# `dot -Tpng <input.gv> -o <output.png>`, then discards it -- it never
+# exposes the .gv and has no flag to keep it. This is the only way to get
+# it out: intercept the same call, copy the input aside, then pass the
+# original call through untouched so Threagile's normal PNG/report
+# generation is unaffected.
+#
+# generate_report.py re-renders the saved .gv itself (via
+# threagile_dfd_to_html.py's build_svg()) rather than this script rendering
+# an SVG copy directly -- that gives it our own restyled shapes/palette
+# instead of Threagile's default Graphviz styling, and sidesteps a real
+# WeasyPrint sizing bug tied to Threagile's own dpi=120 SVG output (see
+# threagile_dfd_to_html.py for that history).
+#
+# The two diagrams are told apart by their own graph attributes, not
+# invocation order (more robust against Threagile changing generation
+# order in a future release): the data-flow diagram uses
+# rankdir="TB"/splines=ortho, the data-asset diagram uses
+# rankdir="LR"/splines=false.
+#
+# Requires $DOT_GV_OUTPUT_DIR to be set to where the .gv files should land.
+# If unset, or if the input can't be classified, this is a silent no-op
+# passthrough -- it must never be the reason Threagile's own diagram
+# rendering fails.
+
+REAL_DOT=/usr/bin/dot
+
+# Matched by .gv suffix, not just file existence: Threagile pre-creates an
+# empty placeholder at the -o output path before invoking dot, so a bare
+# "first/last existing file wins" scan picks up the (also existing) output
+# PNG path instead of the actual input.
+GV_INPUT=""
+for arg in "$@"; do
+  case "$arg" in
+    *.gv) [ -f "$arg" ] && GV_INPUT="$arg" ;;
+  esac
+done
+
+if [ -n "$GV_INPUT" ] && [ -n "$DOT_GV_OUTPUT_DIR" ]; then
+  if grep -q 'rankdir="TB"' "$GV_INPUT" 2>/dev/null; then
+    NAME=data-flow-diagram
+  elif grep -q 'rankdir="LR"' "$GV_INPUT" 2>/dev/null; then
+    NAME=data-asset-diagram
+  else
+    NAME=""
+  fi
+  if [ -n "$NAME" ]; then
+    cp "$GV_INPUT" "$DOT_GV_OUTPUT_DIR/$NAME.gv" 2>/dev/null || true
+  fi
+fi
+
+exec "$REAL_DOT" "$@"

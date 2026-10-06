@@ -1,0 +1,9 @@
+  # ============================================================================
+  # 7. EKS CLUSTERS
+  # Kubernetes managed cluster boundaries per environment.
+  #
+  # Nest each of these inside a copy of 06-subnets.yml's "EKS Subnet" (its
+  # own dedicated subnet), not directly inside the parent VPC -- a real
+  # EKS node pool is always assigned to a specific subnet, so the model
+  # should be too.
+  # ============================================================================

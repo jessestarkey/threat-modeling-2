@@ -1,0 +1,126 @@
+# ==============================================================================
+# TAGS USED BY THIS APP: 03-tags.yml
+# Source library: 03-tags-lib.yml
+# ==============================================================================
+#
+# UNLIKE the other numbered fragments, this file is built LAST -- after you've
+# tagged your technical assets, communication links, trust boundaries, shared
+# runtimes, and data assets in 04-08. Threagile requires every tag used
+# anywhere in the model to appear in this file's tags_available list, or it
+# fails at runtime with "missing referenced tag in overall tag list".
+#
+# HOW TO COMPOSE THIS FILE:
+#   1. Finish tagging your assets/links/boundaries/runtimes in 04-08 first.
+#   2. Collect every distinct tag you actually used across those files.
+#   3. For each one, copy its exact line (tag name + trailing comment)
+#      verbatim from 03-tags-lib.yml into the matching section below.
+#   4. Only include tags you actually used -- this is a trimmed subset, not
+#      the full library. Delete any section heading below that ends up empty.
+#   5. Whenever you add or remove a tag from any other fragment file, come
+#      back and update this file to match.
+#
+# SECTION QUICK-REFERENCE (mirrors 03-tags-lib.yml -- see that file for the
+# full tag list and every tag's meaning):
+#   CLASSIFICATION TAGS                    data:*, storage:*, auth:*, risk:*,
+#                                           app:*, net:*, sec:*, compliance:*,
+#                                           zone:*, mgmt:*, scope:*
+#   BEHAVIORAL FEATURE TAGS                feature:*
+#   INFRASTRUCTURE HARDENING TAGS          ops:*
+#   CROSS-DOMAIN SOLUTION INTERFACE TAGS   cds:*
+#   POLICY EXCEPTION TAGS (POA&M Triggers) exception:*
+#   AI/ML THREAT SURFACE TAGS              ai:*
+#   DIAGRAM ICON TAGS (cosmetic only)      icon:*
+#
+# AI ASSISTANCE (optional):
+#   Provide this template, 03-tags-lib.yml, and your completed 04-08 fragment
+#   files to an AI assistant and ask it to extract every tag actually used and
+#   populate this file. Review the output for accuracy before committing.
+# ==============================================================================
+
+tags_available:
+
+  # =============================================================================
+  # CLASSIFICATION TAGS
+  # These tags describe what an asset IS and what data it handles.
+  # They are used for documentation, data flow annotation, and as inputs to
+  # risk triggers. They do not fire risks directly on their own.
+  # =============================================================================
+
+  # --- Data Asset Classification ---
+
+  # --- Foundational Asset Classification (Compute, Network, Crypto) ---
+
+  # --- Trust Boundary Classification ---
+
+  # =============================================================================
+  # BEHAVIORAL FEATURE TAGS
+  # These tags describe what an asset DOES — specific capabilities that introduce
+  # discrete attack surfaces. Each tag triggers one or more risk injections.
+  # =============================================================================
+
+  # --- Authentication and Identity ---
+
+  # --- Authorization ---
+
+  # --- Input Handling and Injection ---
+
+  # --- Application Feature Risks ---
+
+  # =============================================================================
+  # INFRASTRUCTURE HARDENING TAGS
+  # Positive-confirmation tags: presence means the control IS in place.
+  # Absence of these tags fires the corresponding hardening risk.
+  # =============================================================================
+
+  # --- Container Hardening (absence fires risk) ---
+
+  # --- VM Hardening (absence fires risk) ---
+
+  # --- Service Hardening (absence fires risk) ---
+
+  # =============================================================================
+  # CROSS-DOMAIN SOLUTION INTERFACE TAGS
+  # Apply to assets that interface with an external, UCDMO-approved CDS.
+  # The CDS itself is outside the ATO boundary and modeled as an external entity.
+  # These tags cover only the low-side/high-side application's own role in the
+  # transfer workflow.
+  # =============================================================================
+
+  # =============================================================================
+  # POLICY EXCEPTION TAGS  (POA&M Triggers)
+  # These tags mark explicit AO-accepted waivers. Each fires a risk entry
+  # requiring formal risk acceptance documentation.
+  # =============================================================================
+
+  # =============================================================================
+  # AI/ML THREAT SURFACE TAGS
+  # Apply to any technical asset that hosts, serves, or integrates an AI/ML
+  # component. Tags are grouped by the ATLAS/MAESTRO attack surface they map to.
+  # Only relevant if this app has any ai:* trigger tags at all.
+  # =============================================================================
+
+  # --- Inference and Access Surface ---
+
+  # --- Prompt and Input Attack Surface ---
+
+  # --- RAG and Knowledge Base Surface ---
+
+  # --- Agentic and Tool-Use Surface ---
+
+  # --- Training and Data Pipeline Surface ---
+
+  # --- Supply Chain Surface ---
+
+  # --- Evaluation and Observability Surface (MAESTRO L5) ---
+
+  # --- Security AI as Target (MAESTRO L6) ---
+
+  # --- Agent Ecosystem and Identity (MAESTRO L7) ---
+
+  # =============================================================================
+  # DIAGRAM ICON TAGS
+  # Purely cosmetic -- select which small icon threagile_dfd_to_html.py draws
+  # in a node or trust boundary's corner on the data-flow diagram. Never used
+  # as an inject_risks.py trigger. At most one per asset/boundary; if several
+  # are present the renderer just uses whichever it finds first.
+  # =============================================================================

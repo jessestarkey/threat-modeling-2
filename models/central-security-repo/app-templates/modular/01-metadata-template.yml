@@ -1,0 +1,188 @@
+# ==============================================================================
+# Metadata INVENTORY: threagile_version, title, date, author,
+# management_summary_comment, business_criticality, business_overview,
+# technical_overview, questions
+# Maintainer: Application Development Team
+# ==============================================================================
+
+threagile_version: 1.0.0
+
+title: >
+  [Application] Threat Model
+
+# Pipeline automates the date and can be left as is
+date: 2000-01-01
+
+author:
+  name: Name
+  role: Role
+
+
+# ------------------------------------------------------------------------------
+# EXECUTIVE SUMMARY: management_summary_comment
+# ------------------------------------------------------------------------------
+# PURPOSE: 
+# This is the "Elevator Pitch" for the Authorizing Official (AO) and CISO. It appears on the first page of the generated PDF report. Do NOT use deep 
+# technical jargon (e.g., "pods", "ingress", "JWTs") here.
+#
+# REQUIRED CONTENT (BLUF Format):
+# 1. Mission Value: What does this application DO for the organization?
+# 2. Primary Users: Who relies on this system?
+# 3. CIA Impact: What happens to the mission if this system is breached (Confidentiality), tampered with (Integrity), or goes offline (Availability)?
+#
+# EXAMPLE:
+# "The 'Alpha' targeting system is the primary ISR aggregation platform for forward-deployed analysts. It processes highly restricted, multi-source 
+# sensor data. A loss of integrity would result in catastrophic miscalculation # of targeting coordinates, and a loss of availability would immediately halt 
+# the operational mission. Therefore, the system is rated Mission-Critical."
+# ------------------------------------------------------------------------------
+management_summary_comment: >
+  [ENTER YOUR EXECUTIVE SUMMARY HERE. Follow the guidance above.]
+
+# ------------------------------------------------------------------------------
+# MISSION PRIORITY: business_criticality
+# ------------------------------------------------------------------------------
+# PURPOSE: 
+# Defines the overall sensitivity and importance of this application relative to the broader organization. This value directly influences the "Severity" 
+# calculations in the Risk Report.
+#
+# ALLOWED VALUES (Choose one):
+# - mission-critical: (Warfighting) System is essential for kinetic/operational 
+#                     success. Outage = Immediate mission failure.
+# - critical:         (Enterprise Core) Essential daily tool. Outage = Widespread 
+#                     disruption of organizational productivity (e.g., Confluence).
+# - important:        (Project Specific) Required for specific project execution. 
+#                     Outage = Delays/degradation for a specific group.
+# - operational:      (Administrative) Supporting/back-office tasks. Outage = 
+#                     Minor inconvenience, easily substituted with manual work.
+# - archive:          (Legacy/Reference) Read-only data for historical lookup.
+# ------------------------------------------------------------------------------
+business_criticality: important # values: archive, operational, important, critical, mission-critical
+
+
+# ------------------------------------------------------------------------------
+# THREAT LANDSCAPE: business_overview
+# ------------------------------------------------------------------------------
+# PURPOSE: 
+# This section describes the primary security concerns and the overall risk profile of the application from an attacker's perspective. It highlights 
+# the most valuable targets within the system and the core defensive strategies employed to protect them.
+#
+# REQUIRED CONTENT (BLUF Format):
+# 1. Primary Threat Vector: What is the most likely way this system would be attacked? (e.g., Insider Threat, Supply Chain, Public API Abuse).
+# 2. High-Value Targets: What data or access is the attacker trying to steal/disrupt?
+# 3. Core Defenses: What are the primary mitigations in place? (e.g., WAF, Zero Trust Isolation, FIPS Encryption).
+#
+# EXAMPLE:
+# "The threat profile for this API is driven by its exposure to the public internet and its processing of proprietary sensor telemetry. The primary security focus 
+# is mitigating asymmetric Denial of Service (DoS) and unauthorized data scraping. Defense-in-depth is achieved via strict API Gateway rate-limiting and robust 
+# payload validation before traffic enters the internal Kubernetes boundary."
+# ------------------------------------------------------------------------------
+business_overview:
+  description: >
+    [ENTER YOUR THREAT LANDSCAPE NARRATIVE HERE. Follow the guidance above.]
+  images:
+#    - custom-image-1.png: Some dummy image 1
+
+
+# ------------------------------------------------------------------------------
+# ARCHITECTURE SUMMARY: technical_overview
+# ------------------------------------------------------------------------------
+# PURPOSE: 
+# This section provides a concise technical summary of the application stack, its hosting environment, and its primary integration points. It serves as 
+# the narrative context for the Data Flow Diagram (DFD).
+#
+# REQUIRED CONTENT (BLUF Format):
+# 1. Deployment Model: Where is it hosted? (e.g., AKS on Azure Gov, standalone 
+#    IaaS VMs, multi-region cluster).
+# 2. Tech Stack: What are the core components? (e.g., Java JVM, Nginx Ingress, 
+#    Postgres Database, OIDC/Entra ID).
+# 3. Security Boundary: How is traffic isolated? (e.g., Kubernetes namespaces, 
+#    VNet Peering, Private Endpoints, dedicated secrets vault).
+#
+# EXAMPLE:
+# "This service is deployed as a microservice on Azure Kubernetes Service (AKS) in the Azure Government IL5 region. It utilizes an Nginx Ingress for traffic 
+# routing and integrates with Entra ID for centralized authentication. Persistent data is hosted on an Azure Managed Postgres instance, accessed 
+# exclusively via Private Endpoints. Security is enforced through strict K8s NetworkPolicies and an CSI Driver for Azure Key Vault secret management."
+# ------------------------------------------------------------------------------
+technical_overview:
+  description: >
+    [ENTER YOUR TECHNICAL ARCHITECTURE SUMMARY HERE. Follow the guidance above.]
+  images:
+#    - custom-image-1.png: Some dummy image 1
+
+
+# ==============================================================================
+# DIGITAL SYSTEM SECURITY PLAN (SSP): questions
+# ==============================================================================
+# PURPOSE:
+# This section serves as the formal security narrative for your application.
+# The answers provided here are printed directly into the executive summary
+# of the final threat model report and are reviewed by the PMO ISSE during
+# the Continuous Certification to Field (CCTF) process.
+#
+# QUESTION SOURCE:
+# Questions are drawn from the category library: 01-metadata-lib.yml
+# Select categories whose triggers match your system's asset tags and machine
+# types. The baseline category (cat-baseline) is ALWAYS required.
+#
+# HOW TO SELECT CATEGORIES:
+#   1. Open 01-metadata-lib.yml and review the `triggers` list for each category.
+#   2. If any trigger tag or machine type is present in your technical assets,
+#      copy that category's questions into this file below.
+#   3. Always include cat-baseline regardless of your system profile.
+#
+# CATEGORY QUICK-REFERENCE:
+#   cat-baseline          Always required — core application security
+#   cat-file-processing   feature:file-upload-processing, feature:import-export,
+#                         feature:pdf-generation, risk:malware-vector
+#   cat-public-api        feature:public-api-endpoint, feature:graphql-endpoint,
+#                         feature:search-index, feature:webhook-receiver
+#   cat-auth-flows        feature:oauth-oidc-provider, feature:saml-sp,
+#                         feature:password-reset, feature:multi-tenancy
+#   cat-container         machine: container
+#   cat-vm                machine: virtual
+#   cat-ai-inference      ai:user-prompt-input, ai:indirect-prompt-input,
+#                         ai:llm-endpoint, ai:rag-pipeline,
+#                         ai:agent-orchestrator, ai:plugin-tool-use
+#   cat-ai-supply-chain   ai:model-serving, ai:model-registry,
+#                         ai:training-pipeline, ai:dataset-store,
+#                         ai:agent-framework, ai:eval-pipeline
+#
+# ANSWER FORMAT (The "Yes, And..." Method):
+#   Do NOT answer with a bare "Yes" or "No". Explain HOW the control is
+#   implemented, WHICH tool enforces it, and HOW it is verified.
+#     Bad:  "Yes, we validate input."
+#     Good: "Yes. Server-side input validation is enforced at the application
+#            layer using allow-list validation on all API parameters.
+#            The perimeter WAF (Azure App Gateway, OWASP CRS in Prevention
+#            mode) provides an additional blocking layer. Validated via DAST
+#            scan in the CI/CD pipeline."
+#   If a control is not applicable, state "N/A" and explain why.
+#   If a control is platform-inherited, name the specific platform tool.
+#
+# AI ASSISTANCE (optional):
+#   Provide this template, 01-metadata-lib.yml, and a description of your
+#   system's architecture and tags to an AI assistant, and ask it to draft
+#   the narrative sections (management_summary_comment, business_overview,
+#   technical_overview), select the applicable question categories based on
+#   your tags/machine types, and draft "[ANSWER REQUIRED]" guidance for each
+#   question rather than inventing compliance answers. Review the output for
+#   accuracy before committing, and get real answers from whoever actually
+#   knows the implementation.
+# ==============================================================================
+
+questions:
+
+  # ----------------------------------------------------------------------------
+  # Copy question blocks from 01-metadata-lib.yml for each applicable category.
+  # Delete this comment block and the example below once questions are filled in.
+  #
+  # EXAMPLE (from cat-baseline, question q-001):
+  #
+  # Does the application enforce strict server-side input validation
+  # (e.g., allow-listing) for all user-supplied data, headers, and file
+  # uploads, independent of any WAF or perimeter control?: >
+  #   Yes. All API endpoints validate input against explicit allow-list schemas
+  #   defined in the OpenAPI specification. Validation is enforced in the
+  #   application middleware layer independent of the perimeter WAF. Verified
+  #   via automated DAST scans on every CI/CD deployment.
+  # ----------------------------------------------------------------------------

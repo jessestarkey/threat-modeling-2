@@ -1,0 +1,27 @@
+# ==============================================================================
+# ENTERPRISE DATA ASSET LIBRARY
+# Environment Level: DoD IL5 (Azure Government / AWS GovCloud, per app's cloud provider)
+# Maintainer: Enterprise Architecture & Security Engineering
+#
+# PURPOSE:
+# This library contains the authoritative definitions, CIA (Confidentiality, 
+# Integrity, Availability) ratings, and compliance justifications for all 
+# data types approved for processing within this target environment's 
+# Accreditation Boundary.
+#
+# USAGE INSTRUCTIONS (The "Lego Block" Method): 
+# 1. Do NOT reference this file directly in your pipeline's merge command.
+# 2. Verify you are using the correct library for your deployment environment 
+#    (e.g., do not use the Seg1 library for a Seg2 deployment).
+# 3. Review this library and SELECT only the specific Data Assets that your 
+#    application actively processes, stores, or transmits.
+# 4. COPY the selected YAML blocks exactly as written and PASTE them into 
+#    your application's local '04-data-assets.yml' file.
+# 5. Do NOT modify the Confidentiality, Integrity, or Availability (CIA) 
+#    ratings or the 'justification_cia_rating' narratives. They are pre-calibrated 
+#    and legally mapped to DoD/IL5 compliance mandates.
+# 6. Map the exact 'id' of your chosen assets into your Technical Assets' 
+#    'data_assets_processed', 'data_assets_stored', and 'communication_links' arrays.
+# ==============================================================================
+
+data_assets: {}

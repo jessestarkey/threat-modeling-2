@@ -1,0 +1,66 @@
+# ==============================================================================
+# APPLICATION DATA INVENTORY: data_assets
+# Maintainer: Application Development Team
+#
+# PURPOSE:
+# This file defines the specific business payloads, credentials, and telemetry 
+# processed by your application. It must accurately reflect the data flows 
+# modeled in your '03-tech-assets.yml' file.
+#
+# USAGE INSTRUCTIONS (The "Library Import" Method):
+# 1. Do NOT invent custom Data Assets or modify Confidentiality, Integrity,
+#    or Availability (CIA) ratings.
+# 2. OPEN the relevant file(s) under libraries/04-data-assets-lib/*.yml in the
+#    central security repository.
+# 3. SELECT only the specific data types your application actively processes,
+#    stores, or transmits (e.g., 'structured-mission-data', 'user-credentials').
+# 4. COPY the selected YAML blocks exactly as written from the central library,
+#    INCLUDING the library file's own numbered section header comment above
+#    each block (e.g. "# 3. IDENTITY AND SESSION DATA") -- keep assets grouped
+#    under the same numbered heading they came from, in the library's own
+#    order, rather than a flat undifferentiated list. See OUTPUT FORMAT below.
+# 5. PASTE the copied blocks below, organized by section.
+# 6. Ensure every data asset ID listed here is actively mapped to at least one
+#    Technical Asset in your '05-tech-assets.yml' file to prevent 'Orphaned
+#    Data' warnings during the pipeline run.
+#
+# OUTPUT FORMAT (copy the library's own section header verbatim):
+#
+#   # ============================================================================
+#   # 3. IDENTITY AND SESSION DATA
+#   # Tokens and credentials representing authenticated human and NPE identities.
+#   # Source library: 04-data-assets-lib/03-identity-and-session-data.yml
+#   # ============================================================================
+#
+#   Some Data Asset:
+#     ...
+#
+# AI ASSISTANCE (optional):
+#   Provide this template, the libraries/04-data-assets-lib/*.yml files, and
+#   a description of the data your application actually processes/stores/
+#   transmits to an AI assistant, and ask it to select and compose the
+#   applicable blocks, preserving each library file's own numbered section
+#   header above the blocks taken from it. Review the output for accuracy
+#   before committing.
+# ==============================================================================
+
+data_assets:
+
+  # ============================================================================
+  # <N>. <SECTION NAME FROM THE LIBRARY FILE, e.g. "3. IDENTITY AND SESSION DATA">
+  # <one-line description copied from the library file's own header comment>
+  # Source library: 04-data-assets-lib/<matching-file>.yml
+  # ============================================================================
+
+  Some Data Asset:
+    id: some-data
+    description: Some Description
+    usage: business # values: business, devops
+    tags:
+    origin: Some Origin
+    owner: Some Owner
+    quantity: many # values: very-few, few, many, very-many
+    confidentiality: confidential # values: public, internal, restricted, confidential, strictly-confidential
+    integrity: critical # values: archive, operational, important, critical, mission-critical
+    availability: operational # values: archive, operational, important, critical, mission-critical
+    justification_cia_rating: Some Justification

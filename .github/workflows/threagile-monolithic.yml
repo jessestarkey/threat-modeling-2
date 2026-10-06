@@ -1,0 +1,105 @@
+name: Monolithic Threat Model Analysis
+
+on:
+  # Push trigger temporarily disabled -- running locally against
+  # confluence/llm-chat during active development. Re-enable by
+  # uncommenting below.
+  # push:
+  #   paths:
+  #     - 'models/monolithic-apps-repo/*'
+  #     - 'models/central-security-repo/core-policies/*'
+  workflow_dispatch:
+
+jobs:
+  threagile_job:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # The four models this used to run (confluence-single-file,
+        # ztna-single-file, and the two upstream Threagile samples) were
+        # testing/scaffolding content, not real apps, and confluence-
+        # single-file had drifted badly from the actively-maintained
+        # modular confluence app (see CLAUDE.md) -- deleted, not
+        # replaced 1:1. sample-transfer is a CI-validation fixture (not
+        # an independently-maintained app -- see its own file header),
+        # here so this pipeline actually runs in CI instead of sitting
+        # untested with an empty matrix. Add a real app's filename here
+        # (matching models/monolithic-apps-repo/<name>.yml) once one is
+        # authored from app-templates/monolithic/monolithic-template.yml.
+        application: [sample-transfer]
+      fail-fast: false # Continues even if one app fails
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update -qq
+          # fonts-freefont-ttf provides FreeSans, the font
+          # threagile_dfd_to_html.py's build_svg() draws diagram labels in --
+          # matching it explicitly (rather than via the "Verdana" alias) is
+          # what keeps rendered text sized consistently with the label boxes
+          # Graphviz computed. graphviz provides the `dot` binary
+          # generate_report.py itself now needs (via threagile_dfd_to_html.py)
+          # to re-render the .gv files dot-wrapper captured during the
+          # Threagile run, below.
+          sudo apt-get install -y -qq --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 libffi-dev shared-mime-info fonts-liberation fonts-freefont-ttf graphviz
+          # cairosvg isn't a runtime dependency -- see threagile-modular.yml's
+          # Install Dependencies step for the full explanation. Versions
+          # pinned for reproducibility -- an IL5 threat model report should
+          # be regenerable identically later, not silently different
+          # because a dependency moved on.
+          pip install pyyaml==6.0.3 jinja2==3.1.6 weasyprint==68.1 openpyxl==3.1.5
+
+      - name: Inject Custom IL5 Risks
+        # Assumes your files are named [app-name].yml inside that folder
+        run: python models/central-security-repo/core-policies/inject_risks.py models/monolithic-apps-repo/${{ matrix.application }}.yml
+
+      - name: Run Threagile
+        # Invoked directly (instead of threagile/run-threagile-action) so the
+        # dot-wrapper script can shadow Graphviz's dot binary via PATH and
+        # capture the .gv source Threagile discards after rendering -- see
+        # dot-wrapper/dot for why this needs a real docker run rather than a
+        # third-party action, which exposes no hook for this. Mirrors
+        # threagile-modular.yml's step of the same name -- see that file's
+        # own comment here for why chmod 777 + HOME=/tmp are both needed
+        # (threagile/threagile:0.9.1 runs as a fixed non-root uid 1000,
+        # confirmed via `docker run --entrypoint sh ... -c id`, which can't
+        # otherwise write into a runner-owned output dir or its own
+        # image-baked $HOME=/ for fontconfig's cache -- only surfaces on a
+        # real Linux runner, invisible under local Docker Desktop/Windows
+        # testing).
+        run: |
+          mkdir -p threagile/output
+          chmod 777 threagile/output
+          chmod +x models/central-security-repo/core-policies/dot-wrapper/dot
+          docker run --rm \
+            -v "${{ github.workspace }}:/app/work" \
+            -e DOT_GV_OUTPUT_DIR=/app/work/threagile/output \
+            -e HOME=/tmp \
+            -v "${{ github.workspace }}/models/central-security-repo/core-policies/dot-wrapper:/wrap" \
+            --entrypoint sh \
+            threagile/threagile:0.9.1 \
+            -c 'PATH=/wrap:$PATH /app/threagile -model /app/work/threagile_injected.yml -output /app/work/threagile/output'
+
+      - name: Generate Report
+        # The threagile container above runs as a different (non-root, see
+        # the previous step) uid than this step, so output files it created
+        # need to come back under this step's own uid before Python here can
+        # freely read/write/replace them.
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" threagile/output
+          python models/central-security-repo/core-policies/generate_report.py \
+            --model threagile_injected.yml --output-dir threagile/output
+
+      - name: Archive Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.application }}-threagile-report
+          path: threagile/output

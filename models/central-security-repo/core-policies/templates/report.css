@@ -1,0 +1,239 @@
+@page {
+  size: letter;
+  margin: 1in 0.85in;
+  @bottom-center { content: "— CONFIDENTIAL —"; font-size: 8pt; color: #666; }
+  @bottom-right { content: counter(page); font-size: 8pt; color: #666; }
+}
+
+@page title {
+  margin: 1in 0.85in;
+  @bottom-center { content: none; }
+  @bottom-right { content: none; }
+}
+
+@page toc {
+  margin: 1in 0.85in;
+  @bottom-center { content: none; }
+  @bottom-right { content: none; }
+}
+
+@page content {
+  margin: 1in 0.85in;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.4;
+  color: #1a1a1a;
+}
+
+section { break-before: page; }
+
+/* Bare h1 is now reserved for the report's 3 top-level part dividers
+   (Application Profile, Application Risks, Application Components) --
+   every section that used to be an h1 in its own right is now a
+   .section-heading instead, one bookmark level down (2), and everything
+   that used to hang off a section (domain-heading, category-heading, and
+   the generic bare h2 used for in-section sub-headings like "Risk
+   Severity" or "Confidentiality") shifts down one level in turn, so the
+   PDF outline still nests correctly under the new part dividers.
+   WeasyPrint builds that outline from bookmark-level transitions in
+   document order, not DOM nesting, so keeping this whole chain in sync
+   matters even though most of these elements aren't DOM-nested inside
+   each other. */
+h1 {
+  font-size: 22pt;
+  color: #1a3a5c;
+  border-top: 3px solid #1a3a5c;
+  padding-top: 10px;
+  margin: 0 0 18px 0;
+  bookmark-level: 1;
+}
+
+.section-heading {
+  font-size: 18pt;
+  border-bottom: 2px solid #1a3a5c;
+  padding-bottom: 6px;
+  margin: 0 0 16px 0;
+  bookmark-level: 2;
+}
+
+h2 {
+  font-size: 13pt;
+  color: #1a3a5c;
+  margin: 20px 0 8px 0;
+  break-after: avoid;
+  bookmark-level: 3;
+}
+
+h3 {
+  font-size: 11pt;
+  margin: 14px 0 6px 0;
+  break-after: avoid;
+}
+
+.domain-heading {
+  font-size: 14pt;
+  color: #1a3a5c;
+  margin: 26px 0 10px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #c8d2db;
+  break-after: avoid;
+  bookmark-level: 3;
+}
+
+.category-heading {
+  font-size: 13pt;
+  color: #1a3a5c;
+  margin: 18px 0 8px 0;
+  break-after: avoid;
+  bookmark-level: 4;
+}
+
+p { margin: 0 0 8px 0; }
+
+a { color: #1a3a5c; text-decoration: none; }
+
+code {
+  font-family: "Courier New", monospace;
+  font-size: 9pt;
+  background: #f0f0f0;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+/* -- Title page -- */
+.title-page { padding-top: 2in; }
+.title-band { width: 100%; height: 6px; background: #1a3a5c; margin-bottom: 36px; }
+.report-title { font-size: 26pt; color: #1a1a1a; border: none; margin: 0 0 6px 0; }
+.report-subtitle { font-size: 13pt; color: #555; margin: 0 0 28px 0; }
+.title-rule { border: none; border-top: 2px solid #1a3a5c; width: 100%; margin: 0 0 32px 0; }
+.title-meta { width: auto; }
+.title-meta, .title-meta th, .title-meta td { border: none; }
+.title-meta th { text-align: left; padding: 4px 16px 4px 0; color: #666; font-weight: normal; width: 160px; background: none; }
+.title-meta td { text-align: left; padding: 4px 0; color: #1a1a1a; font-weight: 600; }
+
+/* -- Table of contents -- */
+/* l0 = the 3 report parts, no indent, bold. l1 = what used to be every
+   top-level section (Methodology, Executive Summary, ...), one indent.
+   l2 = the vulnerability-category domain groups, two indents, small and
+   grey -- previously l1, since there was no l0/part layer yet. */
+.toc-list { list-style: none; padding: 0; margin: 0; }
+.toc-list li { display: flex; align-items: baseline; margin-top: 5px; margin-bottom: 5px; }
+.toc-list li.toc-l0 { font-weight: 700; margin-top: 14px; }
+.toc-list li.toc-l0:first-child { margin-top: 0; }
+.toc-list li.toc-l1 { margin-left: 22px; }
+.toc-list li.toc-l2 { margin-left: 44px; font-size: 9pt; color: #444; }
+.toc-fill { flex: 1; border-bottom: 1px dotted #999; margin: 0 6px; transform: translateY(-3px); }
+a.toc-page::after { content: target-counter(attr(href), page); }
+.toc-list a { color: inherit; text-decoration: none; }
+
+/* -- Tables -- */
+table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
+th, td { border: 1px solid #ccc; padding: 5px 8px; text-align: left; font-size: 9pt; vertical-align: top; }
+th { background: #eef2f6; }
+
+.summary-counts th, .summary-counts td { text-align: center; }
+.summary-counts td:first-child, .summary-counts th:first-child { text-align: left; }
+
+/* -- ASVS/AISVS security-requirement tables --
+   One per subsection (e.g. "V6.2: Password Security"), reproducing the
+   standard's own #/Description/Level column layout. thead repeats on
+   every page a table spans (WeasyPrint's default for an unconstrained
+   table -- deliberately not wrapped in break-inside: avoid, since several
+   subsections run well past a page); only the individual row is kept
+   intact via tr { break-inside: avoid }. */
+.svs-table { margin-bottom: 16px; }
+.svs-table th, .svs-table td { font-size: 8.5pt; }
+.svs-table tr { break-inside: avoid; }
+.svs-table .svs-num { width: 42px; white-space: nowrap; }
+.svs-table .svs-level { width: 36px; text-align: center; font-weight: 600; }
+
+/* Ascending verification rigor, not severity -- a deliberately distinct
+   (blue monochrome) scale from .severity-badge's red/amber danger scale
+   so a reader never reads "Level 3" as "more dangerous than Level 1". */
+.level-1 { color: #6b7f93; }
+.level-2 { color: #4a6fa5; }
+.level-3 { color: #1a3a5c; }
+
+/* -- Severity colors -- */
+.severity-critical { color: #8b0000; font-weight: bold; }
+.severity-high { color: #c1440e; font-weight: bold; }
+.severity-elevated { color: #b8860b; font-weight: bold; }
+.severity-medium { color: #4a6fa5; }
+.severity-low { color: #556b2f; }
+
+.severity-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 8pt;
+  color: white;
+  margin-right: 6px;
+}
+.severity-badge.severity-critical { background: #8b0000; }
+.severity-badge.severity-high { background: #c1440e; }
+.severity-badge.severity-elevated { background: #b8860b; }
+.severity-badge.severity-medium { background: #4a6fa5; }
+.severity-badge.severity-low { background: #556b2f; }
+
+.severity-matrix { width: auto; max-width: 380px; margin: 8px 0 4px; }
+.severity-matrix caption { caption-side: top; text-align: left; font-size: 8.5pt; color: #555; margin-bottom: 3px; font-style: italic; }
+.severity-matrix th, .severity-matrix td { text-align: center; padding: 3px 8px; font-size: 8.5pt; }
+.severity-matrix th:first-child { background: #eef2f6; text-align: left; }
+.matrix-footnote { font-size: 8pt; color: #555; margin: -2px 0 8px; }
+
+/* -- Findings -- */
+.category-block { break-before: auto; }
+.finding { break-inside: avoid; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; }
+.finding-meta td { border: none; padding: 1px 8px 1px 0; font-size: 9pt; }
+
+/* -- Diagrams -- */
+/* The inline <svg> already carries its own explicit width/height in inches
+   (computed by threagile_dfd_to_html.py's build_svg() to fit within this
+   same 6.8in x 8in box) -- this just centers it. Unlike Threagile's own
+   Graphviz SVG output, ours has no internal dpi-derived transform, so it
+   doesn't need the CSS max-width/max-height workaround that approach
+   required. */
+.diagram { text-align: center; }
+.diagram svg { display: inline-block; }
+
+/* -- Trust boundaries / shared runtimes -- */
+.boundary-node, .runtime-node { margin-bottom: 10px; break-inside: avoid; }
+.boundary-type { font-weight: normal; color: #666; font-size: 9pt; }
+.tag-list code { margin-right: 4px; }
+
+/* -- Data assets / technical assets -- */
+.asset-node { break-inside: avoid; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; }
+
+/* Same 5-step low->critical palette as .severity-badge, reused here so a
+   reader learns the color scale once and it applies report-wide. Two
+   separate enum scales share it: confidentiality (public..strictly-
+   confidential) and integrity/availability (archive..mission-critical). */
+.cia-badge, .raa-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 8pt;
+  color: white;
+}
+.cia-badge.conf-public { background: #556b2f; }
+.cia-badge.conf-internal { background: #4a6fa5; }
+.cia-badge.conf-restricted { background: #b8860b; }
+.cia-badge.conf-confidential { background: #c1440e; }
+.cia-badge.conf-strictly-confidential { background: #8b0000; }
+.cia-badge.ia-archive { background: #556b2f; }
+.cia-badge.ia-operational { background: #4a6fa5; }
+.cia-badge.ia-important { background: #b8860b; }
+.cia-badge.ia-critical { background: #c1440e; }
+.cia-badge.ia-mission-critical { background: #8b0000; }
+
+/* RAA is a 0-100 numeric score (not an enum) -- banded into the same 5 steps. */
+.raa-badge.raa-low { background: #556b2f; }
+.raa-badge.raa-medium { background: #4a6fa5; }
+.raa-badge.raa-elevated { background: #b8860b; }
+.raa-badge.raa-high { background: #c1440e; }
+.raa-badge.raa-critical { background: #8b0000; }
