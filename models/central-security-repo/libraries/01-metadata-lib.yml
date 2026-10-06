@@ -56,4 +56,223 @@
 #   RECOVERY                   NIST SP 800-53 (CP family, plus SA-9, AC-5, SC-12)
 # ==============================================================================
 
-categories: []
+categories:
+  - name: "Identity"
+    triggers:
+      - feature:oauth-oidc-provider
+      - feature:saml-sp
+      - feature:password-reset
+      - feature:multi-tenancy
+      - feature:admin-panel
+      - mgmt:self-managed-identity
+      - mgmt:self-managed-pam
+
+    questions:
+
+      # Requirement IDs: ASVS V6.1-ASVS V6.8
+      "How are users and non-person entities authenticated and where is that documented? For example, are passwords, MFA, out-of-band codes, certs, or a federated IdP login utilized?": ""
+
+      # Requirement IDs: ASVS V7.1-ASVS V7.6
+      "Walk through session handling end to end: how long sessions live, what kills them early, and what happens on re-authentication after a federated login.": ""
+
+      # Requirement IDs: ASVS V8.1-ASVS V8.4
+      "Who can access what, and how is that enforced at the function, data, and field level? What protects the admin interface specifically?": ""
+
+      # Requirement IDs: ASVS V9.1-ASVS V9.2, ASVS V10.1-ASVS V10.7
+      "If this asset issues or accepts OAuth/OIDC tokens, how are they validated and scoped? What secures the client, resource-server, authorization-server, and consent flows involved?": ""
+
+      # Requirement IDs: AC-2(7), AC-2(6)
+      "If the application runs its own directory, CA, or hybrid-sync service instead of the enterprise tenant, how is it hardened, and who governs privileged access to it?": ""
+
+  - name: "Device and Infrastructure"
+    triggers:
+      - machine:container
+      - machine:virtual
+      - mgmt:self-managed-hardware
+
+    questions:
+
+      # Requirement IDs: CM-14, CM-7, SC-7(21), SC-5, AC-6, CM-6, SI-2, SI-4, AC-17, SC-28
+      "What hardens the containers and VMs? Cover image/OS provenance, least-privilege runtime, network segmentation, resource limits, patching, endpoint monitoring, admin access, and encryption at rest.": ""
+
+      # Requirement IDs: PE-3 / SI-7
+      "Does the application utilize any self-managed hardware? If so, have default BMC/iDRAC credentials been changed, is firmware tracked separately from OS patching, and is secure boot enabled?": ""
+
+  - name: "Network and Environment"
+    triggers:
+      - net:tls-terminator
+      - zone:dmz
+      - mgmt:self-managed-network
+      - cds:low-side-submitter
+      - cds:low-side-receiver
+      - cds:low-side-broker
+      - cds:high-side-submitter
+      - cds:high-side-receiver
+      - cds:high-side-broker
+
+    questions:
+
+      # Requirement IDs: ASVS V12.1-ASVS V12.3
+      "How is TLS implemented, both for external-facing traffic and for service-to-service calls inside the network?": ""
+
+      # Requirement IDs: SC-7, AC-18
+      "If the application manages its own network segmentation, how is it segmented, and what controls wireless access?": ""
+
+      # Requirement IDs: AC-4(19), AC-4(8) / SI-3, AC-4(25) / AC-4(9), SI-7
+      "Does content cross a cross-domain solution? If so, how are classification markings checked, how is the content inspected and sanitized, and who signs off before release?": ""
+
+      # Requirement IDs: AU-9, AC-3, SC-31, MP-8, CA-3
+      "Does the application send or receive data across the authorization boundary? If so, how is the transfer path governed? Are controls such as broker access restrictions, a tamper-evident audit trail, covert-channel mitigation, and a signed interconnection agreement in place?": ""
+
+  - name: "Application"
+    triggers:
+      - feature:file-upload-processing
+      - feature:import-export
+      - feature:pdf-generation
+      - risk:malware-vector
+      - feature:dynamic-code-execution
+      - feature:public-api-endpoint
+      - feature:graphql-endpoint
+      - feature:search-index
+      - feature:webhook-receiver
+      - feature:websocket
+      - feature:ugc-rendering
+      - feature:deserialization
+      - feature:admin-panel
+      - feature:email-sending
+      - feature:background-jobs
+      - feature:third-party-plugins
+
+    questions:
+
+      # Requirement IDs: ASVS V1.1-ASVS V1.5
+      "What prevents injection and unsafe deserialization? Is there a defined encoding and sanitization architecture, are memory-safety protections in place, and is XML/object deserialization handled safely?": ""
+
+      # Requirement IDs: ASVS V2.1-ASVS V2.4
+      "What stops someone from skipping steps in the application business logic or scripting abuse of it at volume?": ""
+
+      # Requirement IDs: ASVS V3.1-ASVS V3.7
+      "On the frontend, how are cookies configured, what security headers are set, how is CSRF/origin separation enforced, and are external resources integrity-checked?": ""
+
+      # Requirement IDs: ASVS V4.1-ASVS V4.4
+      "What secures HTTP, GraphQL, and WebSocket handling specifically? Are protections like request-smuggling defenses, GraphQL query depth limits, and WebSocket origin checks in place?": ""
+
+      # Requirement IDs: ASVS V5.1-ASVS V5.4
+      "Describe the file handling process, to include upload validation, storage isolation, and safe download.": ""
+
+      # Requirement IDs: ASVS V13.1-ASVS V13.4
+      "How is configuration managed, how do backend services authenticate to each other, and where do secrets actually live?": ""
+
+      # Requirement IDs: ASVS V15.1-ASVS V15.4
+      "How does the application track third-party dependency risk and what defensive coding practices are actually enforced rather than just documented?": ""
+
+      # Requirement IDs: ASVS V17.1-ASVS V17.3
+      "If the application is running WebRTC, what secures the TURN relay and signaling?": ""
+
+  - name: "Artificial Intelligence"
+    triggers:
+      - ai:user-prompt-input
+      - ai:indirect-prompt-input
+      - ai:llm-endpoint
+      - ai:rag-pipeline
+      - ai:agent-orchestrator
+      - ai:plugin-tool-use
+      - ai:ot-adjacent-output
+      - ai:third-party-model-api
+      - ai:model-serving
+      - ai:model-registry
+      - ai:training-pipeline
+      - ai:dataset-store
+      - ai:agent-framework
+      - ai:eval-pipeline
+      - ai:on-device-inference
+      - ai:air-gapped-model-delivery
+      - ai:rag-ingest-pipeline
+      - ai:agent-memory
+      - ai:model-exfil-risk
+      - ai:multi-agent-boundary
+
+    questions:
+
+      # Requirement IDs: AISVS C1.1-AISVS C1.3
+      "How is training and labeling data secured and what detects poisoning attempts?": ""
+
+      # Requirement IDs: AISVS C2.1-AISVS C2.2
+      "What stops a prompt injection and how is untrusted input screened before it reaches the model?": ""
+
+      # Requirement IDs: AISVS C3.1-AISVS C3.5, AISVS C6.1-AISVS C6.2
+      "How does the application verify a model artifact's integrity and provenance? Is it signed, is there an AI-BOM for it, and is its source tracked? What controls safe deployment and rollback?": ""
+
+      # Requirement IDs: AISVS C4.1-AISVS C4.3
+      "How are AI workloads isolated? Are enforcement mechanisms such as sandboxing, GPU/accelerator access restrictions, or protected edge-deployed models utilized?": ""
+
+      # Requirement IDs: AISVS C5.1-AISVS C5.3
+      "Who can access the application's AI resources and how is that authenticated? If multiple tenants share the infrastructure, how are they kept apart?": ""
+
+      # Requirement IDs: AISVS C7.1-AISVS C7.4
+      "What validates and bounds model output before a user sees it? Does anything catch hallucinations or check source attribution?": ""
+
+      # Requirement IDs: AISVS C8.1-AISVS C8.3
+      "For the memory/RAG index: who can access it, is content sanitized before embedding, and does old material actually expire?": ""
+
+      # Requirement IDs: AISVS C9.1-AISVS C9.6
+      "What constrains the agent? Are safeguards such as execution budgets, a kill-switch, human approval before high-impact actions, tool isolation, and identity distinction in place?": ""
+
+      # Requirement IDs: AISVS C10.1-AISVS C10.4
+      "For each MCP server the agent talks to: where did it come from, how is it authenticated, what's the transport, and is input validated against a schema?": ""
+
+      # Requirement IDs: AISVS C11.1-AISVS C11.3
+      "What hardens the model against adversarial inputs, membership inference, and someone trying to extract it wholesale?": ""
+
+  - name: "Data"
+    triggers:
+      - storage:persistent
+      - storage:vault
+      - data:external-feed-ingest
+      - data:release-candidate
+      - feature:import-export
+      - cds:high-side-submitter
+      - cds:high-side-broker
+      - data:pii
+
+    questions:
+
+      # Requirement IDs: ASVS V11.1-ASVS V11.7
+      "How are cryptographic keys managed? Is there an inventory, are the algorithms approved, and is data protected while it's in use?": ""
+
+      # Requirement IDs: ASVS V14.1-ASVS V14.3
+      "How is sensitive data classified and what protects it at rest, in transit, and on the client?": ""
+
+  - name: "Detection"
+    triggers:
+      - feature:public-api-endpoint
+      - machine:container
+      - ai:observability-stack
+
+    questions:
+
+      # Requirement IDs: ASVS V16.1-ASVS V16.5
+      "What gets logged and what happens when something fails? Does the error message leak anything it shouldn't?": ""
+
+      # Requirement IDs: AISVS C11.4, AISVS C12.1-AISVS C12.5
+      "What's watching the model itself? Is there anomaly detection, do jailbreak or injection attempts trigger alerts, is it drift detected, and is there a lifecycle audit trail?": ""
+
+  - name: "Response"
+    triggers:
+      - zone:dmz
+      - sec:secrets-broker
+
+    questions:
+
+      # Requirement IDs: IR-4, IR-4, IR-3, IR-6
+      "If this asset gets compromised, what's the plan for containment and credential rotation, and has any of it been tested rather than just written down? What's the reporting timeline?": ""
+
+  - name: "Recovery"
+    triggers:
+      - ops:requires-backup
+      - ops:vendor-hosted-service
+
+    questions:
+
+      # Requirement IDs: CP-9 / AC-5, CP-2, CP-4, SA-9, SC-12
+      "What backs this up, what's the RTO/RPO, and has a restore actually been tested? If any part of this is vendor-hosted or SaaS, how are independent exports handled?": ""

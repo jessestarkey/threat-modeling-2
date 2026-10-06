@@ -84,4 +84,192 @@
 #   follow-ups.
 # ==============================================================================
 
-categories: []
+categories:
+
+  # ============================================================================
+  # IDENTITY
+  # ============================================================================
+  - name: "Identity"
+    questions:
+
+      "Does the application talk to an enterprise identity provider, such as Entra ID or Keycloak, via OAuth 2.0 or OpenID Connect, when issuing or validating tokens?": "-> feature:oauth-oidc-provider"
+
+      "Does the application accept SAML sign-in assertions from an outside identity provider, such as CAC/PIV federation through ADFS, Okta, or Shibboleth?": "-> feature:saml-sp"
+
+      "Does the application have its own password-reset or credential-recovery flow that is separate from the enterprise IdP?": "-> feature:password-reset"
+
+      "Does one deployment of the application serve more than one organization or customer group?": "-> feature:multi-tenancy"
+
+      "In the application, is there an admin panel or back-office interface for managing users, configuration, or audit logs?": "-> feature:admin-panel"
+
+      "Does the application operate any part of the identity or access-management infrastructure itself, rather than relying entirely on the enterprise-managed platform?":
+        then:
+          "Does the application run its own directory service, certificate authority, or identity hybrid-sync service?": "-> mgmt:self-managed-identity"
+
+          "Does the application decide who gets admin rights and when, rather than going through the enterprise PAM or JIT program?": "-> mgmt:self-managed-pam"
+
+  # ============================================================================
+  # DEVICE AND INFRASTRUCTURE
+  # ============================================================================
+  - name: "Device and Infrastructure"
+    questions:
+
+      "Is the application a virtual machine, a stand-alone container, or orchestrated on Kubernetes, AKS, or EKS?": "-> machine:container OR machine:virtual"
+
+      "Does the application administer any physical server hardware directly, including out-of-band management like BMC, iDRAC, or iLO, rather than running entirely on cloud-provisioned compute?": "-> mgmt:self-managed-hardware"
+
+  # ============================================================================
+  # NETWORK AND ENVIRONMENT
+  # ============================================================================
+  - name: "Network and Environment"
+    questions:
+
+      "Does the application decrypt TLS traffic?": "-> net:tls-terminator"
+
+      "Is this application positioned in a zone expected to handle hostile traffic?": "-> zone:dmz"
+
+      "Does the application have its own network segmentation, wireless, or external routing, rather than inheriting it from the overarching platform?": "-> mgmt:self-managed-network"
+
+      "Does the application send or receive content through a cross-domain solution?":
+        then:
+          "Does this asset submit content into the CDS, from the low side going up to a higher classification, or from the high side going down to a lower one?": "-> cds:low-side-submitter OR cds:high-side-submitter"
+
+          "Does this asset receive content from the CDS, on the low side with content coming down from a higher classification, or on the high side with content coming up from a lower one?": "-> cds:low-side-receiver OR cds:high-side-receiver"
+
+          "Is this asset the broker or queue staging CDS traffic, on the low side or the high side?": "-> cds:low-side-broker OR cds:high-side-broker"
+
+  # ============================================================================
+  # APPLICATION
+  # ============================================================================
+  - name: "Application"
+    questions:
+
+      "Can users upload files to the application such as documents, images, attachments, etc?": "-> feature:file-upload-processing"
+
+      "Could any files the application handles, such as uploaded documents or email attachments, plausibly carry malware?": "-> risk:malware-vector"
+
+      "Can users bulk-import or bulk-export data, such as a CSV/Excel upload, a full dataset download, or a generated report?": "-> feature:import-export"
+
+      "Does the application generate PDFs from content a user supplied or influenced?": "-> feature:pdf-generation"
+
+      "Does the application execute dynamic or user-influenced code such as templates, expressions, macros, or an eval()-style construct?": "-> feature:dynamic-code-execution"
+
+      "Is there an API that's deliberately open to the public internet for third-party or partner integration?": "-> feature:public-api-endpoint"
+
+      "Does the application expose a GraphQL API?": "-> feature:graphql-endpoint"
+
+      "Is there search functionality backed by an index such as Elasticsearch, Solr, or Azure AI Search?": "-> feature:search-index"
+
+      "Does the application receive inbound webhooks or callbacks from other systems and act on what's in the payload?": "-> feature:webhook-receiver"
+
+      "Does the application use WebSocket connections for real-time, persistent communication?": "-> feature:websocket"
+
+      "In the application, does content one user creates, such as comments, posts, or wiki pages, get shown to other users?": "-> feature:ugc-rendering"
+
+      "Does the application deserialize objects from user-supplied or externally sourced data outside of an AI/ML model-loading context?": "-> feature:deserialization"
+
+      "Does the application send email where the recipient, subject, or body is built from user input?": "-> feature:email-sending"
+
+      "Are there background jobs pulled from a queue or scheduler whose parameters trace back to earlier user input?": "-> feature:background-jobs"
+
+      "Can admins or end users install third-party plugins that run code inside the application itself?": "-> feature:third-party-plugins"
+
+  # ============================================================================
+  # ARTIFICIAL INTELLIGENCE
+  # ============================================================================
+  - name: "Artificial Intelligence"
+    questions:
+
+      "Does the application take free-form natural-language input straight from users and pass it to an LLM?": "-> ai:user-prompt-input"
+
+      "Does content from outside sources ever end up in an LLM's context, emails, web pages, documents, or search results?": "-> ai:indirect-prompt-input"
+
+      "Does the application expose an LLM or ML inference API, either internal or external?": "-> ai:llm-endpoint"
+
+      "Does the application send requests to a vendor-hosted foundation model or a commercial LLM provider?": "-> ai:third-party-model-api"
+
+      "Does the application host and serve a trained model itself, such as Triton, TorchServe, vLLM, or Ollama?": "-> ai:model-serving"
+
+      "Is the application a model registry or artifact store for model weights and configs, such as MLflow or a HuggingFace Hub mirror?": "-> ai:model-registry"
+
+      "Does the application sit at a boundary where someone could plausibly extract model weights, architecture, or training data?": "-> ai:model-exfil-risk"
+
+      "Could any output from the AI system reach an OT actuator or a safety-critical process?": "-> ai:ot-adjacent-output"
+
+      "Does the application train, fine-tune, RLHF, or continually update any model itself?":
+        tag: "-> ai:training-pipeline"
+        then:
+          "Is the application the system of record for training, evaluation, or fine-tuning data?": "-> ai:dataset-store"
+
+          "Is there an evaluation, red-teaming, or benchmark pipeline that has to sign off before a model gets promoted?": "-> ai:eval-pipeline"
+
+      "Does the application run an AI agent that plans tasks and dispatches tool calls on its own, such as LangChain, AutoGen, CrewAI, or a custom agent loop?":
+        tag: "-> ai:agent-orchestrator"
+        then:
+          "Can the agent call tools, plugins, or functions that invoke external APIs or take real actions?": "-> ai:plugin-tool-use"
+
+          "Is this application specifically the agent framework code itself, such as LangChain, AutoGen, or Semantic Kernel, or one of its dependencies?": "-> ai:agent-framework"
+
+          "Does the agent keep persistent memory or session state across turns or sessions?": "-> ai:agent-memory"
+
+          "Do multiple agents interact here across identity domains, an A2A gateway, an MCP server, or an agent registry?": "-> ai:multi-agent-boundary"
+
+      "Does the application run a Retrieval-Augmented Generation pipeline or a vector database plus retrieval plus LLM grounding?":
+        tag: "-> ai:rag-pipeline"
+        then:
+          "Is there a separate ingestion step that chunks, embeds, and writes documents into the vector store?": "-> ai:rag-ingest-pipeline"
+
+      "Is any model deployed somewhere other than a standard cloud-hosted environment, on the edge, on a mobile device, on embedded hardware, or into a disconnected enclave?":
+        then:
+          "Is that deployment on edge, mobile, or embedded hardware an adversary could physically get their hands on, or into a disconnected or air-gapped enclave instead?": "-> ai:on-device-inference OR ai:air-gapped-model-delivery"
+
+  # ============================================================================
+  # DATA
+  # ============================================================================
+  - name: "Data"
+    questions:
+
+      "Does this application write data to persistent storage, disk, or a database?": "-> storage:persistent"
+
+      "Does this application store secrets or keys in a dedicated secrets manager or vault?": "-> storage:vault"
+
+      "Does the application pull in data from an external feed on an ongoing basis, such as a partner feed or an upstream integration?": "-> data:external-feed-ingest"
+
+      "Does the application produce files or datasets meant to be released or shared outside the boundary they came from?": "-> data:release-candidate"
+
+      "Does this application process or store personally identifiable information about individuals?": "-> data:pii"
+
+  # ============================================================================
+  # DETECTION
+  # ============================================================================
+  - name: "Detection"
+    questions:
+
+      "Does this application have its own AI-specific monitoring or logging layer, such as LLM tracing, inference telemetry, or behavioral drift detection?": "-> ai:observability-stack"
+
+  # ============================================================================
+  # RESPONSE
+  # ============================================================================
+  - name: "Response"
+    questions:
+
+      # Response domain content also applies whenever this asset carries a
+      # policy exception (any exception:* tag) or the model's overall
+      # business_criticality is rated critical or mission-critical,
+      # regardless of how the questions below are answered. Neither
+      # condition is a single discoverable yes/no tag, so there's nothing
+      # to record for it here -- just don't skip Response on this domain's
+      # tags alone without also checking those two facts.
+
+      "Does this application fetch, cache, or hand out credentials on behalf of other services, acting as a secrets broker?": "-> sec:secrets-broker"
+
+  # ============================================================================
+  # RECOVERY
+  # ============================================================================
+  - name: "Recovery"
+    questions:
+
+      "Does this application need to be backed up for disaster recovery or continuity of operations?":
+        tag: "-> ops:requires-backup"
+        then:
+          "Is this application a SaaS tenant, vendor-hosted appliance, or niche managed service the enterprise backup platform can't directly enroll?": "-> ops:vendor-hosted-service"
