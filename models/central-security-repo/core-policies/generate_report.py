@@ -491,7 +491,27 @@ def load_model(model_path: str) -> dict:
 
 def load_risks_json(output_dir: str) -> list:
     with open(os.path.join(output_dir, "risks.json"), encoding="utf-8") as f:
-        return json.load(f)
+        findings = json.load(f)
+    # This engine's risks.json omits a field entirely whenever it holds the
+    # first/lowest value of its enum -- an omitempty-style JSON encoding of
+    # Threagile's own Go struct, where that enum's zero int value (its first
+    # declared constant) is indistinguishable from "not set". The previously
+    # pinned threagile:0.9.1 always wrote these explicitly. Confirmed by
+    # auditing every key actually present across a real 292-finding run:
+    # these four are the ones directly bracket-accessed elsewhere in this
+    # script (f["severity"], etc.) rather than only reached through Jinja's
+    # already-graceful `f.field or '-'` pattern -- backfill them once here
+    # so every such call site can keep assuming the key exists.
+    defaults = {
+        "risk_status": "unchecked",
+        "severity": "low",
+        "exploitation_likelihood": "unlikely",
+        "exploitation_impact": "low",
+    }
+    for f in findings:
+        for key, default in defaults.items():
+            f.setdefault(key, default)
+    return findings
 
 
 def load_raa_by_id(output_dir: str) -> dict:
@@ -501,7 +521,9 @@ def load_raa_by_id(output_dir: str) -> dict:
     several risk categories' own likelihood scoring."""
     with open(os.path.join(output_dir, "technical-assets.json"), encoding="utf-8") as f:
         data = json.load(f)
-    return {aid: a["RAA"] for aid, a in data.items()}
+    # Lowercased to "raa" in technical-assets.json's own JSON tag on this
+    # engine -- the previously pinned threagile:0.9.1 wrote it as "RAA".
+    return {aid: a["raa"] for aid, a in data.items()}
 
 
 def load_risks_xlsx(output_dir: str) -> dict:
