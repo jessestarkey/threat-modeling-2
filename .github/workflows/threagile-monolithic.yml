@@ -72,18 +72,18 @@ jobs:
         # the custom image built above. Mirrors threagile-modular.yml's
         # step of the same name -- see that file's own comment here for
         # the full explanation of --keep-diagram-source-files,
-        # --ignore-orphaned-risk-tracking, and why chmod 777 is still
-        # needed (the image's non-root "threagile" user can't otherwise
-        # write into a runner-owned output dir -- only surfaces on a real
-        # Linux runner, invisible under local Docker Desktop/Windows
-        # testing).
+        # --ignore-orphaned-risk-tracking, --skip-report-pdf/-adoc, and
+        # why chmod 777 is still needed (the image's non-root "threagile"
+        # user can't otherwise write into a runner-owned output dir --
+        # only surfaces on a real Linux runner, invisible under local
+        # Docker Desktop/Windows testing).
         run: |
           mkdir -p threagile/output
           chmod 777 threagile/output
           docker run --rm \
             -v "${{ github.workspace }}:/app/work" \
             threagile-custom:latest \
-            analyze-model --model /app/work/threagile_injected.yml --output /app/work/threagile/output --keep-diagram-source-files --ignore-orphaned-risk-tracking
+            analyze-model --model /app/work/threagile_injected.yml --output /app/work/threagile/output --keep-diagram-source-files --ignore-orphaned-risk-tracking --skip-report-pdf --skip-report-adoc
 
       - name: Generate Report
         # The threagile container above runs as a different (non-root, see

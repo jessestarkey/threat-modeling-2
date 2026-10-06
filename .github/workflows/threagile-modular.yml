@@ -136,7 +136,14 @@ jobs:
         # (the latter needed because this engine hard-fails rather than
         # warns on a risk_tracking wildcard that doesn't match anything in
         # a given run -- a legitimate case, e.g. a wildcard category tag
-        # that happens not to fire on this particular app).
+        # that happens not to fire on this particular app), plus
+        # --skip-report-pdf --skip-report-adoc since generate_report.py
+        # below replaces both outputs entirely -- confirmed via the Go
+        # source (pkg/report/generate.go) that this pair only ever forces
+        # diagram generation ON as a safety net when the PDF/ADOC needs it
+        # and it was otherwise off, never OFF, so skipping them has no
+        # effect on the --keep-diagram-source-files .gv output this
+        # pipeline actually depends on; verified with a real run too.
         #
         # The image runs as a non-root named user ("threagile", not a
         # fixed numeric uid the way threagile:0.9.1 did) -- confirmed via
@@ -151,7 +158,7 @@ jobs:
           docker run --rm \
             -v "${{ github.workspace }}:/app/work" \
             threagile-custom:latest \
-            analyze-model --model /app/work/threagile_injected.yml --output /app/work/threagile/output --keep-diagram-source-files --ignore-orphaned-risk-tracking
+            analyze-model --model /app/work/threagile_injected.yml --output /app/work/threagile/output --keep-diagram-source-files --ignore-orphaned-risk-tracking --skip-report-pdf --skip-report-adoc
 
       - name: Generate Report
         # The threagile container above runs as a different (non-root, see
