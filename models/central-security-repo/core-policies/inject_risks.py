@@ -487,6 +487,17 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             inject("Improper API Inventory Management", "API Inventory Risk")
             if 'ops:api-abuse-logging-enabled' not in tags:
                 inject("API Abuse and Enumeration Logging Gap", "API Abuse Logging Gap Risk")
+        # OWASP API Security Top 10:2023 API6 -- distinct from the asymmetric-DoS/rate-limiting
+        # framing above: this is about automated/bulk abuse of a legitimate multi-step business
+        # process itself (bulk account creation, ticket/inventory scalping), not raw request
+        # volume.
+        if 'feature:sensitive-business-flow' in tags:
+            inject("Unrestricted Access to Sensitive Business Flows", "Business Flow Abuse Risk")
+        # OWASP API Security Top 10:2023 API10 -- the inverse of SSRF: this asset calls a
+        # legitimate external API and trusts its response content/schema without validation,
+        # rather than its own request being hijacked to hit an unintended target.
+        if 'net:external-api-consumer' in tags:
+            inject("Unsafe Consumption of APIs", "Unsafe API Consumption Risk")
         if 'feature:dynamic-code-execution' in tags: inject("Server-Side Template Injection and RCE", "RCE Risk")
         if 'feature:search-index' in tags: inject("Search Index Abuse and Data Exposure", "Search Index Risk")
         if 'feature:deserialization' in tags: inject("Insecure Deserialization", "Insecure Deserialization Risk")

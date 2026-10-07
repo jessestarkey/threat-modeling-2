@@ -1003,6 +1003,42 @@ custom_risk_definitions:
     detection_logic: Run an external attack-surface scan against the organization's own registered IP ranges/subdomains and diff discovered API endpoints/versions against the authoritative inventory; flag anything reachable but not inventoried. Audit the API gateway's routing configuration for registered routes with no corresponding entry in current API documentation.
     risks_identified: {}
 
+  Unrestricted Access to Sensitive Business Flows:
+    id: business-flow-abuse
+    baseline_likelihood: likely
+    baseline_impact: medium
+    description: 'This asset implements a multi-step business process valuable enough to be worth automating or abusing at scale -- bulk account creation, ticket or inventory scalping, loan or claim application submission, bulk coupon redemption -- without a control distinguishing legitimate human usage from automated abuse of the flow itself. Distinct from Public API Abuse and Asymmetric DoS, which is about raw request volume/compute exhaustion regardless of what the request does; this is about the business value of the specific flow being automated at scale even at ordinary request rates.'
+    impact: 'If this risk remains unmitigated, an adversary can automate a legitimate business process at a volume and speed no human user could achieve, extracting business value (inventory, credentials, approved applications) the flow was never designed to yield at scale.'
+    asvs: V11 - Business Logic
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+    action: Identify which business flows on this asset are sensitive enough to warrant anti-automation controls, and apply bot detection, behavioral analysis, or step-up friction to each one specifically.
+    mitigation: 'Identify this asset''s sensitive business flows (account creation, checkout, application submission, bulk redemption) separately from its general API surface, since generic rate limiting alone does not stop a low-and-slow distributed automation campaign. Apply flow-specific controls: CAPTCHA or proof-of-work at flow entry, device/behavioral fingerprinting to detect non-human interaction patterns, velocity limits scoped to the specific flow (not just the API as a whole), and step-up authentication for the highest-value flows. Monitor for completion-rate and timing anomalies characteristic of automation (near-instant form completion, identical inter-request timing) rather than relying on volume alone.'
+    references: 'OWASP API Security Top 10: API6:2023 (Unrestricted Access to Sensitive Business Flows); OWASP Automated Threats to Web Applications (OAT); NIST SP 800-53 SC-5 (Denial of Service Protection)'
+    risk_assessment: High for any publicly-reachable flow with direct business value (inventory, credential issuance, financial approval) and no anti-automation control distinct from generic rate limiting.
+    false_positives: Every identified sensitive business flow on this asset has a flow-specific anti-automation control (CAPTCHA, behavioral fingerprinting, flow-scoped velocity limits, or step-up authentication) confirmed active, distinct from generic API rate limiting.
+    function: architecture
+    stride: denial-of-service
+    detection_logic: Monitor flow completion timing and velocity per identity/session for patterns inconsistent with human interaction (near-instant completion, suspiciously uniform inter-request timing, abnormal completion-to-abandonment ratios). Run bot-detection/behavioral-fingerprinting tooling against the flow's entry point specifically.
+    risks_identified: {}
+
+  Unsafe Consumption of APIs:
+    id: unsafe-api-consumption
+    baseline_likelihood: likely
+    baseline_impact: medium
+    description: 'This asset sends requests to an external, third-party API and trusts the response content and schema without validation, treating "came from a legitimate external API" as equivalent to "safe to consume." Distinct from Server-Side Request Forgery, which is about this asset''s own request being hijacked to reach an unintended target; this is about the response from an intended, legitimate target being trusted without verification.'
+    impact: 'If this risk remains unmitigated, a compromised, misconfigured, or simply buggy upstream API can inject unexpected data shapes, oversized payloads, or malicious content directly into this asset''s own processing logic, since no boundary exists between "external API response" and "trusted internal data."'
+    asvs: V13 - API and Web Service
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+    action: Apply the same schema validation, size limits, and content sanitization to every external API response this asset consumes that would be applied to direct user input.
+    mitigation: 'Validate every external API response against an explicit, versioned schema before using its content -- never deserialize directly into internal objects without validation. Apply response size and depth limits to prevent resource exhaustion from an oversized or maliciously nested payload. Treat redirects and TLS certificates from the external API with the same scrutiny as the response body -- do not blindly follow redirects. Apply timeouts and circuit-breaking so a slow or unresponsive upstream API cannot cascade into this asset''s own availability. Sanitize any response content that will be rendered, logged, or passed to a downstream system exactly as if it were direct user input, since from this asset''s perspective it originates outside its own trust boundary.'
+    references: 'OWASP API Security Top 10: API10:2023 (Unsafe Consumption of APIs); NIST SP 800-53 SI-10 (Information Input Validation)'
+    risk_assessment: Medium as a standalone structural gap; escalates to High if the consumed API is a soft or unauthenticated third-party integration whose own security posture this organization cannot verify.
+    false_positives: Every external API response is validated against an explicit schema with size/depth limits enforced, and response content is sanitized identically to direct user input before use.
+    function: architecture
+    stride: tampering
+    detection_logic: Audit integration code for direct deserialization of external API responses without schema validation. Monitor for anomalous response sizes, depths, or processing latency from each external API dependency as a signal of upstream compromise or malfunction.
+    risks_identified: {}
+
   Missing Web Application Firewall on Internet-Facing Asset:
     id: missing-waf-internet-facing
     baseline_likelihood: very-likely
