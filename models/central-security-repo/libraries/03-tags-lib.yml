@@ -56,16 +56,15 @@ tags_available:
   - app:frontend-ui    # Asset serves HTML/JS to the browser — primary user-facing application surface
   - app:backend-api    # Asset implements business logic and API endpoints
   - app:async-worker   # Asset processes jobs from a queue without accepting direct web traffic
-  - ops:ci-pipeline    # Asset is a CI/CD build runner or pipeline — modeled as its own technical asset since its dependency-resolution, install-script, and change-control configuration varies per app/repo even on shared enterprise tooling
   - net:ingress-path   # Asset is part of the traffic inspection and routing chain from the perimeter to the cluster
   - net:egress-path    # Asset initiates outbound connections to external entities
   - net:tls-terminator # Asset is where encryption-in-transit is decrypted (plaintext exists in memory here)
   - sec:secrets-broker # Asset fetches, caches, or distributes credentials on behalf of other services
   - compliance:fips-validated # Asset has been confirmed to use FIPS 140-2/3 validated cryptographic modules — suppresses FIPS risk
-  - crypto:hsm-backed         # Keys are generated and held in a hardware-backed vault (HSM) rather than software — suppresses part of the key-storage-ownership-hardening-gap risk
-  - crypto:customer-managed-key # Key ownership tier is customer-managed (CMK), not platform-managed (PMK), matching this asset's classification requirement — suppresses part of the key-storage-ownership-hardening-gap risk
-  - crypto:key-rotation-tested  # Key rotation is automated on a schedule, and any customer-managed key's escrow/recovery procedure has been exercised — suppresses the key-rotation-escrow-neglect risk
-  - crypto:key-management-separated # Key-operation permissions and vault-administration/audit permissions are held by distinct roles/individuals — suppresses the key-management-separation-of-duties-violation risk
+  # ops:ci-pipeline and the key-management crypto:* suppression tags below have been removed:
+  # the risks they gated are now ported into the jessestarkey/threagile fork as native script
+  # rules that fire unconditionally off the build-pipeline/vault technology attributes instead.
+  # See docs/risk-methodology.md for the full rationale.
 
   # --- Trust Boundary Classification ---
   - zone:dmz           # Internet-facing or untrusted transit network — asset is expected to handle hostile traffic
@@ -173,11 +172,6 @@ tags_available:
   - ir:plan-tested                        # The incident response plan has been exercised via a tabletop or live-fire drill (not merely documented) within the current ATO period — suppresses the untested-incident-response-plan risk
   - ir:breach-notification-procedure-documented # A documented procedure identifies the DoD/contract-specified reporting timeline (e.g., DFARS 252.204-7012's 72-hour requirement) and the party responsible for executing it — suppresses the dfars-breach-notification-gap risk
   - ir:evidence-handling-documented       # A documented forensic evidence-handling procedure (acquisition, custody log, storage, transfer) exists for incidents affecting this model — suppresses the forensic-chain-of-custody-gap risk
-
-  # --- CI/CD Pipeline Hardening (absence fires risk on ops:ci-pipeline assets) ---
-  - ops:dependency-proxy-enforced  # Internally-named packages resolve only from the internal feed, with no public-index fallback for that namespace — suppresses the dependency-confusion-internal-namespace risk
-  - ops:install-scripts-restricted # Dependency install/post-install script execution is suppressed by default, with a publish-to-adoption cooldown enforced — suppresses the malicious-install-script-execution risk
-  - ops:pipeline-changes-reviewed  # Pipeline/policy edits outside the repository's PR trail are restricted to a minimal administrative group and logged to the SIEM — suppresses the cicd-pipeline-tampering-outside-repo risk
 
   # =============================================================================
   # DATA GOVERNANCE AND LIFECYCLE TAGS

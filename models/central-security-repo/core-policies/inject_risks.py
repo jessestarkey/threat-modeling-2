@@ -702,14 +702,13 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'net:tls-terminator' in tags:
             inject("Deprecated TLS Versions and Weak Cipher Suites", "Weak TLS Configuration Risk")
 
-        # Key management hardening -- fires on any secrets/key vault asset
-        if 'storage:vault' in tags:
-            if 'crypto:hsm-backed' not in tags or 'crypto:customer-managed-key' not in tags:
-                inject("Key Storage and Ownership Hardening Gap", "Key Storage Hardening Risk")
-            if 'crypto:key-rotation-tested' not in tags:
-                inject("Key Rotation and Escrow Neglect", "Key Rotation Neglect Risk")
-            if 'crypto:key-management-separated' not in tags:
-                inject("Key Management Separation-of-Duties Violation", "Key Management SoD Risk")
+        # NOTE: the key management hardening cluster (Key Storage and Ownership Hardening Gap,
+        # Key Rotation and Escrow Neglect, Key Management Separation-of-Duties Violation) that
+        # used to live here has been ported into the jessestarkey/threagile fork as native
+        # script rules (pkg/risks/scripts/*.yaml), triggered off the native vault technology
+        # attribute instead of the storage:vault tag. Removed here rather than left duplicated.
+        # storage:vault itself stays in 03-tags-lib.yml -- still used below by the Data Store
+        # Audit Logging check. See docs/risk-methodology.md for the full rationale.
 
         # NOTE: the app-tier baseline cluster that used to live here (CUI Telemetry Spillage,
         # AU-2 Logging Gap, Mishandling of Exceptional Conditions, BOLA/BFLA/Mass Assignment,
@@ -869,13 +868,13 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
                 inject("Forensic Evidence Chain-of-Custody Gap", "Chain-of-Custody Gap Risk")
 
         # --- 7. SOFTWARE SUPPLY CHAIN AND CI/CD PIPELINE INTEGRITY ---
-        if 'ops:ci-pipeline' in tags:
-            if 'ops:dependency-proxy-enforced' not in tags:
-                inject("Dependency Confusion via Unclaimed Internal Package Namespace", "Dependency Confusion Risk")
-            if 'ops:install-scripts-restricted' not in tags:
-                inject("Malicious Package Install-Script Execution on CI Runner", "Malicious Install-Script Risk")
-            if 'ops:pipeline-changes-reviewed' not in tags:
-                inject("CI/CD Pipeline and Admission-Policy Tampering Outside Repository Trail", "Pipeline Tampering Risk")
+        # NOTE: this entire cluster (Dependency Confusion via Unclaimed Internal Package
+        # Namespace, Malicious Package Install-Script Execution on CI Runner, CI/CD Pipeline and
+        # Admission-Policy Tampering Outside Repository Trail) has been ported into the
+        # jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml),
+        # triggered off the native build-pipeline technology attribute instead of the
+        # ops:ci-pipeline tag. Removed here rather than left duplicated. See
+        # docs/risk-methodology.md for the full rationale.
 
         # --- 8. NETWORK SEGMENTATION AND PERIMETER (SELF-MANAGED) ---
         if 'mgmt:self-managed-network' in tags and 'mgmt:self-managed-network-hardened' not in tags:

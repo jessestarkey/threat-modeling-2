@@ -1046,61 +1046,13 @@ custom_risk_definitions:
   # full rationale.
 
   # --- 4.5 SOFTWARE SUPPLY CHAIN AND CI/CD PIPELINE INTEGRITY ---
-  # Applies to an asset tagged ops:ci-pipeline -- a build runner or
-  # pipeline is modeled as its own technical asset, not folded into the
-  # application it builds, since its own configuration (dependency
-  # resolution, install-script policy, change control) varies per
-  # app/repo even on shared enterprise CI/CD tooling.
-  Dependency Confusion via Unclaimed Internal Package Namespace:
-    id: dependency-confusion-internal-namespace
-    baseline_likelihood: very-likely
-    baseline_impact: very-high
-    description: 'This build pipeline''s dependency resolver falls back to a public package index when a package is not found in the internal feed, rather than restricting internally-named packages to that feed.'
-    impact: 'If this risk remains unmitigated, an attacker who publishes a higher-versioned package under the internal name on the public index causes the build to pull and execute their code instead.'
-    asvs: V14 - Configuration
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
-    action: Configure the dependency resolver to treat the internal package namespace as authoritative, refusing fallback to a public index for internally-named packages.
-    mitigation: 'Configure the package manager''s scoped registry / upstream source settings so internally-named packages resolve only from the internal feed, with no fallback to a public index for that namespace (npm scoped packages, a private PyPI index with `--index-url` pinned rather than `--extra-index-url`, NuGet package source mapping, or equivalent). Where a dependency proxy/artifact repository manager is used, configure it to reserve the internal namespace and block public-index publication under names matching it. Tag the pipeline ops:dependency-proxy-enforced once confirmed.'
-    references: NIST SP 800-53 SR-4 (Provenance); NIST SP 800-218 (Secure Software Development Framework, PW.4); OWASP Dependency Confusion guidance
-    risk_assessment: Critical for any build pipeline resolving internally-named packages through a resolver configuration that permits public-index fallback.
-    false_positives: The pipeline is tagged ops:dependency-proxy-enforced confirming internally-named packages resolve only from the internal feed with no public-index fallback for that namespace.
-    function: architecture
-    stride: tampering
-    risks_identified: {}
-
-  Malicious Package Install-Script Execution on CI Runner:
-    id: malicious-install-script-execution
-    baseline_likelihood: very-likely
-    baseline_impact: very-high
-    description: 'This build pipeline allows dependency install scripts to run automatically during resolution, before any malware or vulnerability scan examines the package.'
-    impact: 'If this risk remains unmitigated, a malicious dependency''s install script executes arbitrary code on the CI runner before any downstream scan has a chance to catch it.'
-    asvs: V14 - Configuration
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
-    action: Suppress automatic execution of dependency install/post-install scripts in the CI environment, and apply a publish-to-adoption cooldown before newly published dependency versions are eligible for use.
-    mitigation: 'Configure the package manager to suppress automatic install-script execution during CI dependency resolution (e.g., `npm install --ignore-scripts`, pip''s build isolation with no arbitrary setup.py execution where avoidable) and only allow specific, reviewed exceptions for packages that genuinely require a build step. Apply a minimum cooldown period (e.g., 3-7 days) between a dependency version''s publication and its eligibility for use in this pipeline, since malicious package versions are frequently identified and pulled within days of publication. Tag the pipeline ops:install-scripts-restricted once enforced.'
-    references: NIST SP 800-218 (Secure Software Development Framework, PW.4, PO.5); NIST SP 800-53 SI-3 (Malicious Code Protection); OWASP Software Component Verification Standard
-    risk_assessment: Critical for any build pipeline that executes dependency install scripts automatically with no cooldown period on newly published versions.
-    false_positives: The pipeline is tagged ops:install-scripts-restricted confirming install-script execution is suppressed by default and a publish-to-adoption cooldown is enforced.
-    function: operations
-    stride: tampering
-    risks_identified: {}
-
-  CI/CD Pipeline and Admission-Policy Tampering Outside Repository Trail:
-    id: cicd-pipeline-tampering-outside-repo
-    baseline_likelihood: unlikely
-    baseline_impact: high
-    description: 'An identity with access to the CI/CD platform''s own console can modify the pipeline definition or its gate policies directly, bypassing the source-controlled pipeline file and leaving no pull-request trail.'
-    impact: 'If this risk remains unmitigated, a security gate can be silently disabled outside code review, so the gate a reviewer approved is no longer the one that actually runs.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/CI_CD_Security_Cheat_Sheet.html
-    action: Restrict who can modify this pipeline's definition or admission/gate policies directly through the CI/CD platform's console or API, and log every such change even when it does not originate from a repository commit.
-    mitigation: Where the CI/CD platform allows pipeline or policy edits outside the repository (console UI, direct API calls), restrict that capability to a minimal administrative group distinct from ordinary contributors, and forward every such change to the SIEM regardless of whether it originated from a commit. Prefer a platform configuration that sources the pipeline definition exclusively from the repository (true pipeline-as-code with no console override capability) where the platform supports it. Tag the pipeline ops:pipeline-changes-reviewed once confirmed.
-    references: NIST SP 800-218 (Secure Software Development Framework, PO.3, PS.1); NIST SP 800-53 CM-3 (Configuration Change Control)
-    risk_assessment: High for any pipeline where a non-administrative identity can alter the pipeline definition or gate policies outside the repository's PR trail.
-    false_positives: The pipeline is tagged ops:pipeline-changes-reviewed confirming pipeline/policy edits outside the repository are restricted to a minimal administrative group and logged to the SIEM.
-    function: operations
-    stride: tampering
-    risks_identified: {}
+  # This entire cluster (Dependency Confusion via Unclaimed Internal Package Namespace,
+  # Malicious Package Install-Script Execution on CI Runner, CI/CD Pipeline and
+  # Admission-Policy Tampering Outside Repository Trail) has been ported into the
+  # jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml), triggered
+  # off the native build-pipeline technology attribute instead of the ops:ci-pipeline tag.
+  # Removed here rather than left duplicated. See docs/risk-methodology.md for the full
+  # rationale.
 
   # #############################################################################
   # DOMAIN 5: ARTIFICIAL INTELLIGENCE
@@ -1865,56 +1817,11 @@ custom_risk_definitions:
     detection_logic: Run testssl.sh or sslyze against all TLS endpoints in the CI/CD pipeline and fail the build on detection of deprecated protocols or weak ciphers. Integrate Azure Security Center TLS recommendations into the compliance dashboard. Schedule quarterly TLS configuration scans via ACAS/Nessus.
     risks_identified: {}
 
-  Key Storage and Ownership Hardening Gap:
-    id: key-storage-ownership-hardening-gap
-    baseline_likelihood: unlikely
-    baseline_impact: medium
-    description: 'This secrets or key management asset holds consequential key material either generated only in software rather than a hardware-backed root of trust, or encrypted under a platform-managed key when policy requires a customer-managed one.'
-    impact: 'If this risk remains unmitigated, a compromised host that generated a software-only key yields the key material directly, with no hardware boundary to cross.'
-    asvs: V6 - Cryptography
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
-    action: Generate and store consequential keys in an HSM-backed service (not software), and confirm the key ownership tier (customer-managed vs. platform-managed) matches this asset's data classification requirement.
-    mitigation: Generate and store keys protecting CUI or signing/root credentials in a hardware-backed key vault (Azure Key Vault Premium/Managed HSM, or equivalent) rather than in application memory or a software keystore. Where policy requires customer control over key material for a given classification tier, provision the resource with a customer-managed key (CMK) in that hardware-backed vault rather than accepting the platform's default platform-managed key (PMK) — verify this per resource, since PMK is frequently the default and satisfies "encrypted at rest" scans without satisfying the ownership requirement.
-    references: NIST SP 800-53 SC-12 (Cryptographic Key Establishment and Management); NIST SP 800-57 (Recommendation for Key Management); FIPS 140-3
-    risk_assessment: High for any asset generating or holding keys protecting CUI in software rather than a hardware-backed vault, or where a classification tier requiring CMK is provisioned with a platform-managed key instead.
-    false_positives: Consequential keys are generated and held in a hardware-backed key vault (HSM-backed), and the key ownership tier (CMK vs. PMK) has been verified against this asset's data classification requirement.
-    function: architecture
-    stride: information-disclosure
-    risks_identified: {}
-
-  Key Rotation and Escrow Neglect:
-    id: key-rotation-escrow-neglect
-    baseline_likelihood: unlikely
-    baseline_impact: medium
-    description: 'Key rotation for this asset is manual and inconsistently performed, and no tested escrow or recovery procedure exists for a customer-managed key.'
-    impact: 'If this risk remains unmitigated, a key that is never rotated has an ever-growing undetected exposure window, and an untested recovery procedure can mean permanent loss of access when it''s actually needed.'
-    asvs: V6 - Cryptography
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
-    action: Enforce a scheduled key rotation policy for this asset's keys, and test the escrow/recovery procedure for any customer-managed key at least annually.
-    mitigation: Configure automated key rotation on a defined cadence (e.g., 90-180 days for data-encryption keys) rather than relying on manual rotation. For customer-managed keys, establish a documented escrow/recovery procedure (e.g., a split-knowledge backup, an HSM-to-HSM export under dual control) and actually exercise it — a full recovery drill, not a paper review — on a recurring schedule, since an unexercised procedure has the same failure mode as having none.
-    references: NIST SP 800-53 SC-12 (Cryptographic Key Establishment and Management); NIST SP 800-57 Part 1 (Key Management — General)
-    risk_assessment: High for customer-managed keys with no tested recovery procedure. Medium for manual-only rotation on platform-managed keys.
-    false_positives: Key rotation is automated on a documented schedule, and the escrow/recovery procedure for any customer-managed key has been exercised (not merely documented) within the current ATO period.
-    function: operations
-    stride: information-disclosure
-    risks_identified: {}
-
-  Key Management Separation-of-Duties Violation:
-    id: key-management-separation-of-duties-violation
-    baseline_likelihood: unlikely
-    baseline_impact: medium
-    description: 'A single identity can both perform key operations and administer or audit that same key vault''s access policy and activity log.'
-    impact: 'If this risk remains unmitigated, a single compromised or malicious identity can both misuse a key and erase the trace of that misuse, with no independent party positioned to notice.'
-    asvs: V6 - Cryptography
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
-    action: Ensure no single identity holds both key-operation permissions and the ability to modify this key vault's own access policy or audit configuration.
-    mitigation: Assign key vault management-plane permissions (create/rotate/delete keys, modify access policy) and data-plane permissions (use a key for cryptographic operations) to distinct roles held by different individuals. Route access-policy changes to the vault itself through a change process requiring a second approver. Forward the vault's audit log to a destination this vault's own administrators cannot delete or modify, so a key-management role change is independently visible.
-    references: NIST SP 800-53 AC-5 (Separation of Duties); NIST SP 800-53 SC-12 (Cryptographic Key Establishment and Management)
-    risk_assessment: High for any key vault where a single identity holds both key-operation and vault-administration/audit permissions.
-    false_positives: Key-operation and vault-administration/audit permissions are held by distinct roles/individuals, verified by an access review within the current ATO period.
-    function: architecture
-    stride: elevation-of-privilege
-    risks_identified: {}
+  # Key Storage and Ownership Hardening Gap, Key Rotation and Escrow Neglect, and Key
+  # Management Separation-of-Duties Violation have been ported into the jessestarkey/threagile
+  # fork as native script rules (pkg/risks/scripts/*.yaml), triggered off the native vault
+  # technology attribute instead of the storage:vault tag. Removed here rather than left
+  # duplicated. See docs/risk-methodology.md for the full rationale.
 
   # #############################################################################
   # DOMAIN 7: DETECTION
