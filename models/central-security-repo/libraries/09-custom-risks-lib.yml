@@ -150,41 +150,12 @@ custom_risk_definitions:
     detection_logic: Test for XSW vulnerabilities using SAMLRaider (Burp Suite extension) against all SAML assertion endpoints. Test for XXE by injecting a DOCTYPE declaration into a SAML request and monitoring for outbound DNS or HTTP requests. Verify that assertions with invalid Recipient, expired timestamps, or mismatched AudienceRestriction are rejected.
     risks_identified: {}
 
-  Insecure Session Management:
-    id: insecure-session-management
-    baseline_likelihood: very-likely
-    baseline_impact: medium
-    description: 'The frontend application issues session tokens without enforcing secure handling -- missing Secure/HttpOnly flags, excessive lifetimes, or no re-authentication before sensitive actions.'
-    impact: 'If this risk remains unmitigated, a stolen or fixated session token grants an attacker authenticated access to the application for as long as the token remains valid.'
-    asvs: V3 - Session Management
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
-    action: Enforce Secure and HttpOnly cookie flags, implement absolute and idle session timeouts, and rotate session tokens on authentication events.
-    mitigation: 'Set Secure and HttpOnly flags on all session cookies. Set SameSite=Strict or SameSite=Lax to mitigate CSRF. Implement both an absolute session timeout (e.g., 8 hours per STIG guidance) and an idle timeout (e.g., 15 minutes per NIST 800-53 AC-12). Rotate session tokens immediately after successful authentication and after any privilege escalation. Require re-authentication for sensitive operations (password change, export of CUI, administrative actions). For CAC/PIV environments: integrate session termination with card removal events via smart card middleware.'
-    references: NIST SP 800-53 AC-12 (Session Termination); DISA Application Security and Development STIG (APSC-DV-001460, APSC-DV-001480); OWASP ASVS V3
-    risk_assessment: Medium. Escalates to High if session tokens have no expiry, are transmitted over HTTP, or if administrator sessions are affected.
-    false_positives: 'Session management configuration has been audited and confirmed to enforce Secure/HttpOnly/SameSite flags, idle and absolute timeouts per STIG requirements, and token rotation on authentication events — documented with scan evidence in the SSP. NOTE: Threagile''s built-in ''session-id-using-shared-secret'' rule may generate a partially overlapping finding; this entry provides broader STIG-aligned session management coverage including timeout and re-authentication requirements.'
-    function: architecture
-    stride: spoofing
-    detection_logic: Run DAST tools (OWASP ZAP, Burp Suite) with session management checks against all login and authenticated endpoints. Check Set-Cookie response headers for Secure, HttpOnly, and SameSite attributes in automated integration tests. Monitor authentication logs for sessions exceeding the configured absolute timeout threshold.
-    risks_identified: {}
-
-  Hardcoded Credentials and Secrets Sprawl:
-    id: hardcoded-credentials-secrets-sprawl
-    baseline_likelihood: very-likely
-    baseline_impact: high
-    description: 'Credentials, API keys, or other secrets are embedded in source code, container images, or configuration files, and copies of them persist across git history, image layers, and build caches even after rotation.'
-    impact: 'If this risk remains unmitigated, a discovered secret provides immediate authenticated access to the resource it protects, and is often found by automated scanning within hours of exposure.'
-    asvs: V2 - Authentication / V14 - Configuration
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
-    action: Rotate any exposed secrets immediately, then eliminate all hardcoded credentials by migrating to a vault-backed secrets management solution.
-    mitigation: Enforce pre-commit and CI/CD pipeline secret scanning (e.g., git-secrets, Trufflehog, GitHub Advanced Security secret scanning) to block credential commits at the source. Migrate all secrets to Azure Key Vault or equivalent and inject at runtime via managed identity — never via environment variables in manifests or baked into images. Enforce RBAC on Key Vault access policies scoped to individual workload identities. Implement secret rotation schedules and verify rotation via automated canary checks. Audit git history and container image layers for historical secret exposure.
-    references: NIST SP 800-53 IA-5 (Authenticator Management); NIST SP 800-53 CM-6 (Configuration Settings); DoD DevSecOps Reference Architecture
-    risk_assessment: High if secret scanning is not integrated into the CI/CD pipeline. Critical if live credentials are found in a public or broadly-accessible repository.
-    false_positives: All credential references in source code are confirmed to be references to vault paths or environment variable names only — no literal secret values are present — validated by automated secret scanning with zero findings.
-    function: architecture
-    stride: information-disclosure
-    detection_logic: Run Trufflehog or equivalent against the full git history of all repositories in scope, not just HEAD. Scan all container image layers for embedded secrets using tools such as Grype or Trivy with secret detection enabled. Monitor Azure Key Vault access logs for anomalous access patterns indicating credential theft.
-    risks_identified: {}
+  # Insecure Session Management and Hardcoded Credentials and Secrets Sprawl have been ported
+  # into the jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml):
+  # Insecure Session Management via the frontend_related technology attribute, Secrets Sprawl
+  # via the vault attribute for self-exclusion plus a residual read of the data:credential tag
+  # (DataAsset has no native "this is credential-shaped data" concept). Removed here rather than
+  # left duplicated. See docs/risk-methodology.md for the full rationale.
 
   Missing Token Binding on Session and Refresh Tokens:
     id: missing-token-binding
@@ -272,77 +243,12 @@ custom_risk_definitions:
     risks_identified: {}
 
   # --- 1.2 AUTHORIZATION ---
-  Broken Object-Level Authorization (BOLA/IDOR):
-    id: broken-object-level-authorization
-    baseline_likelihood: very-likely
-    baseline_impact: high
-    description: 'The backend API does not verify that an authenticated user is authorized to access a specific object, allowing them to read, modify, or delete records belonging to other users or tenants by changing an identifier in the request.'
-    impact: 'If this risk remains unmitigated, an authenticated user can access or modify records outside their own -- including other users'' or tenants'' data -- without needing any additional privilege escalation.'
-    asvs: V4 - Access Control
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html
-    action: Implement and test server-side object ownership verification on every API endpoint that operates on a resource by identifier.
-    mitigation: Enforce server-side authorization checks on every data-access operation that accepts an object identifier — verify that the authenticated principal owns or has explicit permission for the specific record, not just the resource type. Use opaque, non-sequential identifiers (UUIDs v4) to eliminate enumeration. Implement automated BOLA test cases in the CI/CD pipeline that verify cross-tenant access is denied. Apply attribute-based access control (ABAC) or row-level security at the database layer as a defense-in-depth backstop.
-    references: 'OWASP API Security Top 10: API1:2023 (Broken Object Level Authorization); NIST SP 800-53 AC-3 (Access Enforcement); NIST SP 800-53 AC-4 (Information Flow Enforcement)'
-    risk_assessment: High for any multi-tenant API that operates on CUI records by identifier. Medium for single-tenant deployments where all authenticated users are authorized to access all records.
-    false_positives: The API operates exclusively on resources owned by the authenticated principal with no cross-user or cross-tenant data access pattern — e.g., a single-user personal data API where every record is definitionally owned by the requester.
-    function: architecture
-    stride: information-disclosure
-    detection_logic: 'Include BOLA-specific test cases in the automated API test suite: for each endpoint that accepts a resource ID, verify that a token for user A cannot retrieve or modify resources owned by user B. Run DAST tools configured for IDOR detection (e.g., OWASP ZAP with IDOR scripts) in the CI/CD pipeline. Monitor API access logs for sequential or enumeration-pattern ID probing by individual tokens.'
-    risks_identified: {}
-
-  Broken Function-Level Authorization (BFLA):
-    id: broken-function-level-authorization
-    baseline_likelihood: very-likely
-    baseline_impact: high
-    description: 'The backend API exposes administrative or privileged function endpoints that rely on client-supplied role claims or obscurity rather than server-side role verification.'
-    impact: 'If this risk remains unmitigated, a low-privilege authenticated user who discovers an admin endpoint can invoke privileged functions without triggering an authorization error.'
-    asvs: V4 - Access Control
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
-    action: Enforce server-side role verification on every API endpoint, including administrative and internal endpoints, regardless of whether they are documented or discoverable.
-    mitigation: 'Implement server-side role-based access control (RBAC) on every API endpoint — never rely on client-supplied role claims, obscure URLs, or UI visibility controls as an authorization boundary. Apply deny-by-default: all endpoints require an explicit permission grant, not an explicit denial. Enforce endpoint-level authorization in a centralized middleware layer rather than individual controller logic to prevent omission. Include BFLA test cases in the automated API test suite: verify that tokens for each role cannot invoke functions outside their intended scope.'
-    references: 'OWASP API Security Top 10: API5:2023 (Broken Function Level Authorization); NIST SP 800-53 AC-3 (Access Enforcement); NIST SP 800-53 AC-6 (Least Privilege)'
-    risk_assessment: High for APIs with administrative endpoints. Escalates to Critical if administrative endpoints are unauthenticated or accessible without any privilege check.
-    false_positives: All API endpoints enforce server-side role verification through a centralized authorization middleware, confirmed by automated BFLA test coverage with zero cross-role access findings.
-    function: architecture
-    stride: elevation-of-privilege
-    detection_logic: Include cross-role endpoint access tests in the automated API test suite, verifying that each role cannot reach functions outside its authorized scope. Run DAST tools configured to replay requests with downgraded role tokens against all discovered endpoints. Monitor API access logs for low-privilege tokens accessing endpoints in administrative URL namespaces.
-    risks_identified: {}
-
-  Broken Object Property Level Authorization (Mass Assignment):
-    id: broken-object-property-level-authorization
-    baseline_likelihood: likely
-    baseline_impact: high
-    description: 'The backend API binds client request bodies directly to internal models without an explicit per-field allow-list, allowing a client to set privileged fields (e.g. role, isAdmin, accountBalance) the UI never exposes, or receives fields in a response that were never meant to be exposed.'
-    impact: 'If this risk remains unmitigated, a client can escalate privilege by setting a field the application''s own framework silently accepted despite the UI never exposing it, or harvest sensitive fields (internal IDs, other users'' data, unpublished flags) an endpoint returns without ever intending to.'
-    asvs: V4 - Access Control
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
-    action: Enforce an explicit allow-list of client-writable and client-readable properties on every API endpoint, rather than binding request/response bodies directly to internal models.
-    mitigation: Use explicit request/response DTOs (data transfer objects) scoped per-endpoint rather than binding client input directly to internal domain/ORM models -- never trust a framework's default "bind all fields" behavior. Maintain an explicit allow-list of which properties a given role may write (e.g. a standard user can set displayName but not role or accountBalance) and which properties a response may include, enforced server-side regardless of what the client sends. Include automated test cases that attempt to set privileged/internal fields via the API and verify they are silently ignored or rejected, not silently accepted.
-    references: 'OWASP API Security Top 10: API3:2023 (Broken Object Property Level Authorization); NIST SP 800-53 AC-3 (Access Enforcement); CWE-915 (Improperly Controlled Modification of Dynamically-Determined Object Attributes)'
-    risk_assessment: High for any API that binds request bodies directly to internal models without an explicit per-field allow-list. Escalates to Critical if a privilege-bearing field (role, permission level, account balance) is client-writable without server-side filtering.
-    false_positives: Every API endpoint uses explicit per-endpoint request/response DTOs with a documented, server-enforced allow-list of client-writable and client-readable properties, confirmed by automated mass-assignment test coverage with zero unauthorized field acceptance.
-    function: architecture
-    stride: tampering
-    detection_logic: Include automated API test cases that submit requests containing internal/privileged field names (role, isAdmin, price, ownerId) not exposed in the documented request schema, and verify the server ignores or rejects them rather than applying them. Diff each endpoint's actual JSON response against its documented response schema in CI to catch undocumented fields being returned.
-    risks_identified: {}
-
-  Multi-Tenant Data Isolation Failure:
-    id: multi-tenant-data-isolation
-    baseline_likelihood: likely
-    baseline_impact: very-high
-    description: 'The asset serves multiple organizational tenants from a shared deployment without sufficient isolation in database queries, caching, or background job processing.'
-    impact: 'If this risk remains unmitigated, an authorization failure that would expose one user''s data in a single-tenant system instead exposes an entire tenant''s data to another tenant''s users.'
-    asvs: V4 - Access Control
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html
-    action: Enforce tenant context in every database query and cache key, and test cross-tenant isolation on every data-access endpoint.
-    mitigation: Enforce tenant ID as a mandatory filter in every database query at the ORM or repository layer — never rely on application-layer filtering alone. Implement row-level security at the database layer as a defense-in-depth backstop. Include tenant context in all cache keys to prevent cross-tenant cache poisoning. Validate tenant context in background job processors when jobs are dequeued, not only when enqueued. Use opaque, non-sequential tenant identifiers (UUIDs) to prevent enumeration. Include cross-tenant isolation test cases in the automated test suite.
-    references: NIST SP 800-53 AC-3 (Access Enforcement); NIST SP 800-53 AC-4 (Information Flow Enforcement); DoD Cloud Multi-Tenant Security Requirements
-    risk_assessment: Critical for multi-tenant systems handling CUI. Severity of individual isolation failures is at least one level higher than equivalent single-tenant findings.
-    false_positives: Each tenant's data is stored in a completely isolated database schema or database instance with no shared tables — physical isolation rather than logical isolation with tenant ID filtering.
-    function: architecture
-    stride: information-disclosure
-    detection_logic: 'Execute cross-tenant access tests in the automated test suite: obtain authenticated tokens for two distinct tenants and verify that tenant A''s token cannot access any resources owned by tenant B. Verify tenant ID inclusion in generated database query logs. Test cache isolation by populating a response as tenant A and attempting to retrieve it as tenant B.'
-    risks_identified: {}
+  # Broken Object-Level Authorization (BOLA/IDOR), Broken Function-Level Authorization (BFLA),
+  # Broken Object Property Level Authorization (Mass Assignment), and Multi-Tenant Data Isolation
+  # Failure have been ported into the jessestarkey/threagile fork as native script rules
+  # (pkg/risks/scripts/*.yaml): the first three via the request_serving_api technology
+  # attribute, multi-tenant isolation via the native TechnicalAsset.MultiTenant field. Removed
+  # here rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   Exposed Administrative Interface Without Hardened Access Controls:
     id: exposed-admin-panel
@@ -435,59 +341,15 @@ custom_risk_definitions:
   # #############################################################################
 
   # --- 2.1 INFRASTRUCTURE: CONTAINERS ---
-  Untrusted Container Image Supply Chain:
-    id: untrusted-container-image
-    baseline_likelihood: very-likely
-    baseline_impact: very-high
-    description: 'The container image''s provenance is not explicitly verified as coming from a trusted, scanned registry.'
-    impact: 'If this risk remains unmitigated, the image may introduce known CVEs or supply-chain malware into the ATO boundary — the same attacker-controlled-artifact-runs-with-the-workload''s-own-privilege consequence as a compromised CI/CD dependency (see Malicious Package Install-Script Execution on CI Runner), rated the same here rather than a lesser tier just because the artifact is a container image instead of a package.'
-    asvs: V14 - Configuration
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
-    action: Migrate image sourcing to a trusted, DoD-approved registry and enforce cryptographic verification at deploy time.
-    mitigation: Source all base and application images exclusively from a DoD-approved, continuously-scanned registry (e.g., Iron Bank). Enforce SHA-256 digest pinning in every manifest — prohibit mutable tags like :latest. Require Sigstore/Cosign signature verification via an admission controller (Kyverno or OPA Gatekeeper's image-verification policy) before any pod is scheduled. Run Trivy or Grype against every image in the CI/CD pipeline and fail the build on Critical/High CVEs above the org's accepted threshold.
-    references: DISA Kubernetes STIG; NIST SP 800-53 SA-12 (Supply Chain Protection); NIST SP 800-53 SR-3 (Supply Chain Controls and Processes); SLSA (Supply-chain Levels for Software Artifacts)
-    risk_assessment: High for images pulled from an unvetted public registry into an ATO boundary. Even a DoD-approved registry doesn't fully close this without digest pinning and signature verification enforced at deploy time — an approved image can still be silently swapped after approval.
-    false_positives: The image is already sourced exclusively from a DoD-approved, scanned registry with digest pinning and admission-controller signature verification enforced — confirmed in the cluster's policy-as-code bundle — but the model wasn't updated with the ops:trusted-base-image tag.
-    function: architecture
-    stride: tampering
-    detection_logic: Audit the admission controller's image-verification policy (Kyverno ClusterPolicy / Gatekeeper ConstraintTemplate) to confirm it rejects unsigned or non-digest-pinned images. Cross-reference the registry's own pull audit log for images sourced outside the approved-registry allowlist.
-    risks_identified: {}
-
-  Mutable Container Filesystem:
-    id: mutable-container-filesystem
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'The container''s root filesystem is writable, allowing an attacker who gains code execution to modify binaries or persist inside the container.'
-    impact: 'If this risk remains unmitigated, a compromised container provides an attacker a durable foothold for lateral movement rather than resetting on restart.'
-    asvs: V14 - Configuration
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
-    action: Enforce readOnlyRootFilesystem.
-    mitigation: Set securityContext.readOnlyRootFilesystem to true in the container's PodSecurityContext. Mount ephemeral emptyDir volumes for any directory the workload genuinely needs to write to at runtime (e.g. /tmp). Enforce this cluster-wide via an OPA Gatekeeper or Kyverno admission policy that rejects deployments without it set, rather than relying on manifest review alone.
-    references: DISA Kubernetes STIG; NIST SP 800-53 CM-6 (Configuration Settings); NIST SP 800-53 SC-39 (Process Isolation)
-    risk_assessment: Medium risk to node integrity in isolation, but compounding with any code-execution finding on the same container (e.g. missing input validation, a vulnerable dependency) that would otherwise reset on restart instead of persisting.
-    false_positives: The pod's securityContext already sets readOnlyRootFilesystem to true — confirmed in the deployed manifest or the cluster's admission-controller policy — but the model wasn't updated with the ops:read-only-fs tag.
-    function: operations
-    stride: tampering
-    detection_logic: 'Query the cluster (kubectl get pods -o json) or the admission controller''s policy audit log for containers whose securityContext omits readOnlyRootFilesystem: true. Run Kubescape or a similar CIS Kubernetes Benchmark scanner against running workloads.'
-    risks_identified: {}
-
-  Missing Network Micro-Segmentation:
-    id: missing-network-micro-segmentation
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'The workload lacks an explicit, default-deny network policy, allowing unrestricted East-West traffic within the cluster.'
-    impact: 'If this risk remains unmitigated, compromise of a single pod gives an attacker unrestricted network reach to every other workload in the cluster.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Microservices_Security_Cheat_Sheet.html
-    action: Implement strict K8s NetworkPolicies.
-    mitigation: Apply a default-deny NetworkPolicy to the namespace first, then add explicit allow rules scoped to only the specific source/destination pods and ports the workload genuinely requires (label-selector based, not namespace-wide allows). Enforce this via policy-as-code (e.g. a Kyverno/Gatekeeper policy requiring every namespace to carry a default-deny NetworkPolicy) rather than relying on manual application per namespace.
-    references: NIST SP 800-53 SC-7 (Boundary Protection); NIST SP 800-207 (Zero Trust Architecture); CIS Kubernetes Benchmark
-    risk_assessment: Medium in isolation, but compounds sharply with any single-pod compromise elsewhere in the cluster — the absence of segmentation is what turns one compromised pod into unrestricted reach across every other workload sharing the cluster.
-    false_positives: A default-deny NetworkPolicy is already enforced at the namespace level — confirmed via kubectl get networkpolicy or the cluster's policy-as-code bundle — but the model wasn't updated with the net:micro-segmented tag.
-    function: architecture
-    stride: information-disclosure
-    detection_logic: Run kubectl get networkpolicy --all-namespaces and flag any namespace with zero NetworkPolicy objects, or one that lacks a default-deny baseline. Cross-reference against the cluster's policy-as-code bundle for a cluster-wide enforcement policy.
-    risks_identified: {}
+  # Untrusted Container Image Supply Chain, Mutable Container Filesystem,
+  # Missing Network Micro-Segmentation, Dangerous Container Linux
+  # Capabilities, and Container Orchestrator Control-Plane Audit Logging
+  # Gap (further below) have been ported into the jessestarkey/threagile
+  # fork as native script rules (pkg/risks/scripts/*.yaml), triggered off
+  # the native `machine` field instead of a tag. Removed here rather than
+  # left duplicated. See docs/risk-methodology.md for the full rationale.
+  # Container Runs as Root (Policy Exception) stays here -- it's a
+  # tag-presence-triggered policy waiver, a different shape of content.
 
   Container Runs as Root (Policy Exception):
     id: container-runs-as-root
@@ -507,96 +369,15 @@ custom_risk_definitions:
     detection_logic: 'Query the cluster (kubectl get pods -o json) for containers whose securityContext omits runAsNonRoot: true or explicitly sets runAsUser: 0. Confirm a matching exception:runs-as-root waiver and AO acceptance record exists for every match.'
     risks_identified: {}
 
-  Dangerous Container Linux Capabilities:
-    id: dangerous-container-capabilities
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'The container is granted Linux capabilities beyond what its function requires, such as CAP_SYS_ADMIN, CAP_NET_ADMIN, or CAP_SYS_PTRACE.'
-    impact: 'If this risk remains unmitigated, these capabilities can be used to escape the container, manipulate network traffic, or extract credentials from other processes sharing the node.'
-    asvs: V14 - Configuration
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
-    action: Drop all capabilities and add back only the specific capabilities required for the workload function.
-    mitigation: 'Set securityContext.capabilities.drop: [ALL] in the container spec and add back only the specific capabilities required (e.g., NET_BIND_SERVICE for binding to ports below 1024). Enforce this via Kubernetes admission controller (OPA Gatekeeper or Kyverno policy) that blocks deployment of containers with disallowed capabilities. Audit all existing workloads with kubectl get pods --all-namespaces -o json | jq to identify containers with elevated capabilities. Apply AppArmor or seccomp profiles to further restrict system call surface. Tag compliant containers with ops:container-capabilities-restricted.'
-    references: DISA Kubernetes STIG (K8S-00-000150); NIST SP 800-53 CM-7 (Least Functionality); CIS Kubernetes Benchmark
-    risk_assessment: High for containers with CAP_SYS_ADMIN or CAP_SYS_PTRACE. Medium for CAP_NET_ADMIN or CAP_NET_RAW. All are CAT II STIG findings.
-    false_positives: Container is tagged ops:container-capabilities-restricted confirming all capabilities have been dropped and only explicitly required capabilities are re-granted, enforced by admission controller policy.
-    function: operations
-    stride: elevation-of-privilege
-    detection_logic: Integrate Kubernetes capability audit into the CI/CD pipeline — fail deployments that grant disallowed capabilities. Run Trivy or Kubescape against all running workloads and alert on capability violations. Monitor kernel audit logs for cap_effective flags on container processes that exceed the expected set.
-    risks_identified: {}
-
   # --- 2.2 INFRASTRUCTURE: VIRTUAL MACHINES AND PHYSICAL HARDWARE ---
-  Missing Endpoint Security Agents:
-    id: missing-endpoint-security-agents
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'The virtual machine lacks mandatory endpoint security agents such as EDR or a centralized log forwarder.'
-    impact: 'If this risk remains unmitigated, an attacker can establish persistence and move laterally from this host without triggering any host-level SOC alert.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html
-    action: Deploy EDR and centralized logging agents.
-    mitigation: Ensure Azure Policy enforces the automated deployment of the Microsoft Defender for Endpoint and Azure Monitor Agent extensions on all VMs.
-    references: DoD Zero Trust Reference Architecture
-    risk_assessment: High risk of undetected post-exploitation activity.
-    false_positives: EDR and log-forwarding agents are already deployed through the VM's golden image or automated policy enforcement — confirmed by an active heartbeat in the EDR console — but the model wasn't updated with the ops:host-agents-installed tag.
-    function: operations
-    stride: information-disclosure
-    detection_logic: Query Azure Resource Graph for missing VM extensions or check the EDR portal for host heartbeat.
-    risks_identified: {}
-
-  Unhardened OS / Missing Patch Management:
-    id: unhardened-os-missing-patch-management
-    baseline_likelihood: very-likely
-    baseline_impact: medium
-    description: 'The virtual machine is not deployed from a STIG-compliant baseline image and has no automated patch management in place.'
-    impact: 'If this risk remains unmitigated, the OS accumulates known, unpatched CVEs and configuration drift that make privilege escalation substantially easier.'
-    asvs: V14 - Configuration
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
-    action: Enforce STIG baselines and automated patching.
-    mitigation: Provision VMs exclusively from DoD-approved marketplace images and enroll them in strict update schedules to meet SLA patching requirements.
-    references: DISA OS STIGs
-    risk_assessment: High risk of compromise via known vulnerabilities.
-    false_positives: The VM is already provisioned from a STIG-compliant baseline image and enrolled in automated patching — confirmed by a recent compliance scan (e.g., ACAS/Nessus) — but the model wasn't updated with the ops:stig-baseline tag.
-    function: operations
-    stride: elevation-of-privilege
-    detection_logic: Audit Azure Update Manager compliance logs and run automated STIG compliance scans (e.g., ACAS/Nessus) against the host.
-    risks_identified: {}
-
-  Unencrypted Virtual Disk:
-    id: unencrypted-virtual-disk
-    baseline_likelihood: unlikely
-    baseline_impact: medium
-    description: 'The virtual machine''s attached disks are not encrypted at rest, or do not use a FIPS-validated cryptographic module.'
-    impact: 'If this risk remains unmitigated, an attacker or malicious insider who snapshots or detaches the disk can read its contents offline.'
-    asvs: V8 - Data Protection
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
-    action: Enable Host-Based Encryption or Azure Disk Encryption (ADE).
-    mitigation: Enforce encryption at rest for all Managed Disks using Platform-Managed Keys (PMK) or Customer-Managed Keys (CMK) stored in Azure Key Vault.
-    references: DoD Cloud Computing SRG
-    risk_assessment: High risk of offline data exposure.
-    false_positives: Disk encryption at rest is already enforced with platform- or customer-managed keys — confirmed in the cloud provider's disk encryption status — but the model wasn't updated with the ops:disk-encrypted tag.
-    function: architecture
-    stride: information-disclosure
-    detection_logic: Audit the Azure Disk resource properties to ensure EncryptionAtRestWithPlatformKey or EncryptionAtRestWithCustomerKey is enabled.
-    risks_identified: {}
-
-  Media Sanitization Procedure Gap:
-    id: media-sanitization-procedure-gap
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'This virtual machine''s persistent storage has no documented, NIST SP 800-88-aligned sanitization procedure for end-of-life, decommissioning, or repurposing -- distinct from a cross-domain solution''s own media-downgrading process (see Media Downgrading Procedure Gap), which only covers media moved between classification enclaves, not routine decommissioning.'
-    impact: 'If this risk remains unmitigated, CUI persists recoverable on a disk that is decommissioned, repurposed, or returned to a cloud provider or hardware vendor without verified sanitization.'
-    asvs: V8 - Data Protection
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html
-    action: Adopt and document a NIST SP 800-88-aligned sanitization procedure for this asset's storage, exercised at decommissioning, repurposing, or hardware return.
-    mitigation: Adopt a documented sanitization procedure aligned to NIST SP 800-88 (Guidelines for Media Sanitization) for this asset's persistent storage before decommissioning, repurposing, or returning hardware to a vendor -- cryptographic erase where the disk supports it (effectively immediate given ops:disk-encrypted with organization-controlled key destruction), otherwise a verified multi-pass wipe. Log every sanitization event with the method used and who verified it. For self-managed physical hardware leaving the organization's control, maintain a chain-of-custody record for the media itself.
-    references: NIST SP 800-53 MP-6 (Media Sanitization); NIST SP 800-88 (Guidelines for Media Sanitization); DoD 5200.01 (DoD Information Security Program)
-    risk_assessment: Medium where the disk is already encrypted (ops:disk-encrypted) with organization-controlled keys, since key destruction alone is an effective sanitization. High where the disk is unencrypted or the encryption key isn't organization-controlled, since sanitization then depends entirely on the physical wipe or destruction actually happening as documented.
-    false_positives: A documented, NIST SP 800-88-aligned sanitization procedure is in place and evidenced for this asset's storage at end-of-life -- confirmed in the SSP or a decommissioning runbook -- but the model wasn't updated with the ops:media-sanitization-documented tag.
-    function: operations
-    stride: information-disclosure
-    detection_logic: Confirm a documented sanitization procedure exists and request evidence it was exercised for the most recent decommissioning, repurposing, or hardware-return event involving this asset's storage.
-    risks_identified: {}
+  # Missing Endpoint Security Agents, Unhardened OS / Missing Patch
+  # Management, Unencrypted Virtual Disk, and Media Sanitization
+  # Procedure Gap have been ported into the jessestarkey/threagile fork
+  # as native script rules (pkg/risks/scripts/*.yaml), triggered off the
+  # native `machine` field instead of a tag. Removed here rather than
+  # left duplicated. See docs/risk-methodology.md for the full rationale.
+  # 'Policy Exception: Direct Admin Access' stays here -- it's a
+  # tag-presence-triggered policy waiver, a different shape of content.
 
   'Policy Exception: Direct Admin Access':
     id: policy-exception-direct-admin-access
@@ -1180,23 +961,10 @@ custom_risk_definitions:
     detection_logic: Enable AVD host diagnostics and forward WVDConnections and WVDCheckpoints logs to the SIEM. Alert on sessions originating from devices not meeting Conditional Access compliance requirements. Monitor Microsoft Defender for Endpoint clipboard activity telemetry on enrolled GFE endpoints for anomalous copy volume from VDI process contexts.
     risks_identified: {}
 
-  Mishandling of Exceptional Conditions:
-    id: mishandling-exceptional-conditions
-    baseline_likelihood: likely
-    baseline_impact: high
-    description: 'The application does not consistently handle exceptional conditions (unhandled exceptions, malformed input, resource exhaustion) as a fail-closed case -- an exception on an authorization- or validation-critical path can fall through to an allowed state instead of a denied one, or an unhandled error response can leak internal implementation detail.'
-    impact: 'If this risk remains unmitigated, an attacker can trigger an edge-case or malformed-input exception to bypass an authorization or validation control that only executes on the successful path, or harvest stack traces, internal paths, or library versions from an unhandled error response to aid further attack.'
-    asvs: V7 - Error Handling and Logging
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
-    action: Ensure every authorization- or validation-critical code path fails closed on an unhandled exception, and that client-facing error responses never include internal implementation detail.
-    mitigation: Wrap every authorization/validation-critical code path in explicit exception handling that defaults to a deny/fail-closed outcome -- never let an unhandled exception silently skip a check that runs later in the same block. Return generic, non-identifying error messages to the client (no stack traces, internal paths, SQL error text, or library version strings); log the full exception detail server-side only, correlated to a request ID the client-facing message can reference. Add explicit test coverage for the exception paths themselves, not just the happy path. Apply resource limits (timeouts, memory caps, queue depth limits) so a resource-exhaustion condition degrades gracefully rather than crashing into an undefined state.
-    references: 'OWASP Top 10:2025 A10 (Mishandling of Exceptional Conditions); NIST SP 800-53 SI-11 (Error Handling); CWE-755 (Improper Handling of Exceptional Conditions)'
-    risk_assessment: High for any asset whose exception paths haven't been explicitly tested for fail-closed behavior on authorization/validation-critical logic. Escalates to Critical if a known unhandled-exception path has been confirmed to bypass an authentication or authorization check.
-    false_positives: 'Every authorization/validation-critical code path has explicit fail-closed exception handling with test coverage for the exception path itself, and client-facing error responses are confirmed to omit stack traces and internal implementation detail. NOTE: this partially overlaps CUI Telemetry Spillage on error/stack-trace content -- distinct channels, not a duplicate: this entry is about what an unhandled exception exposes in the client-facing HTTP response (and whether it fails open on an authorization check), while CUI Telemetry Spillage is about what ends up written to logs/telemetry regardless of client-facing behavior. An asset can cleanly fail one without the other (e.g. a generic client error message that still logs CUI server-side, or vice versa).'
-    function: architecture
-    stride: elevation-of-privilege
-    detection_logic: Run fuzz/negative testing (malformed input, boundary values, forced resource exhaustion) against every authorization/validation-critical endpoint and confirm each exception path denies access rather than falling through to an allowed state. Scan application logs and error-tracking tooling (e.g. Sentry) for stack traces or internal paths present in client-facing responses.
-    risks_identified: {}
+  # Mishandling of Exceptional Conditions has been ported into the jessestarkey/threagile fork
+  # as a native script rule (pkg/risks/scripts/mishandling-exceptional-conditions.yaml),
+  # triggered off the frontend_related/backend_related technology attributes. Removed here
+  # rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   # --- 4.3 API AND SERVICE EXPOSURE ---
   Public API Abuse and Asymmetric DoS:
@@ -1271,41 +1039,11 @@ custom_risk_definitions:
     risks_identified: {}
 
   # --- 4.4 LOGGING AND OBSERVABILITY ---
-  CUI Telemetry Spillage:
-    id: cui-telemetry-spillage
-    baseline_likelihood: very-likely
-    baseline_impact: medium
-    description: 'CUI can be written into application logs, stack traces, or observability telemetry through debug logging, ORM query logging, or auto-instrumentation that captures request headers.'
-    impact: 'If this risk remains unmitigated, CUI reaching a log or telemetry pipeline constitutes a formal data spill and may expose sensitive data to personnel without need-to-know.'
-    asvs: V7 - Error Handling and Logging
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
-    action: Audit all log emission points for CUI content and implement pre-emission redaction.
-    mitigation: Disable verbose/debug logging in production via environment-specific configuration (never rely on code-level defaults). Implement a structured logging wrapper that applies regex or pattern-based redaction to known CUI field patterns (SSNs, CAC numbers, classification markings) before any log emission. Configure ORM and HTTP client libraries to suppress parameter and body logging. Apply the same redaction pipeline to distributed tracing span attributes. Restrict log storage access to personnel with appropriate clearance and need-to-know. Periodically scan log samples using DLP tooling to detect unredacted CUI.
-    references: NIST SP 800-53 AU-3 (Content of Audit Records); NIST SP 800-53 AU-9 (Protection of Audit Information); DoD CUI Registry spillage handling requirements
-    risk_assessment: High if debug logging is enabled or if request/response body logging is active on any endpoint that processes CUI. Medium with structured logging and redaction controls in place but no periodic DLP validation.
-    false_positives: Application exclusively handles non-CUI, publicly releasable data confirmed by data classification review — or all log emission points have been audited and confirmed to emit only non-sensitive identifiers (e.g., opaque UUIDs with no CUI correlation).
-    function: operations
-    stride: information-disclosure
-    detection_logic: Run periodic DLP scans against log samples in the SIEM to detect patterns matching CUI field formats. Monitor for environment configuration changes that enable debug or verbose logging in production. Audit ORM and HTTP client library configurations in CI/CD via SAST rules that flag body/parameter logging settings.
-    risks_identified: {}
-
-  Insufficient Audit Logging (AU-2 Compliance Gap):
-    id: insufficient-audit-logging
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'The asset does not generate audit records for the event types NIST SP 800-53 AU-2 requires, such as authentication attempts, privilege escalation, and administrative actions.'
-    impact: 'If this risk remains unmitigated, the SOC cannot detect or reconstruct an attack after the fact, and the gap independently blocks ATO under DoD RMF.'
-    asvs: V7 - Error Handling and Logging
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html
-    action: Implement structured audit logging for all AU-2 required event types and forward to a centralized, tamper-evident SIEM.
-    mitigation: 'Implement structured logging (JSON) capturing at minimum: timestamp, event type, user identity, source IP, target resource, and outcome (success/failure) for all AU-2 event categories. Forward logs to a centralized SIEM (e.g., Microsoft Sentinel) with retention meeting the applicable data retention policy. Ensure application-layer authentication events are logged in addition to infrastructure-layer events — WAF and ingress logs alone do not satisfy AU-2 for application-level actions. Implement log integrity protection (forward to write-once storage). Review AU-2 event coverage during each ATO assessment cycle.'
-    references: NIST SP 800-53 AU-2 (Event Logging); NIST SP 800-53 AU-12 (Audit Record Generation); DoD RMF Process Guide; DISA Application Security STIG
-    risk_assessment: Medium (CAT II). Escalates to High if no application-layer security event logging exists at all — infrastructure logs alone do not satisfy AU-2 for application-level access control events.
-    false_positives: AU-2 event coverage has been formally reviewed and documented in the SSP, with log samples provided as evidence to the AO during the most recent assessment.
-    function: operations
-    stride: information-disclosure
-    detection_logic: Run automated AU-2 coverage checks by querying the SIEM for required event type presence over a rolling 30-day window. Alert on gaps where expected event types (e.g., failed authentication) show zero occurrences — absence may indicate logging failure rather than absence of events. Include AU-2 coverage verification in the annual ATO continuous monitoring review.
-    risks_identified: {}
+  # CUI Telemetry Spillage and Insufficient Audit Logging (AU-2 Compliance Gap) have been
+  # ported into the jessestarkey/threagile fork as native script rules
+  # (pkg/risks/scripts/*.yaml), triggered off the frontend_related/backend_related technology
+  # attributes. Removed here rather than left duplicated. See docs/risk-methodology.md for the
+  # full rationale.
 
   # --- 4.5 SOFTWARE SUPPLY CHAIN AND CI/CD PIPELINE INTEGRITY ---
   # Applies to an asset tagged ops:ci-pipeline -- a build runner or
@@ -2208,22 +1946,11 @@ custom_risk_definitions:
     stride: information-disclosure
     risks_identified: {}
 
-  Container Orchestrator Control-Plane Audit Logging Gap:
-    id: cluster-control-plane-audit-gap
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'The cluster''s audit policy is left at its default, which does not capture pod exec, port-forward, secret access, or admission-controller decisions.'
-    impact: 'If this risk remains unmitigated, post-compromise lateral movement inside the cluster produces no audit trail for an incident responder to reconstruct.'
-    asvs: V7 - Error Handling and Logging
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html
-    action: Deploy an explicit Kubernetes audit policy capturing exec/attach/port-forward, secret access, and admission-controller decisions at Request or RequestResponse level, forwarded to the SIEM.
-    mitigation: 'Configure the API server audit policy to capture, at minimum, RequestResponse-level logging for pods/exec, pods/attach, pods/portforward subresources; secrets get/list/watch operations; and all admission webhook decisions (both ValidatingWebhookConfiguration and MutatingWebhookConfiguration). Forward the audit log to the central SIEM with retention matching the platform''s incident-response window. Tag the asset ops:cluster-audit-logging-enabled once the policy is deployed and confirmed forwarding.'
-    references: NIST SP 800-53 AU-2 (Event Logging); NIST SP 800-53 AU-12 (Audit Record Generation); CIS Kubernetes Benchmark (Control Plane Logging)
-    risk_assessment: High for any cluster running the API server's default audit policy (or no audit policy) rather than one explicitly scoped to security-relevant subresources and admission decisions.
-    false_positives: The asset is tagged ops:cluster-audit-logging-enabled confirming an explicit audit policy covering exec/attach/port-forward, secret access, and admission decisions is deployed and forwarding to the SIEM.
-    function: operations
-    stride: information-disclosure
-    risks_identified: {}
+  # Container Orchestrator Control-Plane Audit Logging Gap has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/cluster-control-plane-audit-gap.yaml), triggered off the native
+  # `machine == container` field instead of a tag. Removed here rather than left duplicated.
+  # See docs/risk-methodology.md for the full rationale.
 
   Network Intrusion Detection and Traffic Anomaly Blind Spot:
     id: network-ids-blind-spot

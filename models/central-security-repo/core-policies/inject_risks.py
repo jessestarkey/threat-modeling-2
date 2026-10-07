@@ -711,30 +711,22 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             if 'crypto:key-management-separated' not in tags:
                 inject("Key Management Separation-of-Duties Violation", "Key Management SoD Risk")
 
-        # Spillage check (all compute assets)
-        if any(tag in tags for tag in ['app:frontend-ui', 'app:backend-api', 'app:async-worker']):
-            inject("CUI Telemetry Spillage", "Log Spillage Risk")
-            inject("Insufficient Audit Logging (AU-2 Compliance Gap)", "AU-2 Logging Gap Risk")
-            inject("Mishandling of Exceptional Conditions", "Exceptional Conditions Risk")
-
-        # Backend API authorization risks
-        if 'app:backend-api' in tags:
-            inject("Broken Object-Level Authorization (BOLA/IDOR)", "BOLA/IDOR Risk")
-            inject("Broken Function-Level Authorization (BFLA)", "BFLA Risk")
-            inject("Broken Object Property Level Authorization (Mass Assignment)", "Mass Assignment Risk")
-
-        # Multi-tenancy amplifier: raises isolation risk when multi-tenancy is declared
-        if 'feature:multi-tenancy' in tags:
-            inject("Multi-Tenant Data Isolation Failure", "Multi-Tenant Isolation Risk")
-
-        # Frontend session management
-        if 'app:frontend-ui' in tags:
-            inject("Insecure Session Management", "Session Management Risk")
-
-        # Secrets sprawl — fires on any asset explicitly identified as a secrets broker
-        # and on assets storing credentials (absence of a secrets broker tag is the risk signal)
-        if 'sec:secrets-broker' not in tags and 'data:credential' in tags:
-            inject("Hardcoded Credentials and Secrets Sprawl", "Secrets Sprawl Risk")
+        # NOTE: the app-tier baseline cluster that used to live here (CUI Telemetry Spillage,
+        # AU-2 Logging Gap, Mishandling of Exceptional Conditions, BOLA/BFLA/Mass Assignment,
+        # Multi-Tenant Data Isolation Failure, Insecure Session Management, Hardcoded
+        # Credentials and Secrets Sprawl) has been ported into the jessestarkey/threagile fork
+        # as native script rules (pkg/risks/scripts/*.yaml) -- 8 of 9 fully native (frontend/
+        # backend-related and request-serving-API technology attributes, the native MultiTenant
+        # field), one (secrets sprawl) still reading the data:credential tag directly since
+        # DataAsset has no native "this is credential-shaped data" concept. Removed here rather
+        # than left duplicated, since the Go-native versions fire unconditionally (disposed via
+        # risk_tracking) and would otherwise double up with this Python injection on every app
+        # run through the custom image. See docs/risk-methodology.md for the full rationale.
+        #
+        # app:frontend-ui/app:backend-api/app:async-worker (APP_TIER_TAGS) are still used below
+        # by the Baseline Security Event Logging check; sec:secrets-broker/data:credential are
+        # still used below by the Credential Blast Radius check -- neither tag was removed from
+        # 03-tags-lib.yml for that reason, only feature:multi-tenancy was (it had no other use).
 
         # Backup integrity — fires on all assets requiring backup
         if 'ops:requires-backup' in tags:
@@ -780,29 +772,22 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if (set(tags) & APP_TIER_TAGS) and 'ops:security-event-logging-enabled' not in tags:
             inject("Baseline Security Event Logging and SIEM Forwarding Gap", "Baseline Security Logging Gap Risk")
 
-        # Container Hardening Audits
-        if asset_data.get('machine') == 'container':
-            if 'ops:trusted-base-image' not in tags: inject("Untrusted Container Image Supply Chain", "Unverified Image Source")
-            if 'ops:read-only-fs' not in tags: inject("Mutable Container Filesystem", "Writable Filesystem")
-            if 'net:micro-segmented' not in tags: inject("Missing Network Micro-Segmentation", "Unrestricted East-West Traffic")
-            if 'ops:container-capabilities-restricted' not in tags: inject("Dangerous Container Linux Capabilities", "Excessive Container Capabilities Risk")
-            if 'ops:cluster-audit-logging-enabled' not in tags: inject("Container Orchestrator Control-Plane Audit Logging Gap", "Cluster Audit Logging Gap Risk")
-
-        # Physical Host Hardening Audits (self-managed bare metal only --
-        # BMC/firmware/boot-chain don't apply to a cloud-provisioned VM,
-        # where the hypervisor host is the cloud provider's responsibility)
+        # NOTE: the Container Hardening Audits and VM Hardening Audits blocks that used to live
+        # here (5 container checks, 4 VM checks) have been ported into the jessestarkey/threagile
+        # fork as native script rules (pkg/risks/scripts/*.yaml), triggered off the native
+        # `machine` field instead of a tag, firing unconditionally and disposed via risk_tracking
+        # instead of a suppression tag. Removed here rather than left duplicated. See
+        # docs/risk-methodology.md for the full rationale.
+        #
+        # Physical Host Hardening Audits (self-managed bare metal only -- BMC/firmware/boot-chain
+        # don't apply to a cloud-provisioned VM, where the hypervisor host is the cloud provider's
+        # responsibility) stays here: zero of the real apps have ever fired it, so it's not yet
+        # proven against a real self-managed app worth the Go port.
         if asset_data.get('machine') == 'physical' \
                 and 'mgmt:self-managed-hardware' in tags and 'mgmt:self-managed-hardware-hardened' not in tags:
             inject("Self-Managed Out-of-Band Management Controller Compromise", "BMC Compromise Risk")
             inject("Self-Managed Below-OS Firmware Persistence Gap", "Firmware Persistence Risk")
             inject("Self-Managed Boot Integrity Bypass", "Boot Integrity Risk")
-
-        # VM Hardening Audits
-        if asset_data.get('machine') == 'virtual':
-            if 'ops:host-agents-installed' not in tags: inject("Missing Endpoint Security Agents", "Unmonitored IaaS Endpoint")
-            if 'ops:stig-baseline' not in tags: inject("Unhardened OS / Missing Patch Management", "Non-STIG OS / Unpatched VM")
-            if 'ops:disk-encrypted' not in tags: inject("Unencrypted Virtual Disk", "Unencrypted VHD")
-            if 'ops:media-sanitization-documented' not in tags: inject("Media Sanitization Procedure Gap", "Media Sanitization Gap")
 
         # --- 5. DATA GOVERNANCE AND LIFECYCLE ---
         # All absence-fires-risk, following the same pattern as the

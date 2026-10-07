@@ -112,7 +112,6 @@ tags_available:
   - ops:oauth-consent-governed  # Administrator consent is required for high-privilege scope requests and user self-service consent is restricted to a verified-publisher allow-list — suppresses the oauth-illicit-consent-grant risk
 
   # --- Authorization ---
-  - feature:multi-tenancy       # Asset serves data to multiple distinct organizational tenants from a shared deployment — amplifier tag that raises severity of BOLA, BFLA, and data leakage findings
   - feature:admin-panel         # Asset exposes an administrative interface for user management, system configuration, or audit log access
   - feature:vendor-remote-support # Asset grants third-party vendor support engineers remote access — trigger for the vendor-remote-support-access-gap risk
   - ops:vendor-access-case-bound  # Vendor remote support access is scoped to a specific support case with automatic expiry — suppresses the vendor-remote-support-access-gap risk
@@ -143,18 +142,13 @@ tags_available:
   # Absence of these tags fires the corresponding hardening risk.
   # =============================================================================
 
-  # --- Container Hardening (absence fires risk) ---
-  - ops:trusted-base-image             # Container is deployed from a vetted, scanned DoD/DoW-approved registry image (e.g., Iron Bank)
-  - ops:read-only-fs                   # Container mounts its root filesystem as read-only via PodSecurityContext
-  - net:micro-segmented                # Container namespace enforces strict default-deny Kubernetes NetworkPolicies
-  - ops:container-capabilities-restricted # Container explicitly drops all Linux capabilities and re-grants only those required via securityContext
-  - ops:cluster-audit-logging-enabled  # Cluster's audit policy explicitly captures exec/attach/port-forward, secret access, and admission-controller decisions, forwarded to the SIEM (beyond the API server's default policy)
-
-  # --- VM Hardening (absence fires risk) ---
-  - ops:host-agents-installed # VM has mandatory DoW endpoint security agents deployed (EDR, Tanium, Splunk Forwarder)
-  - ops:stig-baseline         # VM is deployed from a STIG-compliant baseline image and enrolled in automated patch management
-  - ops:disk-encrypted        # VM managed disks are encrypted at rest using Azure Disk Encryption or Host-Based Encryption
-  - ops:media-sanitization-documented # A documented, NIST SP 800-88-aligned sanitization procedure exists for this VM's storage at end-of-life/decommissioning/repurposing
+  # Container Hardening and VM Hardening tags (ops:trusted-base-image, ops:read-only-fs,
+  # net:micro-segmented, ops:container-capabilities-restricted, ops:cluster-audit-logging-enabled,
+  # ops:host-agents-installed, ops:stig-baseline, ops:disk-encrypted,
+  # ops:media-sanitization-documented) have been removed: the risks they suppressed are now
+  # ported into the jessestarkey/threagile fork as native script rules that fire unconditionally
+  # off the `machine` field and are disposed via risk_tracking instead. See
+  # docs/risk-methodology.md for the full rationale.
 
   # --- Service Hardening (absence fires risk) ---
   - ops:waf-enabled                # A WAF with a managed ruleset in Prevention mode is confirmed in the ingress path — suppresses the WAF coverage risk on zone:dmz assets
