@@ -54,9 +54,10 @@ tags_available:
   - risk:malware-vector # Unstructured data that could harbor malicious payloads (e.g., file uploads, email attachments)
 
   # --- Foundational Asset Classification (Compute, Network, Crypto) ---
-  - app:frontend-ui    # Asset serves HTML/JS to the browser — primary user-facing application surface
-  - app:backend-api    # Asset implements business logic and API endpoints
-  - app:async-worker   # Asset processes jobs from a queue without accepting direct web traffic
+  # app:frontend-ui, app:backend-api, and app:async-worker have been removed: their last use
+  # (Baseline Security Event Logging and SIEM Forwarding Gap) is now ported into the
+  # jessestarkey/threagile fork as a native script rule firing off the frontend_related/
+  # backend_related technology attributes instead. See docs/risk-methodology.md.
   - net:ingress-path   # Asset is part of the traffic inspection and routing chain from the perimeter to the cluster
   - net:egress-path    # Asset initiates outbound connections to external entities
   - net:tls-terminator # Asset is where encryption-in-transit is decrypted (plaintext exists in memory here)
@@ -155,8 +156,10 @@ tags_available:
   - net:ids-monitored              # Network-based intrusion detection/traffic-anomaly monitoring observes traffic to and from this asset — suppresses the network-ids-blind-spot risk on internet-reachable/zone:dmz assets
   - ops:requires-backup            # Asset requires backup for DR/COOP — presence triggers backup integrity risk
   - ops:api-abuse-logging-enabled  # Public API logs rate-limit rejections, authorization failures, and object-ID request patterns with caller-identity correlation — suppresses the API abuse/enumeration logging gap risk
-  - ops:security-event-logging-enabled # Application-level security events (authentication failures, authorization denials, input-validation rejections) are captured and forwarded to the SIEM — suppresses the baseline-security-event-logging-gap risk on app:frontend-ui/backend-api/async-worker assets
   - ops:dns-record-reconciled      # Asset's DNS records are reconciled against live resource state on a recurring schedule — suppresses the dangling-dns-subdomain-takeover risk
+  # ops:security-event-logging-enabled has been removed: it only ever suppressed the
+  # baseline-security-event-logging-gap risk, now ported into the jessestarkey/threagile fork
+  # as a native script rule that fires unconditionally. See docs/risk-methodology.md.
 
   # --- Backup and Recovery Hardening (absence fires risk, alongside ops:requires-backup above) ---
   - ops:backup-admin-segregated  # Backup administration is a distinct role from production administration, with dual authorization and step-up auth required for destructive backup operations — suppresses the backup-admin-privilege-separation-gap risk

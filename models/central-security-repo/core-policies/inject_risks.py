@@ -149,10 +149,11 @@ def _clamp(idx: int) -> int:
     return max(0, min(idx, 3))
 
 
-# Tags marking a technical asset as a real application/service tier, as
-# opposed to pure network/infrastructure plumbing (a firewall, a load
-# balancer). Used by the Baseline Security Event Logging check below.
-APP_TIER_TAGS = {"app:frontend-ui", "app:backend-api", "app:async-worker"}
+# NOTE: APP_TIER_TAGS (app:frontend-ui, app:backend-api, app:async-worker) used to be defined
+# here for the Baseline Security Event Logging check, which has since been ported into the
+# jessestarkey/threagile fork as a native script rule triggered off the frontend_related/
+# backend_related technology attributes instead. That was the constant's last use, so it and
+# its 3 member tags are now fully unused and removed. See docs/risk-methodology.md.
 
 # net:internet-reachable was previously a computed signal (a multi-hop walk
 # from every zone:dmz asset, following outbound communication_links,
@@ -745,10 +746,13 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # risk_tracking) and would otherwise double up with this Python injection on every app
         # run through the custom image. See docs/risk-methodology.md for the full rationale.
         #
-        # app:frontend-ui/app:backend-api/app:async-worker (APP_TIER_TAGS) are still used below
-        # by the Baseline Security Event Logging check; sec:secrets-broker/data:credential are
-        # still used below by the Credential Blast Radius check -- neither tag was removed from
-        # 03-tags-lib.yml for that reason, only feature:multi-tenancy was (it had no other use).
+        # app:frontend-ui/app:backend-api/app:async-worker have since also been fully removed
+        # (the Baseline Security Event Logging check that was their last use is now native too
+        # -- see below). sec:secrets-broker/data:credential are still used below by the
+        # Credential Blast Radius check and stay -- checked against confluence's real tag usage,
+        # sec:secrets-broker spans identity-provider/reverse-proxy/local-file-system/database
+        # assets, not just vault technology, so it isn't a faithful native substitute the way
+        # storage:vault was for the key-management batch.
 
         # Backup integrity — fires on all assets requiring backup
         if 'ops:requires-backup' in tags:
@@ -787,12 +791,13 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if (asset_is_internet_reachable or 'zone:dmz' in tags) and 'net:ids-monitored' not in tags:
             inject("Network Intrusion Detection and Traffic Anomaly Blind Spot", "Network IDS Blind Spot Risk")
 
-        # Baseline security-event logging -- fires on the general app tier,
-        # distinct from the narrower feature:public-api-endpoint-gated API
-        # abuse logging check above, so a generic frontend/backend/worker
-        # asset with no public API surface still gets Detection coverage.
-        if (set(tags) & APP_TIER_TAGS) and 'ops:security-event-logging-enabled' not in tags:
-            inject("Baseline Security Event Logging and SIEM Forwarding Gap", "Baseline Security Logging Gap Risk")
+        # NOTE: "Baseline Security Event Logging and SIEM Forwarding Gap" has been ported into
+        # the jessestarkey/threagile fork as a native script rule
+        # (pkg/risks/scripts/baseline-security-event-logging-gap.yaml), triggered off the
+        # frontend_related/backend_related technology attributes instead of APP_TIER_TAGS.
+        # Removed here rather than left duplicated. This was the last use of APP_TIER_TAGS, so
+        # the constant and its 3 member tags are now fully unused -- see the removal below and
+        # in 03-tags-lib.yml. See docs/risk-methodology.md for the full rationale.
 
         # NOTE: the Container Hardening Audits and VM Hardening Audits blocks that used to live
         # here (5 container checks, 4 VM checks) have been ported into the jessestarkey/threagile

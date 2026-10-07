@@ -1760,23 +1760,11 @@ custom_risk_definitions:
     detection_logic: Confirm NIDS/NDR sensor placement covers 100% of the asset's ingress/egress paths (no unmonitored network segment), and validate alerting is live by running a benign signature-triggering test and confirming a SOC-visible alert fires.
     risks_identified: {}
 
-  Baseline Security Event Logging and SIEM Forwarding Gap:
-    id: baseline-security-event-logging-gap
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'This asset does not capture and forward authentication failures, authorization denials, and input-validation rejections to the SIEM, beyond whatever narrower logging its own feature-specific detection risks already require.'
-    impact: 'If this risk remains unmitigated, sustained probing, credential-stuffing, and authorization-bypass attempts against this asset produce no correlated signal, leaving the SOC blind to the buildup toward a successful compromise.'
-    asvs: V7 - Error Handling and Logging
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html
-    action: Emit a distinct log event for every authentication failure, authorization denial, and input-validation rejection this asset produces, tagged with the calling identity or source, and forward these to the SIEM.
-    mitigation: Instrument the asset to emit a structured log event for every authentication failure, authorization denial, and input-validation rejection, each tagged with the calling identity (user, service account, API key, or source IP where unauthenticated) and timestamp. Forward these events to the central SIEM and build a correlation rule flagging a single identity or source crossing a threshold of failures within a rolling window. Tag the asset ops:security-event-logging-enabled once logging and forwarding are confirmed active.
-    references: NIST SP 800-53 AU-2 (Event Logging); NIST SP 800-53 AU-6 (Audit Record Review, Analysis, and Reporting); NIST SP 800-53 SI-4 (System Monitoring)
-    risk_assessment: High for any app:frontend-ui, app:backend-api, or app:async-worker asset with no baseline security-event logging forwarded to the SIEM.
-    false_positives: The asset is tagged ops:security-event-logging-enabled confirming authentication failures, authorization denials, and input-validation rejections are captured and forwarded to the SIEM with active correlation rules.
-    function: operations
-    stride: information-disclosure
-    detection_logic: Alert when a single identity or source crosses a defined threshold of authentication failures, authorization denials, or input-validation rejections within a rolling window, and monitor for the absence of expected security-event log volume as its own signal of a broken forwarding pipeline.
-    risks_identified: {}
+  # Baseline Security Event Logging and SIEM Forwarding Gap has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/baseline-security-event-logging-gap.yaml), triggered off the
+  # frontend_related/backend_related technology attributes instead of APP_TIER_TAGS. Removed
+  # here rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   # #############################################################################
   # DOMAIN 8: RESPONSE
