@@ -794,14 +794,14 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # "DATA GOVERNANCE AND LIFECYCLE TAGS" section for what each
         # positive-confirmation tag means.
 
-        if 'storage:persistent' in tags:
-            if 'data:classification-scanned' not in tags:
-                inject("Unclassified or Unscanned Data Store", "Unscanned Data Store Risk")
-            if 'data:retention-scheduled' not in tags:
-                inject("Missing Data Retention and Disposition Schedule", "Data Retention Schedule Risk")
-
-        if ('storage:persistent' in tags or 'storage:vault' in tags) and 'data:data-plane-audit-enabled' not in tags:
-            inject("Data Store Audit Logging and Anomalous Access Detection Gap", "Data Store Audit Gap Risk")
+        # NOTE: the datastore cluster that used to live here (Unclassified or Unscanned Data
+        # Store, Missing Data Retention and Disposition Schedule, Data Store Audit Logging and
+        # Anomalous Access Detection Gap) has been ported into the jessestarkey/threagile fork
+        # as native script rules (pkg/risks/scripts/*.yaml), triggered off the native
+        # TechnicalAsset.Type == datastore field instead of the storage:persistent/storage:vault
+        # tags (every real asset tagged with either is already type: datastore, so the native
+        # field subsumes both). Removed here rather than left duplicated. See
+        # docs/risk-methodology.md for the full rationale.
 
         # PIA requirement (E-Gov Act Sec. 208) attaches to processing PII at
         # all, not just persisting it -- deliberately not nested under

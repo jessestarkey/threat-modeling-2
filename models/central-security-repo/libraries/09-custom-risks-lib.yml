@@ -1625,23 +1625,11 @@ custom_risk_definitions:
   # #############################################################################
 
   # --- 6.1 DATA GOVERNANCE AND LIFECYCLE ---
-  Unclassified or Unscanned Data Store:
-    id: unscanned-data-store
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'A persistent data store has never been run through an automated classification scan, so no sensitivity label attaches to the data it holds.'
-    impact: 'If this risk remains unmitigated, downstream controls that depend on that label -- encryption tier, access policy, DLP, retention -- apply a default posture that may not match the data''s true sensitivity.'
-    asvs: V8 - Data Protection
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html
-    action: Enroll the data store in an automated discovery/classification scan and apply the resulting sensitivity labels before any classification-driven control is configured.
-    mitigation: Run an automated classification/discovery scan (e.g., Microsoft Purview, Azure Information Protection scanner) against the store on a recurring schedule, not just at provisioning. Attach the resulting sensitivity labels to the asset's metadata so downstream controls (encryption tier, access policy, DLP, retention) can be driven by the label rather than by an assumption made at design time. Re-scan after any bulk import, migration, or schema change that could introduce new data categories.
-    references: NIST SP 800-53 RA-2 (Security Categorization); DoDI 5200.48 (Controlled Unclassified Information); CNSSI 1253 (Security Categorization for National Security Systems)
-    risk_assessment: High for any data store holding CUI or PII where no classification scan has ever been run or where the last scan predates the most recent significant data change.
-    false_positives: The data store's contents have been scanned and labeled by an approved classification tool, and the scan is re-run on a documented recurring schedule tied to data change events.
-    function: architecture
-    stride: information-disclosure
-    detection_logic: Query the classification tool's coverage report for this asset's storage account/database and alert if no scan has completed within the defined interval, or if the asset holds data but carries no sensitivity label at all.
-    risks_identified: {}
+  # Unclassified or Unscanned Data Store has been ported into the jessestarkey/threagile fork
+  # as a native script rule (pkg/risks/scripts/unscanned-data-store.yaml), triggered off the
+  # native TechnicalAsset.Type == datastore field instead of the storage:persistent tag.
+  # Removed here rather than left duplicated. See docs/risk-methodology.md for the full
+  # rationale.
 
   Missing Privacy Impact Assessment:
     id: missing-privacy-impact-assessment
@@ -1694,22 +1682,11 @@ custom_risk_definitions:
     stride: information-disclosure
     risks_identified: {}
 
-  Missing Data Retention and Disposition Schedule:
-    id: missing-data-retention-schedule
-    baseline_likelihood: likely
-    baseline_impact: low
-    description: 'The asset holds data with no documented retention period or disposition action tied to its classification type.'
-    impact: 'If this risk remains unmitigated, sensitive holdings can be retained indefinitely with no owner for disposal, while records needed for a later investigation can be lost prematurely.'
-    asvs: V8 - Data Protection
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html
-    action: Document a retention period and a specific disposition action (not merely "delete") for each data/classification type this asset holds, and implement automated enforcement where the platform supports it.
-    mitigation: Define a retention schedule per data classification/record type, sourced from the applicable NARA General Records Schedule or program-specific records disposition schedule, specifying both a minimum retention period and a required disposition action at expiry. Automate enforcement (lifecycle policies on the storage layer) wherever possible rather than relying on manual review. Ensure the schedule explicitly protects audit and provenance records for at least the minimum period required to support an incident investigation opened near the end of the retention window.
-    references: NIST SP 800-53 SI-12 (Information Management and Retention); NIST SP 800-53 AU-11 (Audit Record Retention); NARA General Records Schedules
-    risk_assessment: Medium, escalating to High where the unretained/over-retained data is CUI or where audit records needed for a pending investigation have already been disposed of.
-    false_positives: A documented retention and disposition schedule exists for every data/classification type this asset holds, and disposition is enforced automatically or verified on a recurring audit cadence.
-    function: operations
-    stride: information-disclosure
-    risks_identified: {}
+  # Missing Data Retention and Disposition Schedule has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/missing-data-retention-schedule.yaml), triggered off the native
+  # TechnicalAsset.Type == datastore field instead of the storage:persistent tag. Removed here
+  # rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   Media Downgrading Procedure Gap:
     id: media-downgrade-procedure-gap
@@ -1762,23 +1739,12 @@ custom_risk_definitions:
     stride: information-disclosure
     risks_identified: {}
 
-  Data Store Audit Logging and Anomalous Access Detection Gap:
-    id: data-store-audit-detection-gap
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'A data store has no operation-level audit logging and no detection tuned to abnormal access patterns such as bulk reads or connections from an unexpected principal.'
-    impact: 'If this risk remains unmitigated, bulk exfiltration by a compromised or malicious authorized identity produces no anomalous signal and no forensic record.'
-    asvs: V7 - Error Handling and Logging
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html
-    action: Enable operation-level (read/write/delete/list) audit logging on the data store with the requesting identity attached, and apply anomaly detection tuned to bulk-read and abnormal-export patterns.
-    mitigation: Enable data-plane audit logging on the store (e.g., Azure SQL Auditing, Storage Analytics logging, Key Vault diagnostic logs) capturing the operation, the requesting identity, and the object/record affected, forwarded to the central SIEM. Layer native or platform-provided anomaly detection (e.g., Microsoft Defender for Storage/SQL) tuned to flag bulk-read volume, access from a principal or location outside the established baseline, and access rate spikes. Treat detection tooling that only covers control-plane (management API) operations, not data-plane operations, as not meeting this control.
-    references: NIST SP 800-53 AU-2 (Event Logging); NIST SP 800-53 AU-6 (Audit Record Review, Analysis, and Reporting); NIST SP 800-53 SI-4 (System Monitoring)
-    risk_assessment: High for any data store holding CUI where data-plane operations are not logged at the record/object level or where no anomaly detection is applied to access patterns.
-    false_positives: Operation-level data-plane audit logging is enabled and forwarded to the SIEM, and anomaly detection tuned to bulk access patterns is confirmed active for this asset.
-    function: operations
-    stride: information-disclosure
-    detection_logic: Alert on read/export volume from a single identity exceeding a rolling baseline by a defined multiple within a 1-hour window, and on any data-plane access from a principal or network location not previously observed for this asset.
-    risks_identified: {}
+  # Data Store Audit Logging and Anomalous Access Detection Gap has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/data-store-audit-detection-gap.yaml), triggered off the native
+  # TechnicalAsset.Type == datastore field instead of the storage:persistent/storage:vault
+  # tags. Removed here rather than left duplicated. See docs/risk-methodology.md for the full
+  # rationale.
 
   # --- 6.2 SECRETS AND CRYPTOGRAPHY ---
   FIPS Non-Compliant Cryptography:
