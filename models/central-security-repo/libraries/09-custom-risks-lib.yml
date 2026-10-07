@@ -1095,23 +1095,11 @@ custom_risk_definitions:
     detection_logic: Trace which external documents entered any LLM context window. Flag tool calls that were not explicitly initiated by the human user turn. Alert on model outputs containing base64 strings, external URLs not in an approved allowlist, or markdown image tags.
     risks_identified: {}
 
-  'ATLAS: RAG Pipeline Poisoning and Data Exfiltration':
-    id: atlas-rag-poisoning-exfil
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'The RAG pipeline retrieves documents from a vector store to ground LLM responses, and an adversary who can influence the indexed content can poison what gets retrieved.'
-    impact: 'If this risk remains unmitigated, poisoned knowledge-base content can persistently redirect model behavior for every user querying related topics, or exfiltrate queries to an attacker-controlled destination.'
-    asvs: V8 - Data Protection
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Enforce strict ingestion access controls and content integrity validation on all documents entering the vector store.
-    mitigation: Gate knowledge base ingestion behind an authenticated, audited pipeline — prohibit direct writes from user-facing interfaces. Apply a content safety classifier to all documents prior to embedding. Implement document provenance tracking (source, ingest timestamp, author identity) stored alongside vector embeddings. Periodically audit high-retrieval-frequency documents for adversarial content. Segment the vector store by trust level and enforce retrieval authorization aligned to the querying user's clearance.
-    references: MITRE ATLAS AML.T0070 (RAG Poisoning), AML.T0071 (False RAG Entry Injection), AML.T0064 (Gather RAG-Indexed Targets), AML.T0066 (Retrieval Content Crafting), AML.T0082 (RAG Credential Harvesting), AML.T0085.000 (Data from RAG Databases), AML.T0036 (Data from Information Repositories); OWASP LLM02:2025
-    risk_assessment: High if the knowledge base accepts documents from user-controlled or third-party sources. Medium for fully controlled, internally authored corpora.
-    false_positives: Vector store is populated exclusively by a controlled, automated ingest pipeline from an authenticated internal document management system with no external or user-write access.
-    function: architecture
-    stride: tampering
-    detection_logic: Audit vector store write access logs. Alert on ingestion events outside the approved pipeline. Periodically retrieve and review top-ranked documents for high-frequency query terms to identify anomalous content. Monitor retrieval API query patterns for systematic scraping.
-    risks_identified: {}
+  # 'ATLAS: RAG Pipeline Poisoning and Data Exfiltration' has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/atlas-rag-poisoning-exfil.yaml), triggered off the new native
+  # rag-pipeline technology instead of the ai:rag-pipeline tag. Removed here rather than left
+  # duplicated. See docs/risk-methodology.md for the full rationale.
 
   'ATLAS: Dataset and RAG Ingest Integrity Erosion':
     id: atlas-dataset-ingest-integrity
@@ -1131,23 +1119,11 @@ custom_risk_definitions:
     detection_logic: Monitor ingest pipeline write logs for anomalous sources. Run automated content validation and anomaly detection on incoming documents before embedding. Alert on schema violations or statistical distribution shifts in ingested data.
     risks_identified: {}
 
-  'ATLAS: AI Agent Orchestration Hijack and Persistence':
-    id: atlas-agent-orchestration-hijack
-    baseline_likelihood: likely
-    baseline_impact: very-high
-    description: 'The AI agent orchestration layer that plans tasks and dispatches tool calls is the highest-value target in an agentic system, and can be poisoned, reconfigured, or hijacked to invoke tools or deploy rogue sub-agents.'
-    impact: 'If this risk remains unmitigated, a compromised orchestrator gives an adversary persistent, automated access to every tool and data source the agent can reach.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Apply strict least-privilege scoping to all agent capabilities and enforce human-in-the-loop for consequential actions.
-    mitigation: Enforce a mandatory human confirmation gate before any agent-initiated action that writes data, sends communications, or invokes external systems. Scope tool permissions to the minimum required. Establish an explicit, immutable allowlist of callable tools and block dynamic tool registration. Implement agent execution sandboxing to prevent container/host escape. Set hard resource budgets on agent compute loops. Log all tool invocations and context mutations with the originating prompt for SOC review. Isolate agent memory stores and restrict write access.
-    references: MITRE ATLAS AML.T0053 (AI Agent Tool Invocation), AML.T0061 (LLM Prompt Self-Replication), AML.T0080 (AI Agent Context Poisoning), AML.T0081 (Modify AI Agent Configuration), AML.T0084 (Discover AI Agent Configuration), AML.T0086 (Exfiltration via AI Agent Tool Invocation), AML.T0094 (Delay Execution), AML.T0101 (Data Destruction via Agent Tool Invocation), AML.T0103 (Deploy AI Agent), AML.T0105 (Escape to Host), AML.T0108 (AI Agent C2), AML.T0034.002 (Agentic Resource Consumption); OWASP LLM07:2025
-    risk_assessment: Critical for any agentic deployment with write-capable tools or multi-agent coordination.
-    false_positives: The orchestrator has zero write-capable tool access, operates in a strictly isolated sandbox, and processes only pre-validated, fully trusted internal instructions.
-    function: architecture
-    stride: elevation-of-privilege
-    detection_logic: Audit all agent tool invocation logs for calls not traceable to an explicit human user turn. Alert on configuration modifications to agent persisted state. Monitor compute usage metrics for runaway agent loops. Alert on any outbound network call from the agent runtime to an endpoint not in the pre-approved allowlist.
-    risks_identified: {}
+  # 'ATLAS: AI Agent Orchestration Hijack and Persistence' has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/atlas-agent-orchestration-hijack.yaml), triggered off the new native
+  # agent-orchestrator technology instead of the ai:agent-orchestrator tag. Removed here rather
+  # than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   'ATLAS: AI Agent Tool and Plugin Compromise':
     id: atlas-agent-tool-plugin-compromise
@@ -1185,66 +1161,19 @@ custom_risk_definitions:
     detection_logic: Audit memory store write logs. Alert on memory entries created or modified outside of authenticated agent runtime sessions. Monitor for memory entries containing syntactic patterns characteristic of prompt injection (e.g., instruction-like imperative sentences, role-switch phrases).
     risks_identified: {}
 
-  'ATLAS: LLM Inference API Abuse, Cost Harvesting, and Model Extraction':
-    id: atlas-inference-api-abuse
-    baseline_likelihood: very-likely
-    baseline_impact: medium
-    description: 'The asset exposes an LLM or model inference API that can be systematically queried to extract a functional copy of the model, infer training data membership, or harvest disproportionate compute.'
-    impact: 'If this risk remains unmitigated, model extraction undermines IP protection, membership inference can constitute a data breach, and cost harvesting drives unauthorized cloud spend.'
-    asvs: V11 - Business Logic
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Apply output perturbation, query rate limiting, and anomalous query pattern detection on all inference endpoints.
-    mitigation: Enforce strict per-user and per-token query rate limits and hard compute budgets. Add calibrated output perturbation (top-k sampling noise, confidence score truncation) to degrade model extraction signal. Monitor for systematic grid-search query patterns characteristic of model extraction. Require authenticated access with short-lived tokens. Log all inference requests with user identity for audit and anomaly detection.
-    references: MITRE ATLAS AML.T0005 (Create Proxy AI Model), AML.T0024 (Exfiltration via AI Inference API — T0024.000-.002), AML.T0029 (Denial of AI Service), AML.T0034 (Cost Harvesting — T0034.000-.001), AML.T0040 (AI Model Inference API Access), AML.T0047 (AI-Enabled Product or Service), AML.T0063 (Discover AI Model Outputs), AML.T0077 (LLM Response Rendering); NIST AI RMF GOVERN 6.2
-    risk_assessment: High for externally accessible endpoints serving proprietary models trained on CUI. Medium for internal-only endpoints.
-    false_positives: Inference API is internal-only, accessible exclusively to authenticated service accounts, and the underlying model contains no sensitive training data.
-    function: architecture
-    stride: information-disclosure
-    detection_logic: Monitor inference logs for statistical patterns consistent with extraction (systematic input sweeps, near-boundary probing, anomalously high per-user query volume). Alert on resource consumption spikes. Track per-session query diversity and flag low-entropy repetitive probing.
-    risks_identified: {}
+  # 'ATLAS: LLM Inference API Abuse, Cost Harvesting, and Model Extraction' and 'ATLAS:
+  # Unbounded AI Resource Consumption and Denial of Service' (both triggered by
+  # ai:llm-endpoint) have been ported into the jessestarkey/threagile fork as native script
+  # rules (pkg/risks/scripts/atlas-inference-api-abuse.yaml and
+  # atlas-unbounded-ai-consumption.yaml), triggered off the new native llm-endpoint technology
+  # instead. Removed here rather than left duplicated. See docs/risk-methodology.md for the
+  # full rationale.
 
-  # Distinct from atlas-inference-api-abuse above: that category is about
-  # extraction/cost-harvesting signal (a sophisticated adversary probing to
-  # steal the model or its data), while this one is about plain volumetric
-  # resource exhaustion -- no extraction sophistication required, just
-  # unmetered request/context/output volume denying service to legitimate
-  # users. OWASP LLM10:2025 and ATLAS AML.T0029 cover this as its own
-  # concern distinct from LLM10's sibling extraction/IP-theft entries.
-  'ATLAS: Unbounded AI Resource Consumption and Denial of Service':
-    id: atlas-unbounded-ai-consumption
-    baseline_likelihood: very-likely
-    baseline_impact: medium
-    description: 'The asset exposes an LLM or model inference API with no enforced limit on request volume, concurrency, or per-request context/output size, letting a single caller or small set of callers exhaust compute capacity and deny service to legitimate users.'
-    impact: 'If this risk remains unmitigated, an adversary -- or an unintentionally runaway legitimate client -- can degrade or fully deny inference service to legitimate users and drive unbounded compute/cloud spend, since each request can consume disproportionate GPU/CPU time relative to its cost to send.'
-    asvs: V11 - Business Logic
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Enforce per-user/per-session rate limits, concurrency caps, and maximum context/output token budgets on every inference endpoint.
-    mitigation: Apply hard per-user and per-API-key request-rate and concurrency limits at the gateway in front of the inference endpoint, not only inside application logic a direct caller could bypass. Cap maximum input context length and maximum output token count per request, and reject or truncate requests that exceed the limit rather than queuing them. Apply adaptive throttling that degrades gracefully (reduced throughput) rather than failing open under load. Monitor per-user and aggregate compute consumption with alerting on sustained anomalous volume. Apply a hard autoscaling ceiling to prevent a single abusive client from driving uncontrolled cloud spend.
-    references: MITRE ATLAS AML.T0029 (Denial of AI Service); OWASP LLM10:2025 (Unbounded Consumption); NIST AI RMF MANAGE 2.3
-    risk_assessment: High for externally accessible, unauthenticated or loosely-authenticated endpoints with no gateway-level throttling. Medium for internal-only endpoints or those already behind a general-purpose API gateway with some rate limiting.
-    false_positives: The asset is tagged ai:resource-budget-enforced confirming per-user rate limits, concurrency caps, and context/output token budgets are enforced at the gateway layer.
-    function: architecture
-    stride: denial-of-service
-    detection_logic: Monitor per-user and aggregate request volume, token consumption, and compute time against expected baselines. Alert on sustained throughput from a single identity or small set of identities disproportionate to typical usage. Track queue depth and request latency percentiles for degradation signals consistent with resource exhaustion.
-    risks_identified: {}
-
-  'ATLAS: AI Model Supply Chain Compromise and Model Manipulation':
-    id: atlas-model-supply-chain
-    baseline_likelihood: unlikely
-    baseline_impact: very-high
-    description: 'The asset loads or serves trained model artifacts from external or shared registries, which can be compromised at the weights, container, or dependency level.'
-    impact: 'If this risk remains unmitigated, a backdoored model artifact can achieve remote code execution on the serving host or produce systematically manipulated outputs that pass standard evaluation.'
-    asvs: V14 - Configuration
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
-    action: Establish model artifact provenance verification as a mandatory CI/CD gate and ban Pickle-based model formats.
-    mitigation: Source all model artifacts exclusively from a private, access-controlled registry. Enforce cryptographic digest pinning (SHA-256) for all model files. Use safetensors format instead of Pickle-based formats (.pt, .pkl) to eliminate deserialization RCE surface. Scan all model archives for embedded executable code using tools such as picklescan. Run behavioral diff against a known-good checkpoint before promoting to production. Restrict write access to model serving directories.
-    references: MITRE ATLAS AML.T0010 (AI Supply Chain Compromise — T0010.001-.004), AML.T0011.000 (Unsafe AI Artifacts), AML.T0018 (Manipulate AI Model — T0018.000-.002), AML.T0043.004 (Insert Backdoor Trigger), AML.T0076 (Corrupt AI Model); NIST AI RMF GOVERN 1.6
-    risk_assessment: Critical if loading Pickle-format weights from public registries or shared internal registries without digest pinning.
-    false_positives: Model artifact is fully internally trained, stored in a private registry with strict access control, uses safetensors format, and is digest-pinned.
-    function: architecture
-    stride: tampering
-    detection_logic: Verify SHA-256 digest of each model file in the CI/CD pipeline against a pinned manifest. Run picklescan on all model archives before any deserialization. Monitor model serving process for anomalous network egress on startup.
-    risks_identified: {}
+  # 'ATLAS: AI Model Supply Chain Compromise and Model Manipulation' has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/atlas-model-supply-chain.yaml), triggered off the new native
+  # model-serving technology instead of the ai:model-serving tag. Removed here rather than
+  # left duplicated.
 
   'ATLAS: Training Data Poisoning and Model Backdoor Insertion':
     id: atlas-training-data-poisoning
@@ -1282,23 +1211,11 @@ custom_risk_definitions:
     detection_logic: Audit dataset store access logs for anomalous bulk read operations or writes from unauthenticated sources. Verify cryptographic hashes of dataset files on each pipeline read. Alert on DLP violations on data egress paths from the store.
     risks_identified: {}
 
-  'ATLAS: AI Model Registry Supply Chain and Reputation Attack':
-    id: atlas-model-registry-supply-chain
-    baseline_likelihood: unlikely
-    baseline_impact: very-high
-    description: 'The model registry or artifact store is a centralized supply chain chokepoint that can be used to publish malware-embedded models, replace a trusted model version, or inflate reputation metrics.'
-    impact: 'If this risk remains unmitigated, a malicious model artifact deployed via the registry can achieve remote code execution on the serving infrastructure.'
-    asvs: V14 - Configuration
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
-    action: Enforce cryptographic signing and digest pinning for all model artifacts in the registry.
-    mitigation: Require cryptographic signing (e.g., Sigstore/Cosign) for all model artifacts published to the registry. Enforce digest pinning — reject any artifact without a pinned SHA-256 hash in the pipeline manifest. Prohibit Pickle-format artifacts; require safetensors. Mirror all approved external artifacts to a private, access-controlled internal registry. Implement write-protect on production artifact versions to prevent rug pulls. Monitor public hub reputation metrics for registered models.
-    references: MITRE ATLAS AML.T0010 (AI Supply Chain Compromise — T0010.001-.004), AML.T0011.000 (Unsafe AI Artifacts), AML.T0011.001 (Malicious Package), AML.T0058 (Publish Poisoned Models), AML.T0109 (AI Supply Chain Rug Pull), AML.T0111 (AI Supply Chain Reputation Inflation); NIST AI RMF GOVERN 1.6
-    risk_assessment: Critical for registries that serve production model artifacts without cryptographic verification.
-    false_positives: Registry serves only internally trained models with no external artifact sourcing, all artifacts are in safetensors format, and all writes require privileged CI/CD service account authentication.
-    function: architecture
-    stride: tampering
-    detection_logic: Verify cryptographic signatures and digest hashes for all artifacts at pull time in the CI/CD pipeline. Alert on unsigned or hash-mismatched artifact downloads. Monitor for anomalous modifications to published artifact versions (rug pull detection). Run picklescan on any non-safetensors artifact before staging.
-    risks_identified: {}
+  # 'ATLAS: AI Model Registry Supply Chain and Reputation Attack' has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/atlas-model-registry-supply-chain.yaml), triggered off the new native
+  # model-registry technology instead of the ai:model-registry tag. Removed here rather than
+  # left duplicated. See docs/risk-methodology.md for the full rationale.
 
   'ATLAS: AI Model Intellectual Property Theft and Proxy Model Creation':
     id: atlas-model-ip-theft

@@ -529,9 +529,14 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ai:indirect-prompt-input' in tags:
             inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "Indirect Prompt Injection Risk")
 
-        # RAG pipeline (poisoning, credential harvesting, data exfil from retrieval)
+        # NOTE: "ATLAS: RAG Pipeline Poisoning and Data Exfiltration" has been ported into the
+        # jessestarkey/threagile fork as a native script rule
+        # (pkg/risks/scripts/atlas-rag-poisoning-exfil.yaml), triggered off the new native
+        # rag-pipeline technology instead of the ai:rag-pipeline tag. Removed here rather than
+        # left duplicated. The tag itself stays -- still read just below for the indirect prompt
+        # injection half, which is a different category not yet ported. See
+        # docs/risk-methodology.md for the full rationale.
         if 'ai:rag-pipeline' in tags:
-            inject("ATLAS: RAG Pipeline Poisoning and Data Exfiltration", "RAG Poisoning Risk")
             # RAG retrieval is inherently an indirect prompt injection surface
             inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "RAG Indirect Injection Risk")
 
@@ -539,9 +544,15 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ai:rag-ingest-pipeline' in tags:
             inject("ATLAS: Dataset and RAG Ingest Integrity Erosion", "RAG Ingest Poisoning Risk")
 
-        # Agent orchestration (full agentic attack surface: context poisoning, config tamper, C2, escape)
+        # NOTE: "ATLAS: AI Agent Orchestration Hijack and Persistence" has been ported into the
+        # jessestarkey/threagile fork as a native script rule
+        # (pkg/risks/scripts/atlas-agent-orchestration-hijack.yaml), triggered off the new
+        # native agent-orchestrator technology instead of the ai:agent-orchestrator tag.
+        # Removed here rather than left duplicated. The tag itself stays -- still read just
+        # below for the indirect prompt injection half, and further below for the AI
+        # OT-actuation check, neither of which is ported yet. See docs/risk-methodology.md for
+        # the full rationale.
         if 'ai:agent-orchestrator' in tags:
-            inject("ATLAS: AI Agent Orchestration Hijack and Persistence", "Agent Orchestration Risk")
             # Orchestrators that process external content also inherit indirect injection
             if 'ai:indirect-prompt-input' not in tags:
                 inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "Agent Indirect Injection Risk")
@@ -554,15 +565,24 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ai:agent-memory' in tags:
             inject("ATLAS: AI Agent Memory and Session State Poisoning", "Agent Memory Poisoning Risk")
 
-        # LLM inference endpoint (API abuse, model extraction, DoAI, cost harvesting)
-        if 'ai:llm-endpoint' in tags:
-            inject("ATLAS: LLM Inference API Abuse, Cost Harvesting, and Model Extraction", "Inference API Abuse Risk")
-            if 'ai:resource-budget-enforced' not in tags:
-                inject("ATLAS: Unbounded AI Resource Consumption and Denial of Service", "Unbounded Consumption Risk")
+        # NOTE: "ATLAS: LLM Inference API Abuse, Cost Harvesting, and Model Extraction" and
+        # "ATLAS: Unbounded AI Resource Consumption and Denial of Service" -- both triggered by
+        # ai:llm-endpoint -- have been ported into the jessestarkey/threagile fork as native
+        # script rules (pkg/risks/scripts/atlas-inference-api-abuse.yaml and
+        # atlas-unbounded-ai-consumption.yaml), triggered off the new native llm-endpoint
+        # technology instead. Removed here rather than left duplicated. ai:llm-endpoint stays
+        # -- still read further below for the AI OT-actuation and canary-testing checks,
+        # neither of which is ported yet. ai:resource-budget-enforced was only ever the
+        # suppression tag for the now-removed unbounded-consumption check, so it's fully
+        # unused now and removed from 03-tags-lib.yml too. See docs/risk-methodology.md for
+        # the full rationale.
 
-        # Model serving host (supply chain compromise, weight manipulation, embedded malware)
-        if 'ai:model-serving' in tags:
-            inject("ATLAS: AI Model Supply Chain Compromise and Model Manipulation", "Model Supply Chain Risk")
+        # NOTE: "ATLAS: AI Model Supply Chain Compromise and Model Manipulation" has been
+        # ported into the jessestarkey/threagile fork as a native script rule
+        # (pkg/risks/scripts/atlas-model-supply-chain.yaml), triggered off the new native
+        # model-serving technology instead of the ai:model-serving tag. Removed here rather
+        # than left duplicated. The tag itself stays -- still read further below for the
+        # model-rollback and registry-source checks, neither of which is ported yet.
 
         # Training / fine-tuning pipeline (data poisoning, backdoor insertion, CUI memorization)
         if 'ai:training-pipeline' in tags:
@@ -572,9 +592,12 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ai:dataset-store' in tags:
             inject("ATLAS: AI Training Dataset Exfiltration and Integrity Attack", "Dataset Store Attack Risk")
 
-        # Model registry / artifact store (registry supply chain, rug pull, reputation inflation)
-        if 'ai:model-registry' in tags:
-            inject("ATLAS: AI Model Registry Supply Chain and Reputation Attack", "Model Registry Risk")
+        # NOTE: "ATLAS: AI Model Registry Supply Chain and Reputation Attack" has been ported
+        # into the jessestarkey/threagile fork as a native script rule
+        # (pkg/risks/scripts/atlas-model-registry-supply-chain.yaml), triggered off the new
+        # native model-registry technology instead of the ai:model-registry tag. Removed here
+        # rather than left duplicated. The tag itself stays -- still read further below for the
+        # registry-source check, not yet ported.
 
         # Model IP exfiltration boundary (model extraction, proxy creation, IP theft)
         if 'ai:model-exfil-risk' in tags:
