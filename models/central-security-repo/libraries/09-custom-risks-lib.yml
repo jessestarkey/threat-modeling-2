@@ -1513,6 +1513,31 @@ custom_risk_definitions:
     detection_logic: Monitor inference logs for statistical patterns consistent with extraction (systematic input sweeps, near-boundary probing, anomalously high per-user query volume). Alert on resource consumption spikes. Track per-session query diversity and flag low-entropy repetitive probing.
     risks_identified: {}
 
+  # Distinct from atlas-inference-api-abuse above: that category is about
+  # extraction/cost-harvesting signal (a sophisticated adversary probing to
+  # steal the model or its data), while this one is about plain volumetric
+  # resource exhaustion -- no extraction sophistication required, just
+  # unmetered request/context/output volume denying service to legitimate
+  # users. OWASP LLM10:2025 and ATLAS AML.T0029 cover this as its own
+  # concern distinct from LLM10's sibling extraction/IP-theft entries.
+  'ATLAS: Unbounded AI Resource Consumption and Denial of Service':
+    id: atlas-unbounded-ai-consumption
+    baseline_likelihood: very-likely
+    baseline_impact: medium
+    description: 'The asset exposes an LLM or model inference API with no enforced limit on request volume, concurrency, or per-request context/output size, letting a single caller or small set of callers exhaust compute capacity and deny service to legitimate users.'
+    impact: 'If this risk remains unmitigated, an adversary -- or an unintentionally runaway legitimate client -- can degrade or fully deny inference service to legitimate users and drive unbounded compute/cloud spend, since each request can consume disproportionate GPU/CPU time relative to its cost to send.'
+    asvs: V11 - Business Logic
+    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
+    action: Enforce per-user/per-session rate limits, concurrency caps, and maximum context/output token budgets on every inference endpoint.
+    mitigation: Apply hard per-user and per-API-key request-rate and concurrency limits at the gateway in front of the inference endpoint, not only inside application logic a direct caller could bypass. Cap maximum input context length and maximum output token count per request, and reject or truncate requests that exceed the limit rather than queuing them. Apply adaptive throttling that degrades gracefully (reduced throughput) rather than failing open under load. Monitor per-user and aggregate compute consumption with alerting on sustained anomalous volume. Apply a hard autoscaling ceiling to prevent a single abusive client from driving uncontrolled cloud spend.
+    references: MITRE ATLAS AML.T0029 (Denial of AI Service); OWASP LLM10:2025 (Unbounded Consumption); NIST AI RMF MANAGE 2.3
+    risk_assessment: High for externally accessible, unauthenticated or loosely-authenticated endpoints with no gateway-level throttling. Medium for internal-only endpoints or those already behind a general-purpose API gateway with some rate limiting.
+    false_positives: The asset is tagged ai:resource-budget-enforced confirming per-user rate limits, concurrency caps, and context/output token budgets are enforced at the gateway layer.
+    function: architecture
+    stride: denial-of-service
+    detection_logic: Monitor per-user and aggregate request volume, token consumption, and compute time against expected baselines. Alert on sustained throughput from a single identity or small set of identities disproportionate to typical usage. Track queue depth and request latency percentiles for degradation signals consistent with resource exhaustion.
+    risks_identified: {}
+
   'ATLAS: AI Model Supply Chain Compromise and Model Manipulation':
     id: atlas-model-supply-chain
     baseline_likelihood: unlikely
@@ -1886,6 +1911,23 @@ custom_risk_definitions:
     false_positives: The asset is tagged ai:vendor-model-governed confirming a data-transmission classification restriction is enforced, a training-use opt-out is on file, the API key is vaulted/rotated as an internal secret, and vendor security posture is reviewed on a recurring cadence.
     function: architecture
     stride: information-disclosure
+    risks_identified: {}
+
+  AI-Generated Decision Support Without Verification Signal:
+    id: ai-overreliance-misinformation
+    baseline_likelihood: likely
+    baseline_impact: medium
+    description: 'This asset presents AI-generated output to a human as input to a consequential decision, with no confidence indicator, citation/provenance, or mandatory verification step to help the human catch a confidently wrong (hallucinated) answer.'
+    impact: 'If this risk remains unmitigated, a human decision-maker can act on a fluent, confident, but factually wrong AI output -- misclassifying data, misreporting status, or authorizing an action based on a fabricated summary of CUI -- with no built-in signal distinguishing a well-grounded answer from a hallucinated one.'
+    asvs: V1 - Architecture, Design and Threat Modeling
+    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
+    action: Surface a confidence indicator, source citation, or provenance trail alongside AI-generated output feeding any consequential decision, and require explicit human verification before the decision is finalized.
+    mitigation: Attach source citations or retrieval provenance to AI-generated output wherever the underlying answer is grounded in retrieved content, so a reviewer can check the answer against its source directly. Surface a calibrated confidence or uncertainty indicator rather than presenting every answer with uniform, confident phrasing. For decisions above a defined consequence threshold, require an explicit human acknowledgment step that the output has been checked against an independent source before the decision is recorded as final. Periodically sample production outputs feeding real decisions against ground truth to measure actual hallucination rate in context, not just in a lab benchmark.
+    references: OWASP LLM09:2025 (Misinformation); NIST AI RMF (MEASURE 2.7, MANAGE 2.3); MAESTRO L6 (Security and Compliance)
+    risk_assessment: High where the AI output directly informs a consequential decision (classification, compliance status, operational action) with no citation or confidence signal. Medium where output is advisory in a low-stakes context or already paired with partial provenance.
+    false_positives: The asset is tagged ai:output-confidence-disclosed confirming AI-generated output feeding decisions carries citations, confidence indicators, or a mandatory human-verification step before the decision is finalized.
+    function: operations
+    stride: tampering
     risks_identified: {}
 
   # #############################################################################

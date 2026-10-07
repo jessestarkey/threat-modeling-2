@@ -557,6 +557,8 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # LLM inference endpoint (API abuse, model extraction, DoAI, cost harvesting)
         if 'ai:llm-endpoint' in tags:
             inject("ATLAS: LLM Inference API Abuse, Cost Harvesting, and Model Extraction", "Inference API Abuse Risk")
+            if 'ai:resource-budget-enforced' not in tags:
+                inject("ATLAS: Unbounded AI Resource Consumption and Denial of Service", "Unbounded Consumption Risk")
 
         # Model serving host (supply chain compromise, weight manipulation, embedded malware)
         if 'ai:model-serving' in tags:
@@ -643,6 +645,9 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
 
         if 'ai:third-party-model-api' in tags and 'ai:vendor-model-governed' not in tags:
             inject("Ungoverned Third-Party Foundation Model API Dependency", "Third-Party Model API Risk")
+
+        if 'ai:decision-support-output' in tags and 'ai:output-confidence-disclosed' not in tags:
+            inject("AI-Generated Decision Support Without Verification Signal", "AI Overreliance Risk")
 
         # --- 2c. CROSS-DOMAIN SOLUTION INTERFACE ---
 

@@ -294,6 +294,9 @@ tags_available:
   - ai:hyperparameter-diffed     # Every promotion-bound run's actual applied hyperparameters are recorded and diffed against an approved baseline before promotion — suppresses the hyperparameter-tampering-no-baseline-diff risk
   - ai:third-party-model-api     # Asset sends requests to a vendor-hosted foundation model API — trigger for the ungoverned-third-party-model-api risk
   - ai:vendor-model-governed     # Data-transmission classification restriction, training-use opt-out, credential vaulting, and recurring vendor security-posture review are all confirmed for this vendor model API — suppresses the ungoverned-third-party-model-api risk
+  - ai:resource-budget-enforced  # Per-user/per-API-key rate limits, concurrency caps, and max context/output token budgets are enforced at the gateway in front of this inference endpoint — suppresses the atlas-unbounded-ai-consumption risk (trigger is the existing ai:llm-endpoint tag)
+  - ai:decision-support-output   # Asset's AI-generated output is presented to a human as input to a consequential decision (not just casual/low-stakes chat) — trigger for the ai-overreliance-misinformation risk
+  - ai:output-confidence-disclosed # AI-generated output feeding decisions carries citations, confidence indicators, or a mandatory human-verification step before the decision is finalized — suppresses the ai-overreliance-misinformation risk
 
   # =============================================================================
   # DIAGRAM ICON TAGS
