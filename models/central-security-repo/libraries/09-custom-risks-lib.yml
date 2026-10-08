@@ -1403,22 +1403,12 @@ custom_risk_definitions:
     stride: elevation-of-privilege
     risks_identified: {}
 
-  Ungoverned Production System Prompt Change:
-    id: ungoverned-system-prompt-change
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'This asset''s production system prompt can be edited without version control, review, or injection-hardening requirements.'
-    impact: 'If this risk remains unmitigated, an unreviewed prompt change can silently widen the model''s capability or remove a safety constraint, with no runtime signal for a filter or detector to catch.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Bring production system prompts under source control with mandatory review before deployment, and enforce explicit instruction-boundary/context-separation structure in every version.
-    mitigation: Store system prompts as versioned artifacts in source control, requiring the same PR review and approval as application code before a change reaches production. Require every system prompt version to maintain explicit structural separation between system instructions, user input, and any retrieved/tool-returned content (clear delimiters, role-anchoring), reviewed as part of the change. Log which prompt version served each production request so an incident can be traced to the exact prompt in effect at the time.
-    references: NIST AI RMF (GOVERN 1.5, MANAGE 4.1); OWASP Top 10 for LLM Applications (LLM01 Prompt Injection); NIST SP 800-53 CM-3 (Configuration Change Control)
-    risk_assessment: High for any production LLM asset where the system prompt can be modified without version control and review.
-    false_positives: The asset is tagged ai:system-prompt-governed confirming system prompts are version-controlled with mandatory review and enforce explicit instruction-boundary structure.
-    function: operations
-    stride: tampering
-    risks_identified: {}
+  # Ungoverned Production System Prompt Change has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/ungoverned-system-prompt-change.yaml), triggered off the
+  # llm-endpoint/rag-pipeline/agent-orchestrator technology attributes instead of the
+  # ai:user-prompt-input/ai:llm-endpoint/ai:agent-orchestrator tags. Removed here rather than
+  # left duplicated. See docs/risk-methodology.md for the full rationale.
 
   On-Device Model Extraction Resistance Gap:
     id: on-device-model-extraction-gap
@@ -1454,56 +1444,12 @@ custom_risk_definitions:
     stride: tampering
     risks_identified: {}
 
-  Missing Model Rollback and Kill-Switch Mechanism:
-    id: missing-model-rollback-killswitch
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'There is no capability to revert this model-serving asset to a previously validated version, or cut traffic via a kill switch, without rerunning the full deployment pipeline.'
-    impact: 'If this risk remains unmitigated, a model found to be compromised or badly regressed continues serving production traffic for the full duration of a redeployment cycle.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Implement a rollback mechanism that restores a previously validated model version within a defined recovery time, and a kill switch that can halt serving entirely with a defined safe-mode fallback.
-    mitigation: Maintain the previous validated model version in a ready-to-serve state (not archived/cold storage) so traffic can be redirected to it without a full pipeline run, and define and test the actual recovery time this takes. Implement a kill switch — both an automated trigger (e.g., on an eval/canary failure) and a manual override — that halts serving and falls back to a defined safe mode (static response, degraded functionality, or full outage, whichever is safer for this use case) rather than continuing to serve a known-bad model.
-    references: NIST AI RMF (MANAGE 2.2, MANAGE 4.1); MAESTRO L5 (Evaluation and Observability)
-    risk_assessment: High for any production model-serving asset with no tested rollback path and no kill switch independent of the standard deployment pipeline.
-    false_positives: The asset is tagged ai:rollback-capable confirming a tested rollback-within-recovery-time path and an independent kill switch with a defined safe-mode fallback exist.
-    function: operations
-    stride: denial-of-service
-    risks_identified: {}
-
-  No Canary Prompt Testing Against Production Inference Endpoint:
-    id: missing-canary-prompt-testing
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'There is no versioned suite of known-answer prompts run against the production inference endpoint on a recurring cadence to detect a silently swapped model, a disabled safety filter, or an unreviewed system prompt change.'
-    impact: 'If this risk remains unmitigated, a disabled guardrail or a silently swapped model can persist for an extended period, since traffic-based monitoring alone has no independent baseline to compare against.'
-    asvs: V7 - Error Handling and Logging
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Run a versioned suite of fixed, known-answer canary prompts against the production inference endpoint on a recurring schedule, and alert on any deviation from the expected response class.
-    mitigation: Build a versioned suite of canary prompts with known-acceptable response characteristics (including prompts specifically designed to verify safety guardrails are active) and execute it against the production endpoint on a defined schedule (e.g., hourly), independent of real user traffic. Alert immediately on any canary result outside its expected class, since this is one of the few signals that catches a silent model swap, a disabled guardrail, or an unreviewed system prompt change without waiting for a user-visible incident.
-    references: NIST AI RMF (MEASURE 2.7, MANAGE 4.1); MAESTRO L5 (Evaluation and Observability)
-    risk_assessment: High for any production inference endpoint with no recurring canary suite independent of real traffic monitoring.
-    false_positives: The asset is tagged ai:canary-tested confirming a versioned canary prompt suite runs against the production endpoint on a recurring schedule with alerting on deviation.
-    function: operations
-    stride: tampering
-    risks_identified: {}
-
-  Untrusted Model Registry Source:
-    id: untrusted-model-registry-source
-    baseline_likelihood: unlikely
-    baseline_impact: very-high
-    description: 'This serving platform has loaded, or can load, a model whose registry host and artifact digest do not resolve to an approved internal registry.'
-    impact: 'If this risk remains unmitigated, a model bypasses every certification, signing, and scanning gate the approved registry enforces, with no way for the serving platform to distinguish it from a properly vetted one.'
-    asvs: V14 - Configuration
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
-    action: Restrict the serving platform to load models only from the approved internal registry, verified by registry host and artifact digest, and block direct loading from any other source.
-    mitigation: Configure the serving platform's model-loading path to accept only artifacts whose registry host and digest match the approved internal registry's manifest — reject any load request referencing a public hub, a local filesystem path outside the registry sync location, or an unrecognized host. Treat a request to bypass this restriction (e.g., for rapid experimentation) as requiring the same review as a production deployment, not an informal exception.
-    references: NIST SP 800-53 SR-4 (Provenance); NIST AI RMF (MANAGE 2.3); MAESTRO L6 (Security and Compliance) / L7 (Ecosystem)
-    risk_assessment: Critical for any serving platform capable of loading a model from a source other than the approved internal registry.
-    false_positives: The asset is tagged ai:registry-source-verified confirming the serving platform loads models only from the approved internal registry, verified by host and digest.
-    function: architecture
-    stride: tampering
-    risks_identified: {}
+  # Missing Model Rollback and Kill-Switch Mechanism, No Canary Prompt Testing Against
+  # Production Inference Endpoint, and Untrusted Model Registry Source have all been ported
+  # into the jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml),
+  # triggered off the native model-serving/llm-endpoint/model-registry technology attributes
+  # instead of the ai:model-serving/ai:llm-endpoint/ai:model-registry tags. Removed here rather
+  # than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   Training Script and Feature-Engineering Pipeline IP Exfiltration:
     id: training-script-ip-exfiltration

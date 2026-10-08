@@ -652,25 +652,23 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ai:ot-adjacent-output' in tags:
             inject("AI Output Path to OT or Safety-Critical Actuation Without Human Gate", "OT Actuation Boundary Risk")
 
-        if any(t in tags for t in ('ai:user-prompt-input', 'ai:llm-endpoint', 'ai:agent-orchestrator')) \
-                and 'ai:system-prompt-governed' not in tags:
-            inject("Ungoverned Production System Prompt Change", "System Prompt Governance Risk")
+        # NOTE: "Ungoverned Production System Prompt Change," "No Canary Prompt Testing Against
+        # Production Inference Endpoint," "Missing Model Rollback and Kill-Switch Mechanism,"
+        # and "Untrusted Model Registry Source" have all been ported into the
+        # jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml),
+        # triggered off the native llm-endpoint/rag-pipeline/agent-orchestrator/model-serving/
+        # model-registry technology attributes instead of re-checking tags of the same name.
+        # Removed here rather than left duplicated. This was the last use of ai:llm-endpoint,
+        # ai:model-serving, and ai:model-registry in this file, so all 3 tags are now fully
+        # removed from 03-tags-lib.yml too. ai:agent-orchestrator and ai:rag-pipeline stay --
+        # each still has one other, unrelated use (the indirect-prompt-injection piggyback)
+        # elsewhere in this file. See docs/risk-methodology.md for the full rationale.
 
         if 'ai:on-device-inference' in tags and 'ai:secure-enclave-protected' not in tags:
             inject("On-Device Model Extraction Resistance Gap", "On-Device Extraction Risk")
 
         if 'ai:air-gapped-model-delivery' in tags and 'ai:model-package-signed' not in tags:
             inject("Offline or Air-Gapped Model Package Integrity Gap", "Air-Gapped Model Integrity Risk")
-
-        if 'ai:model-serving' in tags and 'ai:rollback-capable' not in tags:
-            inject("Missing Model Rollback and Kill-Switch Mechanism", "Model Rollback Gap Risk")
-
-        if 'ai:llm-endpoint' in tags and 'ai:canary-tested' not in tags:
-            inject("No Canary Prompt Testing Against Production Inference Endpoint", "Canary Testing Gap Risk")
-
-        if any(t in tags for t in ('ai:model-registry', 'ai:model-serving')) \
-                and 'ai:registry-source-verified' not in tags:
-            inject("Untrusted Model Registry Source", "Untrusted Registry Source Risk")
 
         if 'ai:training-pipeline' in tags:
             if 'ai:training-code-protected' not in tags:
