@@ -552,9 +552,12 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             # RAG retrieval is inherently an indirect prompt injection surface
             inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "RAG Indirect Injection Risk")
 
-        # RAG ingest pipeline (dataset / knowledge base integrity at write time)
-        if 'ai:rag-ingest-pipeline' in tags:
-            inject("ATLAS: Dataset and RAG Ingest Integrity Erosion", "RAG Ingest Poisoning Risk")
+        # NOTE: "ATLAS: Dataset and RAG Ingest Integrity Erosion" has been ported into the
+        # jessestarkey/threagile fork as a native script rule
+        # (pkg/risks/scripts/atlas-dataset-ingest-integrity.yaml), triggered off the new native
+        # rag-ingest-pipeline technology instead of the ai:rag-ingest-pipeline tag. This was its
+        # only use, so the tag is now fully removed from 03-tags-lib.yml too. See
+        # docs/risk-methodology.md for the full rationale.
 
         # NOTE: "ATLAS: AI Agent Orchestration Hijack and Persistence" has been ported into the
         # jessestarkey/threagile fork as a native script rule
@@ -596,13 +599,21 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # than left duplicated. The tag itself stays -- still read further below for the
         # model-rollback and registry-source checks, neither of which is ported yet.
 
-        # Training / fine-tuning pipeline (data poisoning, backdoor insertion, CUI memorization)
-        if 'ai:training-pipeline' in tags:
-            inject("ATLAS: Training Data Poisoning and Model Backdoor Insertion", "Training Data Poisoning Risk")
+        # NOTE: "ATLAS: Training Data Poisoning and Model Backdoor Insertion" has been ported
+        # into the jessestarkey/threagile fork as a native script rule
+        # (pkg/risks/scripts/atlas-training-data-poisoning.yaml), triggered off the new native
+        # training-pipeline technology instead of the ai:training-pipeline tag. Removed here
+        # rather than left duplicated. The tag itself stays -- still read further below for the
+        # training-script-exfiltration and hyperparameter-tampering checks, which are also
+        # being ported in this same pass (see below).
 
-        # Training dataset store (dataset exfiltration, integrity erosion, CUI at rest)
-        if 'ai:dataset-store' in tags:
-            inject("ATLAS: AI Training Dataset Exfiltration and Integrity Attack", "Dataset Store Attack Risk")
+        # NOTE: "ATLAS: AI Training Dataset Exfiltration and Integrity Attack" has been ported
+        # into the jessestarkey/threagile fork as a native script rule
+        # (pkg/risks/scripts/atlas-dataset-store-attack.yaml), triggered off the new native
+        # dataset-store technology instead of the ai:dataset-store tag. Removed here rather than
+        # left duplicated. The tag itself stays -- still read further below by the Missing Data
+        # Provenance and Lineage Chain-of-Custody check, which also reads the unrelated
+        # data:external-feed-ingest tag and isn't portable the same way.
 
         # NOTE: "ATLAS: AI Model Registry Supply Chain and Reputation Attack" has been ported
         # into the jessestarkey/threagile fork as a native script rule
@@ -620,21 +631,22 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ai:agent-framework' in tags:
             inject("MAESTRO L3: Agent Framework and Dependency Supply Chain Compromise", "Framework Supply Chain Risk")
 
-        # Evaluation pipeline integrity (MAESTRO L5)
-        if 'ai:eval-pipeline' in tags:
-            inject("MAESTRO L5: Evaluation Pipeline and Benchmark Poisoning", "Eval Pipeline Poisoning Risk")
+        # NOTE: "MAESTRO L5: Evaluation Pipeline and Benchmark Poisoning," "MAESTRO L5: AI
+        # Observability Stack Compromise and Evidence Destruction," and "MAESTRO L6: AI-Powered
+        # Security Tooling Compromise" have all been ported into the jessestarkey/threagile
+        # fork as native script rules (pkg/risks/scripts/*.yaml), triggered off the new native
+        # eval-pipeline/ai-observability-stack/ai-security-agent technologies instead of the
+        # ai:eval-pipeline/ai:observability-stack/ai:security-agent tags. Each was that tag's
+        # only use, so all 3 tags are now fully removed from 03-tags-lib.yml too. See
+        # docs/risk-methodology.md for the full rationale.
 
-        # Observability stack as adversarial target (MAESTRO L5)
-        if 'ai:observability-stack' in tags:
-            inject("MAESTRO L5: AI Observability Stack Compromise and Evidence Destruction", "Observability Compromise Risk")
-
-        # AI-powered security tooling as target (MAESTRO L6)
-        if 'ai:security-agent' in tags:
-            inject("MAESTRO L6: AI-Powered Security Tooling Compromise", "Security AI Compromise Risk")
-
-        # Multi-agent trust boundary — identity, impersonation, goal manipulation (MAESTRO L7)
+        # NOTE: "MAESTRO L7: Agent Ecosystem Identity, Impersonation, and Goal Manipulation" has
+        # been ported into the jessestarkey/threagile fork as a native script rule
+        # (pkg/risks/scripts/maestro-l7-agent-ecosystem-identity.yaml), triggered off the new
+        # native multi-agent-gateway technology instead of the ai:multi-agent-boundary tag.
+        # Removed here rather than left duplicated. The tag itself stays -- still read just
+        # below for the indirect-prompt-injection piggyback.
         if 'ai:multi-agent-boundary' in tags:
-            inject("MAESTRO L7: Agent Ecosystem Identity, Impersonation, and Goal Manipulation", "Agent Ecosystem Identity Risk")
             # Multi-agent boundaries also inherit indirect prompt injection since agents
             # interpret messages from other agents as instructions -- but only when
             # the asset isn't already directly tagged ai:indirect-prompt-input, the
@@ -670,11 +682,13 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ai:air-gapped-model-delivery' in tags and 'ai:model-package-signed' not in tags:
             inject("Offline or Air-Gapped Model Package Integrity Gap", "Air-Gapped Model Integrity Risk")
 
-        if 'ai:training-pipeline' in tags:
-            if 'ai:training-code-protected' not in tags:
-                inject("Training Script and Feature-Engineering Pipeline IP Exfiltration", "Training Script Exfiltration Risk")
-            if 'ai:hyperparameter-diffed' not in tags:
-                inject("Hyperparameter Tampering Without Baseline Diffing", "Hyperparameter Tampering Risk")
+        # NOTE: "Training Script and Feature-Engineering Pipeline IP Exfiltration" and
+        # "Hyperparameter Tampering Without Baseline Diffing" have both been ported into the
+        # jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml),
+        # triggered off the native training-pipeline technology instead of the
+        # ai:training-pipeline tag. This was the tag's last remaining use, so it and its 2
+        # suppression tags (ai:training-code-protected, ai:hyperparameter-diffed) are now fully
+        # removed from 03-tags-lib.yml too. See docs/risk-methodology.md for the full rationale.
 
         if 'ai:third-party-model-api' in tags and 'ai:vendor-model-governed' not in tags:
             inject("Ungoverned Third-Party Foundation Model API Dependency", "Third-Party Model API Risk")

@@ -1137,23 +1137,11 @@ custom_risk_definitions:
   # rag-pipeline technology instead of the ai:rag-pipeline tag. Removed here rather than left
   # duplicated. See docs/risk-methodology.md for the full rationale.
 
-  'ATLAS: Dataset and RAG Ingest Integrity Erosion':
-    id: atlas-dataset-ingest-integrity
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'The pipeline that chunks, embeds, and writes documents into a vector store or training dataset is a high-value target for an adversary able to publish or inject poisoned content upstream.'
-    impact: 'If this risk remains unmitigated, a compromised ingest pipeline produces a poisoned knowledge base or training corpus that biases or corrupts model behavior at scale.'
-    asvs: V8 - Data Protection
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Treat the ingest pipeline as a critical security boundary with cryptographic provenance tracking.
-    mitigation: Maintain a signed, immutable data manifest for all ingested content. Enforce strict access controls on pipeline write paths. Apply statistical outlier detection to identify anomalous content distributions. Validate content against a known-good schema prior to embedding. Log and version all ingest mutations.
-    references: MITRE ATLAS AML.T0019 (Publish Poisoned Datasets), AML.T0020 (Poison Training Data), AML.T0059 (Erode Dataset Integrity), AML.T0099 (AI Agent Tool Data Poisoning); NIST AI RMF MAP 2.3
-    risk_assessment: High for pipelines that consume external or user-contributed content. Medium for fully internal, access-controlled corpora.
-    false_positives: All ingested content is cryptographically signed and sourced exclusively from an internally controlled, access-restricted repository with no external contribution path.
-    function: architecture
-    stride: tampering
-    detection_logic: Monitor ingest pipeline write logs for anomalous sources. Run automated content validation and anomaly detection on incoming documents before embedding. Alert on schema violations or statistical distribution shifts in ingested data.
-    risks_identified: {}
+  # 'ATLAS: Dataset and RAG Ingest Integrity Erosion' has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/atlas-dataset-ingest-integrity.yaml), triggered off the new native
+  # rag-ingest-pipeline technology instead of the ai:rag-ingest-pipeline tag. Removed here
+  # rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   # 'ATLAS: AI Agent Orchestration Hijack and Persistence' has been ported into the
   # jessestarkey/threagile fork as a native script rule
@@ -1211,41 +1199,17 @@ custom_risk_definitions:
   # model-serving technology instead of the ai:model-serving tag. Removed here rather than
   # left duplicated.
 
-  'ATLAS: Training Data Poisoning and Model Backdoor Insertion':
-    id: atlas-training-data-poisoning
-    baseline_likelihood: unlikely
-    baseline_impact: medium
-    description: 'The training or fine-tuning pipeline ingests data from sources an adversary may be able to write to, such as public datasets, web scrapes, or user feedback loops.'
-    impact: 'If this risk remains unmitigated, a model can be backdoored to behave maliciously on specific trigger inputs while appearing benign on standard evaluations.'
-    asvs: V8 - Data Protection
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Establish a data provenance and integrity chain for all training corpora and perform adversarial behavioral testing before every model promotion.
-    mitigation: Maintain a signed, immutable data manifest for all training inputs. Apply statistical outlier detection to identify anomalous label distributions prior to training. Run a behavioral evaluation on an independently curated adversarial holdout set specifically targeting backdoor triggers before every model promotion. Apply differential privacy mechanisms during fine-tuning. Scrub CUI, PII, and credentials from training data using automated PII detection pipelines before fine-tuning.
-    references: MITRE ATLAS AML.T0020 (Poison Training Data), AML.T0024.000 (Infer Training Data Membership), AML.T0031 (Erode AI Model Integrity), AML.T0043.004 (Insert Backdoor Trigger), AML.T0057 (LLM Data Leakage), AML.T0059 (Erode Dataset Integrity); NIST AI RMF MAP 2.3
-    risk_assessment: High for pipelines with continuous learning, RLHF, or human-feedback-driven fine-tuning. Medium for static, one-time training on a controlled corpus.
-    false_positives: Training data is entirely internally generated, cryptographically signed, scrubbed of CUI, and has never been sourced from an external or user-controlled origin.
-    function: architecture
-    stride: tampering
-    detection_logic: Implement automated data validation pipelines that flag statistical anomalies in label distributions. Conduct post-training behavioral testing on an adversarial holdout set designed to surface backdoor triggers. Run membership inference probes against the trained model to assess CUI memorization risk before promotion.
-    risks_identified: {}
+  # 'ATLAS: Training Data Poisoning and Model Backdoor Insertion' has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/atlas-training-data-poisoning.yaml), triggered off the new native
+  # training-pipeline technology instead of the ai:training-pipeline tag. Removed here rather
+  # than left duplicated. See docs/risk-methodology.md for the full rationale.
 
-  'ATLAS: AI Training Dataset Exfiltration and Integrity Attack':
-    id: atlas-dataset-store-attack
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'The authoritative dataset store for training or evaluation is a high-value target for both integrity attacks and exfiltration by anyone with access to it.'
-    impact: 'If this risk remains unmitigated, exfiltration of training data constitutes a formal data spill, and integrity compromise permanently poisons downstream models until rebuilt from a known-good state.'
-    asvs: V8 - Data Protection
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
-    action: Apply least-privilege access control, encryption at rest, and cryptographic integrity verification to all dataset storage.
-    mitigation: Enforce strict RBAC on dataset store access — limit write access to authenticated pipeline service accounts only. Encrypt all datasets at rest with FIPS-validated cryptography. Maintain cryptographic hashes for all dataset files and verify on read. Log all read and write access to dataset artifacts. Apply DLP controls on data egress paths from the dataset store.
-    references: MITRE ATLAS AML.T0019 (Publish Poisoned Datasets), AML.T0025 (Exfiltration via Cyber Means), AML.T0035 (AI Artifact Collection), AML.T0036 (Data from Information Repositories), AML.T0037 (Data from Local System), AML.T0059 (Erode Dataset Integrity); NIST AI RMF MAP 2.3, NIST SP 800-53 AU-9
-    risk_assessment: High if the dataset store contains CUI training samples. Medium for de-identified or synthetic datasets.
-    false_positives: Dataset store contains only fully de-identified, synthetic, or public-domain data confirmed by a pre-ingestion audit.
-    function: architecture
-    stride: information-disclosure
-    detection_logic: Audit dataset store access logs for anomalous bulk read operations or writes from unauthenticated sources. Verify cryptographic hashes of dataset files on each pipeline read. Alert on DLP violations on data egress paths from the store.
-    risks_identified: {}
+  # 'ATLAS: AI Training Dataset Exfiltration and Integrity Attack' has been ported into the
+  # jessestarkey/threagile fork as a native script rule
+  # (pkg/risks/scripts/atlas-dataset-store-attack.yaml), triggered off the new native
+  # dataset-store technology instead of the ai:dataset-store tag. Removed here rather than left
+  # duplicated. See docs/risk-methodology.md for the full rationale.
 
   # 'ATLAS: AI Model Registry Supply Chain and Reputation Attack' has been ported into the
   # jessestarkey/threagile fork as a native script rule
@@ -1295,92 +1259,15 @@ custom_risk_definitions:
     detection_logic: Run SCA scans on every CI/CD build and alert on newly introduced CVEs or suspicious new transitive dependencies. Monitor for unexpected network egress from the agent runtime process at startup.
     risks_identified: {}
 
-  'MAESTRO L5: Evaluation Pipeline and Benchmark Poisoning':
-    id: maestro-l5-eval-pipeline-poisoning
-    baseline_likelihood: unlikely
-    baseline_impact: medium
-    description: 'The model evaluation and benchmark pipeline that gates promotion decisions can be manipulated at the dataset, scoring, or reporting layer.'
-    impact: 'If this risk remains unmitigated, a backdoored or degraded model can pass pre-production review and reach every user in production undetected.'
-    asvs: V8 - Data Protection
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Treat evaluation datasets and scoring infrastructure with the same integrity controls as production systems.
-    mitigation: Store evaluation datasets in a write-protected, access-controlled repository with cryptographic hashing. Separate the evaluation pipeline's compute environment from the training pipeline with no shared write access. Maintain a secondary, independently curated adversarial holdout set stored offline and never used for training. Require dual-approval for any modification to evaluation datasets or scoring logic.
-    references: MAESTRO L5 (Evaluation and Observability) — Manipulation of Evaluation Metrics, Poisoned Benchmarks; NIST AI RMF MEASURE 2.5
-    risk_assessment: High for any AI system where a single automated evaluation pipeline is the sole gate before production promotion.
-    false_positives: Evaluation datasets are stored in an immutable, cryptographically signed artifact store with no external write path, and scoring logic is version-controlled with mandatory code review.
-    function: architecture
-    stride: tampering
-    detection_logic: Verify cryptographic hashes of evaluation dataset files before every eval run. Alert on any change to evaluation dataset artifacts outside the approved change management process. Cross-validate automated pipeline results against a manual spot-check on a random sample before every promotion decision.
-    risks_identified: {}
-
-  'MAESTRO L5: AI Observability Stack Compromise and Evidence Destruction':
-    id: maestro-l5-observability-compromise
-    baseline_likelihood: unlikely
-    baseline_impact: very-high
-    description: 'The AI-specific monitoring and anomaly-detection layer is itself an adversarial target once an attacker has initial access, since blinding it conceals further activity.'
-    impact: 'If this risk remains unmitigated, an attacker can selectively delete inference logs, mask anomalous behavior, or exfiltrate sensitive prompts through the telemetry pipeline itself.'
-    asvs: V7 - Error Handling and Logging
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html
-    action: Isolate AI observability infrastructure from the AI runtime write path and enforce tamper-evident logging.
-    mitigation: Route AI inference telemetry to a write-once, append-only log store that the AI runtime process cannot modify or delete. Enforce strict access separation between the AI system being monitored and the monitoring infrastructure. Scrub or tokenize PII and CUI from telemetry before storage using a pre-pipeline redaction layer. Implement integrity monitoring on observability pipeline configurations.
-    references: MAESTRO L5 (Evaluation and Observability) — Compromised Observability Tools, Evasion of Detection, Data Leakage through Observability; NIST SP 800-53 AU-9 (Protection of Audit Information)
-    risk_assessment: High for AI systems handling CUI where inference logs may capture sensitive content. Critical when the observability stack is the primary post-incident forensic source.
-    false_positives: Observability pipeline uses a fully isolated, write-once SIEM with no network path from the AI runtime to the log store modification API.
-    function: operations
-    stride: information-disclosure
-    detection_logic: Monitor observability pipeline configuration files for unauthorized modifications. Alert on any gap or discontinuity in inference log ingestion. Periodically verify log integrity using stored hashes. Audit access logs of the observability infrastructure itself.
-    risks_identified: {}
-
-  'MAESTRO L6: AI-Powered Security Tooling Compromise':
-    id: maestro-l6-security-ai-compromise
-    baseline_likelihood: unlikely
-    baseline_impact: very-high
-    description: 'AI-powered defensive tools that make trust decisions and trigger automated responses are themselves adversarial targets, and their compromise has outsized consequences.'
-    impact: 'If this risk remains unmitigated, a compromised security AI can suppress alerts for the attacker''s own activity, generate false incidents to overwhelm analysts, or pivot to other systems from a trusted context.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html
-    action: Apply the same adversarial threat modeling to AI security tools as to the systems they protect.
-    mitigation: Maintain an independent, non-AI detection layer as a backstop that the AI security tool cannot disable. Treat training and operational data fed to security AI as a high-value, integrity-protected asset. Implement adversarial robustness testing on security AI models before deployment and after significant retraining. Scope security AI agent permissions to advisory-only — alert generation, not automated response — unless human-in-the-loop approval is enforced for all response actions.
-    references: MAESTRO L6 (Security and Compliance — Vertical Layer) — Security Agent Data Poisoning, Evasion of Security AI Agents, Compromised Security AI Agents, Bias in Security AI; NIST SP 800-53 SI-3, SI-7
-    risk_assessment: Critical for any organization where an AI security tool has automated response authority (block, quarantine, disable). High for AI-assisted analysis tools with advisory-only scope.
-    false_positives: The AI security tool is read-only and advisory with no automated response capability, and all actions require human approval via a separate, non-AI workflow.
-    function: architecture
-    stride: elevation-of-privilege
-    detection_logic: Implement a parallel rule-based detection layer that operates independently of the AI security tool and alerts if their outputs diverge significantly. Monitor the security AI's own inference logs for anomalous input patterns. Periodically run known-malicious test scenarios against the security AI to verify detection (canary testing).
-    risks_identified: {}
-
-  'MAESTRO L7: Agent Ecosystem Identity, Impersonation, and Goal Manipulation':
-    id: maestro-l7-agent-ecosystem-identity
-    # Bumped from unlikely -- was rated a full tier below its own closest
-    # peers by trigger population (ATLAS: AI Agent Orchestration Hijack and
-    # Persistence, ATLAS: AI Agent Tool and Plugin Compromise -- both
-    # `likely`, both fire on the same ai:multi-agent-boundary assets
-    # alongside this one), with no principled reason identity spoofing/
-    # impersonation at a trust boundary should be inherently rarer than
-    # orchestration hijacking or tool/plugin compromise -- if anything it's
-    # a more mechanically approachable attack pattern (forging a token or
-    # identity claim is well-worn across all of security), not a rarer
-    # one. The other `unlikely`-rated categories in this file share a trait
-    # this one doesn't: they're about compromising a shared upstream/
-    # infrastructure component (a model registry, a framework dependency,
-    # an observability stack) -- a genuinely rarer class of attack -- while
-    # this category is about spoofing/impersonation at a boundary, closer
-    # in kind to its `likely`-rated orchestration/tool-compromise siblings.
-    baseline_likelihood: likely
-    baseline_impact: very-high
-    description: 'At multi-agent trust boundaries where agents delegate tasks across identity domains, the absence of strong agent identity and authorization controls enables impersonation, goal manipulation, and repudiation.'
-    impact: 'If this risk remains unmitigated, a malicious agent can impersonate a trusted one or alter another agent''s objectives, operating silently inside the system''s own trusted execution context.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Establish cryptographic agent identity and a non-repudiation audit trail for all cross-agent interactions before deploying multi-agent workflows.
-    mitigation: Assign each agent a unique, cryptographically verifiable identity (DIDs or PKI-backed service accounts) and require mutual authentication for all agent-to-agent communication. Maintain a central agent registry with strict admission controls — require signed manifests for all registered agents and tool definitions. Implement rate limiting on agent identity issuance to detect Sybil attacks. Enforce immutability on deployed agent system prompts — any modification must go through an audited change management process. Log all agent-to-agent interactions with cryptographic non-repudiation. Implement name collision detection in MCP/tool registries.
-    references: MAESTRO L7 (Agent Ecosystem) — Agent Impersonation, Agent Goal Manipulation, Sybil Attacks, Marketplace Manipulation, Repudiation; CSA AI NHI Survey 2025 (51% of orgs have no AI identity ownership); NIST SP 800-53 IA-9 (Service Identification and Authentication)
-    risk_assessment: Critical for any multi-agent deployment where agents delegate tasks across trust boundaries. High for single-agent deployments that interact with externally registered tools or MCP servers.
-    false_positives: Deployment uses only a single, fully isolated agent with no inter-agent communication, all tool definitions are hardcoded and version-pinned, and no external agent registry is consulted at runtime.
-    function: architecture
-    stride: spoofing
-    detection_logic: Monitor agent registry for registrations or modifications outside the approved change window. Alert on anomalous spikes in agent identity issuance. Audit cross-agent interaction logs for identity mismatches between claimed and cryptographically verified agent identity. Run periodic canary interactions using known-good agent identities to verify impersonation detection.
-    risks_identified: {}
+  # 'MAESTRO L5: Evaluation Pipeline and Benchmark Poisoning', 'MAESTRO L5: AI Observability
+  # Stack Compromise and Evidence Destruction', 'MAESTRO L6: AI-Powered Security Tooling
+  # Compromise', and 'MAESTRO L7: Agent Ecosystem Identity, Impersonation, and Goal
+  # Manipulation' have all been ported into the jessestarkey/threagile fork as native script
+  # rules (pkg/risks/scripts/*.yaml), triggered off the new native eval-pipeline/
+  # ai-observability-stack/ai-security-agent/multi-agent-gateway technologies instead of the
+  # ai:eval-pipeline/ai:observability-stack/ai:security-agent/ai:multi-agent-boundary tags.
+  # Removed here rather than left duplicated. See docs/risk-methodology.md for the full
+  # rationale.
 
   # --- 5.3 AI OPERATIONAL AND DEPLOYMENT HARDENING GAPS ---
   # Beyond standard ATLAS technique coverage and MAESTRO layer generalities
@@ -1451,39 +1338,11 @@ custom_risk_definitions:
   # instead of the ai:model-serving/ai:llm-endpoint/ai:model-registry tags. Removed here rather
   # than left duplicated. See docs/risk-methodology.md for the full rationale.
 
-  Training Script and Feature-Engineering Pipeline IP Exfiltration:
-    id: training-script-ip-exfiltration
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'Training scripts and feature-engineering pipelines lack the access restriction and egress monitoring applied to the model artifacts they produce, despite often being more valuable.'
-    impact: 'If this risk remains unmitigated, exfiltration of the training methodology lets an adversary replicate or improve on the model while triggering none of the controls built to protect the weights.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html
-    action: Apply the same access restriction, encryption, and bulk-clone/egress monitoring to training scripts and feature-engineering pipelines as to model weight artifacts.
-    mitigation: Restrict read/write access to training scripts and feature-engineering code to the named population that needs it, encrypt the repository at rest, and monitor for bulk-clone or high-volume export activity against it the same way an export path for model weights or CUI data would be monitored. Do not treat training code as ordinary application source code subject only to standard repository access controls, given its distinct value as reproducible model methodology.
-    references: NIST SP 800-53 SR-4 (Provenance); NIST AI RMF (MANAGE 2.3); NIST SP 800-53 AC-4 (Information Flow Enforcement)
-    risk_assessment: High for any training/feature-engineering repository with no access restriction or egress monitoring beyond standard source-control defaults.
-    false_positives: The asset is tagged ai:training-code-protected confirming training scripts and feature-engineering code are access-restricted, encrypted at rest, and monitored for bulk-clone/export activity.
-    function: architecture
-    stride: information-disclosure
-    risks_identified: {}
-
-  Hyperparameter Tampering Without Baseline Diffing:
-    id: hyperparameter-tampering-no-baseline-diff
-    baseline_likelihood: unlikely
-    baseline_impact: medium
-    description: 'There is no diff of a training run''s actual applied hyperparameters against an approved baseline before the resulting model is promoted.'
-    impact: 'If this risk remains unmitigated, an insider can bias what a model learns by changing a single hyperparameter, leaving no trace in the code and still passing standard evaluation.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Diff every promotion-bound training run's actual applied hyperparameters against an approved per-pipeline baseline before the resulting model is eligible for promotion.
-    mitigation: Record the actual hyperparameters applied to every training run (not merely the config file as authored, but what was actually passed to the training job, since these can diverge) and diff them against an approved baseline for that pipeline before allowing promotion. Require a documented, reviewed justification for any deviation from baseline rather than allowing silent divergence. Retain the recorded hyperparameters alongside the resulting model artifact for later audit.
-    references: NIST AI RMF (MANAGE 2.3, MEASURE 2.7); NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity)
-    risk_assessment: High for any training pipeline promoting models with no recorded hyperparameter diff against an approved baseline.
-    false_positives: The asset is tagged ai:hyperparameter-diffed confirming every promotion-bound run's actual applied hyperparameters are recorded and diffed against an approved baseline before promotion.
-    function: operations
-    stride: tampering
-    risks_identified: {}
+  # 'Training Script and Feature-Engineering Pipeline IP Exfiltration' and 'Hyperparameter
+  # Tampering Without Baseline Diffing' have both been ported into the jessestarkey/threagile
+  # fork as native script rules (pkg/risks/scripts/*.yaml), triggered off the native
+  # training-pipeline technology instead of the ai:training-pipeline tag. Removed here rather
+  # than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   Ungoverned Third-Party Foundation Model API Dependency:
     id: ungoverned-third-party-model-api
