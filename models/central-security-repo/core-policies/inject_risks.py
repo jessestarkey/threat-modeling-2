@@ -93,29 +93,23 @@ STRIDE_TO_CIA_DIMENSION = {
     "denial-of-service": "availability",
 }
 
-# Technology-name sets (canonical + every alias) mirroring the matching
-# entry's own `aliases:` list in pkg/types/technologies.yaml in the
-# jessestarkey/threagile fork. Used below in place of a same-named ai:*
-# tag for a handful of checks that still live in Python but whose trigger
-# condition is better read off the asset's own native `technology:` field
+# Technology-name sets, canonical name only, for a handful of checks that
+# still live in Python but whose trigger condition is better read off the
+# asset's own native `technology:` field instead of a same-named ai:* tag
 # -- a tag naming the same concept as a technology an app can already
-# select is a second, unenforced source of truth for the same fact. This
-# is a human-maintained mirror, not a read of that file (a different
-# repo), the same convention 03-tags-lib.yml's relationship to this
-# file's tag checks already documents -- keep in sync by hand if that
-# file's aliases change. See docs/risk-methodology.md.
-RAG_PIPELINE_TECHNOLOGIES = {
-    "ai-rag-pipeline", "rag-pipeline", "retrieval-augmented-generation", "vector-search-pipeline",
-}
-AGENT_ORCHESTRATOR_TECHNOLOGIES = {
-    "ai-agent-orchestrator", "agent-orchestrator", "langchain", "autogen", "crewai", "react-agent-loop",
-}
-MULTI_AGENT_GATEWAY_TECHNOLOGIES = {
-    "ai-multi-agent-gateway", "multi-agent-gateway", "a2a-gateway", "mcp-server", "agent-registry",
-}
-DATASET_STORE_TECHNOLOGIES = {
-    "ai-dataset-store", "dataset-store", "training-data-store",
-}
+# select is a second, unenforced source of truth for the same fact.
+# Deliberately NOT the `aliases:` list from the matching entry in
+# pkg/types/technologies.yaml in the jessestarkey/threagile fork: Threagile
+# itself resolves a `technology:` value by exact canonical-key lookup only
+# (TechnologyMap.Get() in pkg/types/technology-map.go is a plain map
+# lookup) -- aliases are documentation-only and never accepted in a real
+# model's `technology:` field, so a model that used one would already be
+# rejected by Threagile before ever reaching this script in a complete
+# pipeline run. See docs/risk-methodology.md.
+RAG_PIPELINE_TECHNOLOGIES = {"ai-rag-pipeline"}
+AGENT_ORCHESTRATOR_TECHNOLOGIES = {"ai-agent-orchestrator"}
+MULTI_AGENT_GATEWAY_TECHNOLOGIES = {"ai-multi-agent-gateway"}
+DATASET_STORE_TECHNOLOGIES = {"ai-dataset-store"}
 
 # Likelihood x Impact -> Severity, via a weight-product-and-threshold
 # formula rather than a hand-authored rank-sum lookup table (an earlier
