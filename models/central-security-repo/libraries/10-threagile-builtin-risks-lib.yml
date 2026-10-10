@@ -4,61 +4,64 @@
 # Live dependency, read directly by generate_report.py -- same tier as
 # 09-custom-risks-lib.yml (see central-security-repo's CLAUDE.md section for
 # the live-dependency/reference-catalog distinction). Not read by
-# inject_risks.py: this file never injects anything, it only supplies the
-# same enrichment content (description/impact/asvs/cheat_sheet/
-# risk_assessment/false_positives) for Threagile's OWN built-in risk
-# categories that 09-custom-risks-lib.yml supplies for our custom ones --
-# so "Identified Risks by Vulnerability Category" and the Risk Category
-# Reference section can show a real Description/Impact for a built-in
-# finding (e.g. Missing Authentication, SQL/NoSQL Injection) instead of
-# just Action/Mitigation from risks.xlsx.
+# inject_risks.py: this file never injects anything, it only supplies
+# enrichment content (description/impact/asvs/cheat_sheet/risk_assessment/
+# false_positives/detection_logic/references) for Threagile's OWN built-in
+# Go risk rules, the same way 09-custom-risks-lib.yml does for our custom
+# categories -- so "Identified Risks by Vulnerability Category" and the
+# Risk Category Reference section can show a real Description/Impact for a
+# built-in finding (e.g. Missing Authentication, SQL/NoSQL Injection).
 #
-# PROVENANCE -- this content is NOT authored by us. It is Threagile's own
-# risk-rule text, extracted from the pinned `threagile/threagile:0.9.1`
-# Docker image (internal version string: 1.0.0 / 20240730113903) via two
-# sources:
-#   - description: `docker run --entrypoint sh threagile/threagile:0.9.1
-#     -c "/app/threagile -explain-risk-rules"` -- plain CLI text, no
-#     extraction artifacts.
-#   - impact / asvs / cheat_sheet / risk_assessment / false_positives:
-#     Threagile's own native report.pdf (the one this pipeline otherwise
-#     discards in favor of generate_report.py's own render -- see
-#     CLAUDE.md) renders all of these per category; parsed out via a
-#     one-time PyMuPDF text-extraction pass across native reports for all
-#     4 modular apps plus Threagile's own `-create-example-model`, since
-#     no single model's findings exercise every built-in rule. Spot-
-#     checked for the PDF font-encoding mojibake this same extraction
-#     technique hit in trim_report.py's era (none found in Threagile's own
-#     built-in text, which is plain-ASCII prose without the em-dashes that
-#     triggered it in our own custom-risk text elsewhere).
-#   - cheat_sheet is Threagile's own short cheat-sheet slug (e.g.
-#     "Cross_Site_Scripting_Prevention_Cheat_Sheet"), expanded here to the
-#     actual OWASP Cheat Sheet Series URL following that project's own
-#     naming convention.
+# WHERE ACTION / MITIGATION LIVE -- not here. A built-in finding's Action and
+# Mitigation text in the report comes exclusively from Threagile's own
+# risks.xlsx export, which is populated from the hardcoded Action:/
+# Mitigation: string literals in each rule's Go source in the
+# jessestarkey/threagile fork (pkg/risks/builtin/*_rule.go). Those were
+# rewritten in the fork in the same pass as this file; edit them there, not
+# by adding action/mitigation keys here (generate_report.py would ignore
+# them).
 #
-# COVERAGE -- all 35 built-in categories that aren't purely model-authoring
-# failures (missing-build-infrastructure and missing-identity-store ARE
-# included -- they're real risk categories in our pipeline, not in
-# MODEL_FAILURE_CATEGORY_IDS; the 7 actual model-failure IDs are excluded
-# since they render in "Potential Model Failures" and never consult this
-# file). 32 of the 35 came from the same real-model/example-model sources
-# described above; the remaining 3 -- container-platform-escape,
-# missing-identity-provider-isolation, service-registry-poisoning -- never
-# fired in any of those, since none of our 4 real apps or Threagile's own
-# example model happen to include a container-platform, identity-provider-
-# sharing-a-boundary, or service-registry asset. Rather than leave those 3
-# without enrichment, a small handcrafted probe model
-# (threagile-builtin-probe-model.yml, kept in this directory for
-# reproducibility -- not a real app, never merged into any pipeline)
-# exists solely to contain exactly those 3 asset types so all 35 rules
-# would fire somewhere; extracted from its own native report.pdf the same
-# way as everything else in this file.
+# PROVENANCE -- this file started as a one-time extraction of Threagile's
+# own upstream rule text from the pinned `threagile/threagile:0.9.1` image
+# (`-explain-risk-rules` for descriptions, PyMuPDF parsing of the native
+# report.pdf for the rest, plus the small handcrafted
+# threagile-builtin-probe-model.yml in this directory to make the 3 rules
+# none of our real models trigger -- container-platform-escape,
+# missing-identity-provider-isolation, service-registry-poisoning -- fire
+# somewhere). That upstream text proved too thin to act on (e.g. the
+# Cross-Site Scripting description in its entirety was "For each web
+# application Cross-Site Scripting (XSS) risks might arise"), so every
+# entry's description/impact/risk_assessment was rewritten by this project
+# to the depth of 09-custom-risks-lib.yml, with two new fields:
+#   - detection_logic: how to actually find/verify this condition in a real
+#     system (tooling, queries, test cases), not Threagile's own rule-match
+#     logic.
+#   - references: CWE / CAPEC / MITRE ATT&CK / OWASP Top 10:2025 / OWASP API
+#     Security Top 10:2023 / NIST citations where genuinely applicable.
+# asvs/cheat_sheet/false_positives were kept where adequate and tightened
+# where not. Each risk_assessment describes how the jessestarkey/threagile
+# fork actually scores the rule (baseline Likelihood/Impact and the
+# escalation conditions read from the Go source), including the fork's
+# shared computeLikelihood() nudge where that rule applies it: +1 step at
+# RAA >= 40%, -1 step at RAA < 15%, and +1 step if the asset is
+# internet-reachable (native internet flag or the net:internet-reachable
+# tag).
 #
-# MAINTENANCE -- this file only needs regenerating if the pinned Threagile
-# image version changes (a version bump could reword or add/remove rules).
-# It is never hand-edited; re-run the extraction against the new image
-# instead of patching entries here piecemeal, since the whole point is
-# that this is Threagile's own upstream text, not ours to author.
+# COVERAGE -- all 35 built-in categories with enrichment, i.e. every
+# built-in rule except the 7 pure model-authoring failures in
+# generate_report.py's MODEL_FAILURE_CATEGORY_IDS (which render in
+# "Potential Model Failures" and never consult this file).
+# missing-build-infrastructure and missing-identity-store ARE included --
+# they're real risk categories in our pipeline, not in
+# MODEL_FAILURE_CATEGORY_IDS. mixed-targets-on-shared-runtime is included
+# here for enrichment, but its Go Action/Mitigation were deliberately left
+# untouched in the fork's rewrite pass.
+#
+# MAINTENANCE -- this content is now hand-authored and owned by this
+# project. If the fork's rule logic changes (new escalation conditions,
+# thresholds, or a re-based upstream Threagile version), update the
+# matching risk_assessment here by hand; re-running the original
+# extraction would overwrite this content with the thin upstream text.
 # ==============================================================================
 
 builtin_risks:
@@ -66,729 +69,1661 @@ builtin_risks:
   accidental-secret-leak:
     title: "Accidental Secret Leak"
     description: >
-      Sourcecode repositories (including their histories) as well as artifact
-      registries can accidentally contain secrets like checked-in or
-      packaged-in passwords, API tokens, certificates, crypto keys, etc.
+      A source code repository (including its full commit history) or an
+      artifact/container registry in scope contains, or has no control
+      preventing it from containing, plaintext secrets: database passwords,
+      cloud access keys, API tokens, OAuth client secrets, private keys, or
+      kubeconfig and Terraform state files. Secrets typically enter through
+      hardcoded test credentials, committed .env files, configuration copied
+      from a working environment, or build-time credentials baked into a
+      container image layer. Deleting the file in a later commit does not
+      remove it: it remains in history, in every clone and fork, and in
+      every previously pushed image layer.
     impact: >
-      If this risk is unmitigated, attackers which have access to affected
-      sourcecode repositories or artifact registries might find secrets
-      accidentally checked-in.
+      If this risk remains unmitigated, anyone with read access to the
+      repository, a clone, a CI log, or a pulled image (including
+      contractors, a compromised developer account, or a mis-scoped public
+      fork) can recover working credentials and use them to access
+      production databases, cloud control planes, or partner APIs directly,
+      bypassing every application-layer control. For an IL5 system, a single
+      leaked cloud key or service-principal secret can expose all CUI the
+      principal can reach and constitutes a reportable incident.
     asvs: "V14 - Configuration Verification Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the technical asset itself
-      and of the data assets processed and stored.
-    false_positives: "Usually no false positives."
+      Threagile scores this per repository/registry at a baseline Likelihood
+      of Unlikely, adjusted by the asset's RAA (+1 at 40% or higher, -1 below
+      15%) and internet reachability (+1). Impact is Low, raised to Medium
+      when any processed data asset is rated Confidential or higher
+      confidentiality or Critical or higher integrity/availability, and to
+      High when any is Strictly-Confidential or Mission-Critical. In
+      practice, any confirmed live secret in history is High regardless of
+      score until it has been rotated, since exposure is already complete.
+    false_positives: >
+      Repositories and registries that already enforce server-side push
+      protection and CI secret scanning, and whose full history and existing
+      image layers have been scanned clean (or every finding rotated and
+      purged), can be treated as false positives after review. Detected
+      strings that are verifiably non-functional (documented test fixtures,
+      revoked or placeholder values) are not exposures.
+    detection_logic: >
+      Run gitleaks or trufflehog against the full history of every in-scope
+      repository (git log --all, including all branches and tags) and
+      trufflehog or the registry's native secret scanner against every image
+      layer in the registry. Verify push protection is enabled by attempting
+      to push a commit containing a canary AWS-format key to a scratch branch
+      and confirming rejection. Check CI logs for echoed environment
+      variables. For candidate secrets, confirm whether they are live
+      (trufflehog verification) and whether the issuer shows them rotated.
+    references: >
+      CWE-798 (Use of Hard-coded Credentials); CWE-540 (Inclusion of
+      Sensitive Information in Source Code); MITRE ATT&CK T1552.001
+      (Credentials In Files); MITRE ATT&CK T1213.003 (Code Repositories);
+      NIST SP 800-53 IA-5(7)
 
-  # No asvs/cheat_sheet fields on this entry, unlike every other category
-  # in this file -- flagged during review, not yet re-verified against a
-  # fresh extraction. Could be a real absence in Threagile's own native
-  # report.pdf text for this category (plausible: it's a CI/CD-pipeline
-  # category that may not have fired across all 4 modular apps plus the
-  # example model the original PyMuPDF extraction pass covered -- see this
-  # file's own PROVENANCE note above), or it could be an extraction miss.
-  # Worth re-running the extraction against the pinned
-  # threagile/threagile:0.9.1 image to confirm one way or the other.
   code-backdooring:
     title: "Code Backdooring"
     description: >
-      For each build-pipeline component Code Backdooring risks might arise
-      where attackers compromise the build-pipeline in order to let backdoored
-      artifacts be shipped into production. Aside from direct code backdooring
-      this includes backdooring of dependencies and even of more lower-level
-      build infrastructure, like backdooring compilers (similar to what the
-      XcodeGhost malware did) or dependencies.
+      A build-pipeline, source repository, or developer-client asset is
+      exposed to the internet or to unmanaged, out-of-scope developer
+      clients, so an attacker who compromises a developer credential, a CI
+      runner, a pipeline plugin, or an upstream dependency can insert
+      malicious code that is then built, signed with the organization's own
+      keys, and shipped to production as a trusted release. Real cases
+      include the SolarWinds Orion build implant (SUNBURST), the Codecov
+      bash-uploader tampering, the xz-utils maintainer backdoor, and the
+      XcodeGhost compiler substitution.
     impact: >
-      If this risk remains unmitigated, attackers might be able to execute
-      code on and completely takeover production environments.
+      If this risk remains unmitigated, an attacker gains code execution in
+      every environment that deploys the compromised artifact, with the
+      application's full privileges and with output that passes all
+      signature and integrity checks because the legitimate pipeline
+      produced it. Compromise is persistent, spans every customer or
+      enclave running the release, and is typically undetected for months.
+    asvs: "V10 - Malicious Code Verification Requirements"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/CI_CD_Security_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the confidentiality and integrity rating of
-      the code being handled and deployed as well as the placement/calling of
-      this technical asset on/from the internet.
+      Threagile scores this at a baseline Likelihood of Unlikely, adjusted by
+      RAA (+1 at 40% or higher, -1 below 15%) and internet reachability (+1).
+      Impact is Low for code-inspection platforms; otherwise Medium, raised to
+      High when the asset processes Confidential-or-higher or
+      Critical-or-higher-integrity data. Treat as High for any pipeline that
+      deploys to production without signed provenance verification at the
+      target, since that removes the last control able to catch a
+      backdoored artifact.
     false_positives: >
-      When the build-pipeline and sourcecode-repo is not exposed to the
-      internet and considered fully trusted (which implies that all accessing
-      clients are also considered fully trusted in terms of their patch
-      management and applied hardening, which must be equivalent to a managed
-      developer client environment) this can be considered a false positive
-      after individual review.
+      When the source repository and build pipeline are reachable only from
+      managed developer endpoints over VPN or zero-trust access (no direct
+      internet exposure, no unmanaged clients), enforce reviewed and signed
+      commits, and produce signed provenance that deployment targets verify,
+      the finding can be accepted after review.
+    detection_logic: >
+      Inventory network exposure of the repository and CI system (public
+      IPs, publicly resolvable hostnames, absence of conditional-access or
+      IP-allowlist policy). Review branch protection settings on release
+      branches for required reviews, signed commits, and admin bypass.
+      Diff CI pipeline definitions and third-party action references for
+      mutable tags rather than pinned SHAs. Verify the deployment target
+      rejects an unsigned or provenance-less artifact by attempting to
+      deploy one to a non-production environment. Compare built artifacts
+      against a reproducible rebuild where feasible.
+    references: >
+      CWE-506 (Embedded Malicious Code); CWE-494 (Download of Code Without
+      Integrity Check); CAPEC-444 (Development Alteration); MITRE ATT&CK
+      T1195.002 (Compromise Software Supply Chain); OWASP Top 10:2025 A03
+      (Software Supply Chain Failures); NIST SP 800-218 (SSDF) PS.1, PS.2;
+      SLSA v1.0 Build Track
 
   container-baseimage-backdooring:
     title: "Container Base Image Backdooring"
     description: >
-      When a technical asset is built using container technologies, Base Image
-      Backdooring risks might arise where base images and other layers used
-      contain vulnerable components or backdoors. See for example:
-      https://techcrunch.com/2018/06/15/tainted-crypto-mining-containers-pulled-from-docker-hub/
+      This asset runs as a container whose base image and intermediate
+      layers come from a source not verified as trusted: a public registry
+      image referenced by mutable tag (for example FROM node:latest),
+      an unsigned image, or a layer never scanned. Attackers publish
+      typosquatted or trojanized images to public registries (the 2018
+      Docker Hub cryptomining images were pulled more than 5 million times
+      before removal), and a compromised upstream maintainer can retag an
+      existing trusted name to a malicious digest.
     impact: >
-      If this risk is unmitigated, attackers might be able to deeply persist
-      in the target system by executing code in deployed containers.
+      If this risk remains unmitigated, malicious code in the base layer
+      executes inside every container built from it, with the application's
+      credentials, network position, and mounted secrets, and survives
+      application redeploys because it is rebuilt into each new image.
+      Unscanned layers also carry known-exploitable CVEs in system packages
+      that an external attacker can reach through the application.
     asvs: "V10 - Malicious Code Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the technical asset itself
-      and of the data assets.
+      Threagile scores this at a baseline Likelihood of Unlikely, adjusted by
+      RAA (+1 at 40% or higher, -1 below 15%) and internet reachability (+1).
+      Impact is Medium, raised to High when the asset processes
+      Strictly-Confidential or Mission-Critical data. Escalate to High where
+      images are pulled directly from public registries at deploy time
+      without digest pinning or signature verification.
     false_positives: >
-      Fully trusted (i.e. reviewed and cryptographically signed or similar)
-      base images of containers can be considered as false positives after
-      individual review.
+      Images built only from hardened, signature-verified base images
+      (for example Iron Bank) referenced by sha256 digest, scanned in CI and
+      rescanned on a schedule, and admitted only by a signature-enforcing
+      admission controller can be treated as false positives after review.
+    detection_logic: >
+      Grep every Dockerfile and Helm/manifest image reference for tags
+      without an @sha256 digest and for registries outside the approved
+      internal mirror. Run trivy image or grype against each deployed image
+      and compare the base layer digest to the approved catalog. Query the
+      admission controller policy (Kyverno/Gatekeeper/policy-controller) and
+      attempt to deploy an unsigned test image to a non-production namespace
+      to confirm rejection. Check registry audit logs for pulls from public
+      registries.
+    references: >
+      CWE-506 (Embedded Malicious Code); CWE-1395 (Dependency on Vulnerable
+      Third-Party Component); MITRE ATT&CK T1525 (Implant Internal Image);
+      MITRE ATT&CK T1195.002 (Compromise Software Supply Chain); OWASP Top
+      10:2025 A03 (Software Supply Chain Failures); NIST SP 800-190
+      (Application Container Security Guide)
 
   container-platform-escape:
     title: "Container Platform Escape"
     description: >
-      Container platforms are especially interesting targets for attackers as
-      they host big parts of a containerized runtime infrastructure. When not
-      configured and operated with security best practices in mind, attackers
-      might exploit a vulnerability inside an container and escape towards
-      the platform as highly privileged users. These scenarios might give
-      attackers capabilities to attack every other container as owning the
-      container platform (via container escape attacks) equals to owning
-      every container.
+      This asset is a container platform (Kubernetes, OpenShift, Docker
+      host, or similar) whose workloads are not prevented from breaking
+      container isolation. Escape paths include privileged containers,
+      hostPath mounts of the node filesystem, a mounted container runtime
+      socket, host PID/network namespaces, excessive Linux capabilities such
+      as CAP_SYS_ADMIN, over-privileged service-account tokens, and
+      unpatched kernel or runtime vulnerabilities (runc CVE-2019-5736 and
+      CVE-2024-21626, kernel CVE-2022-0185). Owning one node or the cluster
+      control plane equals owning every container scheduled on it.
     impact: >
-      If this risk is unmitigated, attackers which have successfully
-      compromised a container (via other vulnerabilities) might be able to
-      deeply persist in the target system by executing code in many deployed
-      containers and the container platform itself.
+      If this risk remains unmitigated, an attacker who gains code execution
+      in any single container (through an application vulnerability) can
+      escalate to the node and then the cluster, reading every co-located
+      workload's secrets and data, deploying persistent malicious workloads,
+      and pivoting to the cloud control plane through node-attached
+      identities or the instance metadata service.
     asvs: "V14 - Configuration Verification Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the technical asset
-      itself and of the data assets processed and stored.
+      Threagile scores this at a baseline Likelihood of Unlikely, adjusted by
+      RAA (+1 at 40% or higher, -1 below 15%) and internet reachability (+1).
+      Impact is Medium, raised to High when the platform processes
+      Strictly-Confidential or Mission-Critical data. Escalate to High where
+      privileged pods or hostPath mounts are permitted in workload
+      namespaces, since that reduces escape to a single API call.
     false_positives: >
-      Container platforms not running parts of the target architecture can
-      be considered as false positives after individual review.
+      A container platform hosting none of the in-scope workloads, or one
+      validated against the DISA Kubernetes STIG or CIS Kubernetes Benchmark
+      with the restricted Pod Security Standard enforced on every workload
+      namespace, can be treated as a false positive after review.
+    detection_logic: >
+      Run kube-bench against nodes and control plane, and kubescape or
+      Polaris against workloads, for STIG/CIS findings. Query for pods with
+      securityContext.privileged true, hostPID/hostNetwork/hostIPC, hostPath
+      volumes, or added capabilities (kubectl get pods -A -o json piped
+      through jq). Check namespace labels for pod-security.kubernetes.io
+      enforce=restricted. From a test pod, attempt to reach the kubelet API
+      (port 10250) and 169.254.169.254. Run kubectl auth can-i --list for
+      each workload service account. Alert on Falco escape rules (e.g.
+      container drift, sensitive mount) in production.
+    references: >
+      CWE-250 (Execution with Unnecessary Privileges); CWE-269 (Improper
+      Privilege Management); MITRE ATT&CK T1611 (Escape to Host); MITRE
+      ATT&CK T1610 (Deploy Container); NIST SP 800-190; DISA Kubernetes STIG
 
   cross-site-request-forgery:
     title: "Cross-Site Request Forgery (CSRF)"
     description: >
-      When a web application is accessed via web protocols Cross-Site Request
-      Forgery (CSRF) risks might arise.
+      This web application is reached by browsers over HTTP(S) and, if it
+      authenticates with ambient credentials (session cookies, HTTP Basic,
+      or client certificates the browser sends automatically), will process
+      a state-changing request that a malicious third-party page caused the
+      victim's browser to send. Without an unpredictable per-session token,
+      an Origin check, or SameSite cookies, the application cannot tell a
+      request the user intended from one forged by another site.
     impact: >
-      If this risk remains unmitigated, attackers might be able to trick
-      logged-in victim users into unwanted actions within the web application
-      by visiting an attacker controlled web site.
+      If this risk remains unmitigated, an attacker can make an
+      authenticated user unknowingly change their email or password, grant
+      roles, approve workflows, submit or delete records, or initiate
+      transfers, all under the victim's identity and audit trail. Against an
+      administrator, a single visited link can create attacker-controlled
+      accounts or change security configuration.
     asvs: "V4 - Access Control Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the integrity rating of the data sent across
-      the communication link.
+      Threagile scores this per incoming web flow at a baseline Likelihood of
+      Very Likely (Likely for DevOps-usage flows), adjusted by RAA (+1 at 40%
+      or higher, -1 below 15%) and internet reachability (+1). Impact is Low,
+      raised to Medium when the data sent over the flow is rated
+      Mission-Critical integrity. Escalate where administrative or
+      privilege-changing functions are cookie-authenticated without a token.
     false_positives: >
-      Web applications passing the authentication sate via custom headers
-      instead of cookies can eventually be false positives. Also when the web
-      application is not accessed via a browser-like component (i.e not by a
-      human user initiating the request that gets passed through all
-      components until it reaches the web application) this can be considered
-      a false positive.
+      Applications that authenticate exclusively with bearer tokens in the
+      Authorization header (never cookies or other ambient browser
+      credentials), or that enforce a verified synchronizer token or Origin
+      check on every state-changing endpoint, can be treated as false
+      positives. Endpoints never invoked from a browser are also not
+      affected.
+    detection_logic: >
+      Use Burp Suite or OWASP ZAP to replay each state-changing request with
+      the anti-CSRF token removed, altered, or taken from another session,
+      and with a foreign Origin header, and confirm rejection. Inspect
+      Set-Cookie headers for SameSite attributes. Confirm no state change is
+      reachable via GET. Build a minimal cross-origin HTML form proof of
+      concept for any endpoint that accepts the forged request. Run Semgrep
+      rules for disabled framework CSRF protection (e.g. csrf_exempt,
+      csrf().disable()).
+    references: >
+      CWE-352 (Cross-Site Request Forgery); CAPEC-62 (Cross Site Request
+      Forgery); OWASP Top 10:2025 A01 (Broken Access Control)
 
   cross-site-scripting:
     title: "Cross-Site Scripting (XSS)"
     description: >
-      For each web application Cross-Site Scripting (XSS) risks might arise.
-      In terms of the overall risk level take other applications running on
-      the same domain into account as well.
+      This web application renders data that can originate from an
+      untrusted source (request parameters, stored user content, imported
+      files, upstream APIs) into HTML, JavaScript, or URL contexts without
+      context-appropriate output encoding, or passes it to dangerous DOM
+      sinks such as innerHTML, document.write, or eval. This enables
+      reflected, stored, and DOM-based XSS: attacker-supplied script runs in
+      the victim's browser under this application's origin. Any other
+      application sharing the same origin or a parent domain whose cookies
+      are scoped broadly inherits the same exposure.
     impact: >
-      If this risk remains unmitigated, attackers might be able to access
-      individual victim sessions and steal or modify user data.
+      If this risk remains unmitigated, injected script runs with the
+      victim's full session in the application: it can read any data the
+      victim can see, perform any action the victim can (including
+      administrative actions), exfiltrate CSRF tokens and non-HttpOnly
+      cookies, capture keystrokes and credentials through a fake login
+      overlay, and, when stored, compromise every user who views the
+      affected page. A stored XSS reachable by administrators is effectively
+      full application compromise.
     asvs: "V5 - Validation, Sanitization and Encoding Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the data processed or
-      stored in the web application.
+      Threagile scores this per web application at a baseline Likelihood of
+      Likely, adjusted by RAA (+1 at 40% or higher, -1 below 15%) and
+      internet reachability (+1). Impact is Medium, raised to High when the
+      application processes Strictly-Confidential or Mission-Critical
+      integrity data. Treat any confirmed stored XSS reachable by privileged
+      users as High; reflected XSS mitigated by a strict nonce-based CSP can
+      be rated lower.
     false_positives: >
-      When the technical asset is not accessed via a browser-like component
-      (i.e not by a human user initiating the request that gets passed through
-      all components until it reaches the web application) this can be
-      considered a false positive.
+      Assets never rendered by a browser or browser-like component (pure
+      machine-to-machine APIs returning JSON with a correct non-HTML
+      Content-Type and X-Content-Type-Options nosniff) can be treated as
+      false positives after review.
+    detection_logic: >
+      Run DAST (OWASP ZAP active scan, Burp Suite Scanner) with
+      context-specific payloads against every input, including stored-input
+      flows that render on other pages. Run SAST (Semgrep, CodeQL) for
+      sinks such as innerHTML, dangerouslySetInnerHTML,
+      bypassSecurityTrustHtml, Html.Raw, Jinja |safe, and v-html fed by
+      request data. Inspect the Content-Security-Policy response header for
+      unsafe-inline, unsafe-eval, wildcard sources, or absence, and verify
+      session cookies carry HttpOnly. In production, collect CSP violation
+      reports and alert on inline-script violations.
+    references: >
+      CWE-79 (Improper Neutralization of Input During Web Page Generation);
+      CAPEC-63 (Cross-Site Scripting); CAPEC-588 (DOM-Based XSS); CAPEC-592
+      (Stored XSS); MITRE ATT&CK T1189 (Drive-by Compromise); OWASP Top
+      10:2025 A05 (Injection)
 
   dos-risky-access-across-trust-boundary:
     title: "DoS-risky Access Across Trust-Boundary"
     description: >
-      Assets accessed across trust boundaries with critical or
-      mission-critical availability rating are more prone to Denial-of-Service
-      (DoS) risks.
+      An asset rated Critical or Mission-Critical for availability accepts
+      data flows from callers in a different network trust boundary,
+      possibly through intermediate hops, without enough evidence of
+      throttling, quotas, or redundancy. Those callers, or an attacker
+      controlling one, can exhaust connections, threads, memory, CPU, or
+      downstream quota with volumetric floods, slow-request attacks
+      (Slowloris), or a small number of algorithmically expensive requests
+      (large result sets, regex backtracking, deep GraphQL queries, large
+      uploads).
     impact: >
-      If this risk remains unmitigated, attackers might be able to disturb the
-      availability of important parts of the system.
+      If this risk remains unmitigated, an attacker can make an
+      availability-critical function unavailable for the duration of the
+      attack, and because the asset is a dependency for others, the outage
+      can cascade through retries and queued work into components that were
+      never directly targeted. For mission-critical systems this directly
+      affects mission execution and may breach availability SLAs.
     asvs: "V1 - Architecture, Design and Threat Modeling Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html"
     risk_assessment: >
-      Matching technical assets with availability rating of critical or higher
-      are at low risk. When the availability rating is mission-critical and
-      neither a VPN nor IP filter for the incoming data-flow nor redundancy
-      for the asset is applied, the risk-rating is considered medium.
+      Threagile scores this per cross-boundary flow at a baseline Likelihood
+      of Unlikely, adjusted by RAA (+1 at 40% or higher, -1 below 15%) and
+      internet reachability (+1). Impact is Low, raised to Medium when the
+      target is Mission-Critical for availability and the incoming flow is
+      neither VPN-protected nor IP-filtered and the asset is not modeled as
+      redundant. Load balancers are excluded.
     false_positives: >
-      When the accessed target operations are not time- or resource-consuming.
+      Flows whose target operations are cheap and bounded, assets deployed
+      redundantly behind autoscaling with enforced per-client rate limits,
+      or flows restricted to VPN or IP-allowlisted callers can be treated as
+      false positives after review.
+    detection_logic: >
+      Review gateway or ingress configuration for per-client rate limits,
+      connection and body-size limits, and timeouts. Run controlled load
+      tests (k6, JMeter, Locust) against a non-production replica, including
+      slow-request and expensive-query cases, and record the request rate at
+      which latency or error-rate objectives are breached. Confirm the asset
+      runs more than one instance across zones. In production, alert on
+      sustained HTTP 429/503 rates, connection saturation, and abnormal
+      per-client request rates in WAF or gateway logs.
+    references: >
+      CWE-400 (Uncontrolled Resource Consumption); CWE-770 (Allocation of
+      Resources Without Limits or Throttling); CAPEC-125 (Flooding); MITRE
+      ATT&CK T1498 (Network Denial of Service); MITRE ATT&CK T1499 (Endpoint
+      Denial of Service); OWASP API Security Top 10:2023 API4 (Unrestricted
+      Resource Consumption); NIST SP 800-53 SC-5
 
   ldap-injection:
     title: "LDAP-Injection"
     description: >
-      When an LDAP server is accessed LDAP-Injection risks might arise. The
-      risk rating depends on the sensitivity of the LDAP server itself and of
-      the data assets processed or stored.
+      An in-scope client queries this LDAP directory over LDAP or LDAPS, and
+      if caller-supplied values (a username at login, a search term in a
+      people picker, a group name) are concatenated into an LDAP search
+      filter or distinguished name without RFC 4515/4514 escaping, an
+      attacker can inject filter metacharacters (asterisk, parentheses,
+      ampersand, pipe) to rewrite the query. A classic example turns
+      (&(uid=INPUT)(userPassword=PASS)) into a filter that matches any user
+      by submitting a wildcard or an always-true clause.
     impact: >
-      If this risk remains unmitigated, attackers might be able to modify LDAP
-      queries and access more data from the LDAP server than allowed.
+      If this risk remains unmitigated, an attacker can bypass LDAP-backed
+      authentication, enumerate every account, group, and attribute the
+      application's bind account can read (often including email, phone,
+      manager hierarchy, and group memberships that reveal privileged
+      accounts), and where the application writes to the directory, modify
+      group membership to escalate privilege.
     asvs: "V5 - Validation, Sanitization and Encoding Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the LDAP server itself and
-      of the data assets processed or stored.
+      Threagile scores this per LDAP(S) flow at a baseline Likelihood of
+      Likely (Unlikely for DevOps-usage flows), adjusted by RAA (+1 at 40% or
+      higher, -1 below 15%) and internet reachability (+1). Impact is Medium,
+      raised to High when the directory processes Strictly-Confidential or
+      Mission-Critical integrity data. Escalate where the directory is the
+      authentication source for the application.
     false_positives: >
-      LDAP server queries by search values not consisting of parts
-      controllable by the caller can be considered as false positives after
-      individual review.
+      LDAP queries built solely from server-side constants, or from caller
+      input that passes through a library escaping function or a
+      parameterized filter builder on every code path, can be treated as
+      false positives after code review.
+    detection_logic: >
+      Grep or run Semgrep/CodeQL for LDAP search and bind calls
+      (DirContext.search, ldap3 search, DirectorySearcher.Filter) whose
+      filter string is built with concatenation or formatting of request
+      data. In DAST, submit filter metacharacters (an asterisk,
+      )(uid=*, *)(|(objectClass=*)) in login and search fields and look for
+      changed result counts or authentication success. Review the bind
+      account's directory permissions. Alert on directory logs showing
+      wildcard-heavy or unusually broad searches from the application's
+      bind account.
+    references: >
+      CWE-90 (Improper Neutralization of Special Elements used in an LDAP
+      Query); CAPEC-136 (LDAP Injection); OWASP Top 10:2025 A05 (Injection)
 
   missing-authentication:
     title: "Missing Authentication"
     description: >
-      Technical assets (especially multi-tenant systems) should authenticate
-      incoming requests when the asset processes or stores sensitive data.
+      A data flow into this asset carries sensitive data, or the asset is
+      multi-tenant, yet the flow is modeled with no authentication: the
+      asset accepts requests from anything that can reach it on the network.
+      This commonly happens with internal services that rely on being
+      behind a firewall, management and metrics endpoints that ship open by
+      default (Spring Boot Actuator, Elasticsearch, Redis, etcd, Kubernetes
+      dashboard), and backends that trust an upstream gateway to have
+      authenticated the user.
     impact: >
-      If this risk is unmitigated, attackers might be able to access or modify
-      sensitive data in an unauthenticated way.
+      If this risk remains unmitigated, any attacker who reaches this asset's
+      network endpoint, whether from the internet, a compromised neighboring
+      workload, or a server-side request forgery in another component, can
+      read and modify its sensitive data and invoke its functions with no
+      identity attached. Actions are also unattributable, defeating audit
+      requirements.
     asvs: "V2 - Authentication Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating (medium or high) depends on the sensitivity of the data
-      sent across the communication link. Monitoring callers are exempted from
-      this risk.
+      Threagile scores this per unauthenticated incoming flow at a baseline
+      Likelihood of Likely, adjusted by RAA (+1 at 40% or higher, -1 below
+      15%) and internet reachability (+1). Impact is Medium; High when the
+      flow carries Strictly-Confidential or Mission-Critical integrity data,
+      Low when it carries only Internal-or-lower confidentiality and
+      Operational integrity data. Monitoring callers, in-process calls, and
+      load balancers, reverse proxies, WAFs, IDS/IPS, and service registries
+      are excluded. Treat any unauthenticated path to CUI as High.
     false_positives: >
-      Technical assets which do not process requests regarding functionality
-      or data linked to end-users (customers) can be considered as false
-      positives after individual review.
+      Flows where authentication genuinely occurs but was not modeled (for
+      example mutual TLS enforced by a service mesh) should be fixed in the
+      model rather than accepted. Assets that serve only intentionally
+      public, non-sensitive content can be treated as false positives after
+      review.
+    detection_logic: >
+      Enumerate every listening endpoint of the asset (service definitions,
+      ingress routes, OpenAPI specs, port scans from a neighboring subnet)
+      and call each without credentials, expecting HTTP 401/403 or a
+      TLS-handshake failure for mTLS. Specifically probe default management
+      paths (/actuator, /metrics, /_cat, /debug, /admin). Review service mesh
+      PeerAuthentication/AuthorizationPolicy for STRICT mode. Run SAST for
+      route handlers missing authentication decorators or middleware. Alert
+      on successful requests in access logs with no authenticated principal.
+    references: >
+      CWE-306 (Missing Authentication for Critical Function); CWE-287
+      (Improper Authentication); MITRE ATT&CK T1190 (Exploit Public-Facing
+      Application); OWASP Top 10:2025 A07 (Authentication Failures); OWASP
+      API Security Top 10:2023 API2 (Broken Authentication); NIST SP 800-53
+      IA-2, IA-9
 
   missing-authentication-second-factor:
     title: "Missing Two-Factor Authentication (2FA)"
     description: >
-      Technical assets (especially multi-tenant systems) should authenticate
-      incoming requests with two-factor (2FA) authentication when the asset
-      processes or stores highly sensitive data (in terms of confidentiality,
-      integrity, and availability) and is accessed by humans.
+      Human users reach this asset, which processes or stores highly
+      sensitive data, through a flow authenticated by a single factor
+      (typically a password) rather than multi-factor authentication. The
+      check also follows the path backward through intermediate
+      non-authenticating hops such as load balancers and reverse proxies to
+      the originating human-used client. Single-factor authentication is
+      defeated by phishing, password reuse from unrelated breaches,
+      credential stuffing, and password spraying, all of which are
+      high-volume, low-cost attacks.
     impact: >
-      If this risk is unmitigated, attackers might be able to access or modify
-      highly sensitive data without strong authentication.
+      If this risk remains unmitigated, one stolen or guessed password gives
+      an attacker a fully authenticated session with that user's access to
+      highly sensitive data. For federal and DoD systems, password-only
+      access to sensitive systems is non-compliant with OMB M-22-09 and DoD
+      PKI/CAC requirements and will block authorization.
     asvs: "V2 - Authentication Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html"
-    risk_assessment: "medium"
+    risk_assessment: >
+      Threagile scores this per human-originated flow at a fixed Medium
+      Impact and a baseline Likelihood of Unlikely, adjusted by RAA (+1 at
+      40% or higher, -1 below 15%) and internet reachability (+1). Escalate
+      to High for internet-reachable administrative or privileged access, and
+      for any access path that accepts phishable factors (SMS, voice, push
+      without number matching) only.
     false_positives: >
-      Technical assets which do not process requests regarding functionality
-      or data linked to end-users (customers) can be considered as false
-      positives after individual review.
+      Access paths where MFA is enforced upstream by the identity provider's
+      conditional-access policy for every user and session (and the model
+      simply does not flag the flow as two-factor) should be corrected in
+      the model and can be closed after the policy is verified. Assets not
+      handling user-linked data or functionality may also be false positives
+      after review.
+    detection_logic: >
+      Review the identity provider's conditional-access or authentication
+      policies scoped to this application for an MFA requirement with no
+      excluded users, groups, locations, or legacy-protocol clients. Attempt
+      sign-in with a test account from an unregistered device and confirm a
+      second factor is demanded. Query sign-in logs (Entra ID sign-in logs,
+      Okta System Log) for successful single-factor authentications to this
+      application. Verify legacy authentication protocols are blocked.
+    references: >
+      CWE-308 (Use of Single-factor Authentication); MITRE ATT&CK T1078
+      (Valid Accounts); MITRE ATT&CK T1110 (Brute Force); MITRE ATT&CK T1621
+      (Multi-Factor Authentication Request Generation); OWASP Top 10:2025 A07
+      (Authentication Failures); NIST SP 800-63B; NIST SP 800-53 IA-2(1),
+      IA-2(2); OMB M-22-09
 
   missing-build-infrastructure:
     title: "Missing Build Infrastructure"
     description: >
-      The modeled architecture does not contain a build infrastructure
-      (devops-client, sourcecode-repo, build-pipeline, etc.), which might be
-      the risk of a model missing critical assets (and thus not seeing their
-      risks). If the architecture contains custom-developed parts, the
-      pipeline where code gets developed and built needs to be part of the
-      model.
+      The model contains in-scope custom-developed components but no
+      development and build infrastructure: no devops-client, source code
+      repository, or build pipeline asset. The path by which code is
+      written, built, and delivered to production is therefore absent, so
+      none of the supply-chain risk rules (code backdooring, unchecked
+      deployment, accidental secret leak, push instead of pull deployment,
+      container base image backdooring) can evaluate it. This is a model
+      completeness gap, not proof that the build path is insecure.
     impact: >
-      If this risk is unmitigated, attackers might be able to exploit risks
-      unseen in this threat model due to critical build infrastructure
-      components missing in the model.
+      If this risk remains unmitigated, the most consequential attack path
+      against custom software (compromise of the pipeline that produces
+      trusted releases) is invisible in the threat model, its controls are
+      never assessed, and the authorization package omits a component that
+      can alter every production artifact.
     asvs: "V1 - Architecture, Design and Threat Modeling Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/CI_CD_Security_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the highest sensitivity of the in-scope
-      assets running custom-developed parts.
+      Threagile scores this once per model at a flat Likelihood of Unlikely.
+      Impact is Low, raised to Medium when any custom-developed in-scope
+      asset (or the data it processes) is rated Confidential or higher
+      confidentiality or Critical or higher integrity/availability.
     false_positives: >
-      Models not having any custom-developed parts can be considered as false
-      positives after individual review.
+      Models with no custom-developed components (only configured COTS or
+      SaaS), or whose build platform is covered by a separately authorized
+      enterprise pipeline that is explicitly referenced as an inherited
+      control, can be treated as false positives after review; prefer
+      modeling it as out-of-scope assets instead.
+    detection_logic: >
+      Compare the model's technical assets with marked custom_developed_parts
+      against the presence of devops-client, sourcecode-repository, and
+      build-pipeline technologies. Interview the development team or read
+      the CI configuration (.github/workflows, azure-pipelines.yml,
+      .gitlab-ci.yml) to identify every repository, runner, and registry
+      that actually produces deployed artifacts, and confirm each appears in
+      the model with links to its deployment targets.
+    references: >
+      NIST SP 800-218 (SSDF) PO.3, PO.5; NIST SP 800-53 SA-15, SR-3, PL-8;
+      MITRE ATT&CK T1195.002 (Compromise Software Supply Chain)
 
   missing-cloud-hardening:
     title: "Missing Cloud Hardening"
     description: >
-      Cloud components should be hardened according to the cloud vendor best
-      practices. This affects their configuration, auditing, and further
-      areas.
+      This cloud asset, trust boundary, or shared runtime is not marked as
+      hardened against its provider's security baseline (CIS Microsoft Azure
+      or AWS Foundations Benchmark, DISA Cloud Computing SRG, provider
+      security benchmarks), and provider-specific checks fire where the
+      model's cloud tags apply. Typical gaps are publicly accessible storage
+      accounts or buckets, databases with public endpoints, missing control-
+      plane audit logging, long-lived access keys, IMDSv1 left enabled,
+      overly broad IAM or RBAC role assignments, and missing encryption or
+      diagnostic settings.
     impact: >
-      If this risk is unmitigated, attackers might access cloud components in
-      an unintended way.
-    asvs: "V1 - Architecture, Design and Threat Modeling Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html"
+      If this risk remains unmitigated, an attacker can reach cloud
+      resources through paths that bypass the application entirely: reading
+      data from public storage, using leaked or over-privileged keys
+      against the control plane, or stealing role credentials from the
+      instance metadata service via SSRF. Missing audit logging also means
+      such access would go unnoticed and could not be reconstructed.
+      Misconfiguration, not software vulnerability, is the dominant cause of
+      cloud data breaches.
+    asvs: "V14 - Configuration Verification Requirements"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Cloud_Architecture_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the technical asset itself
-      and of the data assets processed and stored.
+      Threagile scores model-level and boundary-level findings at a flat
+      Likelihood of Unlikely, and per-asset findings at Unlikely adjusted by
+      RAA (+1 at 40% or higher, -1 below 15%) and internet reachability (+1).
+      Impact is Medium, raised to High for Confidential-or-higher or
+      Critical-or-higher data and to Very High for Strictly-Confidential or
+      Mission-Critical data. Treat any publicly accessible store of CUI as
+      High regardless of score.
     false_positives: >
-      Cloud components not running parts of the target architecture can be
-      considered as false positives after individual review.
+      Cloud components that do not run any part of the target architecture,
+      and components already scored against the provider benchmark in a
+      continuous posture-management tool with no open failed controls
+      (evidenced by a compliance report), can be treated as false positives
+      after review.
+    detection_logic: >
+      Pull the regulatory compliance or benchmark report from Microsoft
+      Defender for Cloud, AWS Security Hub (CIS AWS Foundations and NIST
+      800-53 standards), or GCP Security Command Center for the resources
+      in scope and list failed controls. Supplement with Prowler or
+      ScoutSuite runs. Specifically query for public network access enabled
+      on storage, databases, and key vaults; IMDSv1-enabled instances; access
+      keys older than 90 days; role assignments with Owner/Contributor or
+      AdministratorAccess on broad scopes; and missing diagnostic settings or
+      CloudTrail trails.
+    references: >
+      CWE-16 (Configuration); MITRE ATT&CK T1530 (Data from Cloud Storage);
+      MITRE ATT&CK T1078.004 (Cloud Accounts); MITRE ATT&CK T1552.005 (Cloud
+      Instance Metadata API); OWASP Top 10:2025 A02 (Security
+      Misconfiguration); NIST SP 800-53 CM-6, CM-7; DISA Cloud Computing SRG
 
   missing-file-validation:
     title: "Missing File Validation"
     description: >
-      When a technical asset accepts files, these input files should be
-      strictly validated about filename and type.
+      This custom-developed asset accepts file data (uploads, attachments,
+      imports) and has no evidence of server-side validation of the file's
+      real type, name, size, and content. Without it, attackers can upload
+      server-executable files (web shells such as .jsp, .aspx, .php),
+      HTML or SVG files that execute script when served back, malware aimed
+      at the users or back-office staff who later open the file, archive
+      bombs, Zip Slip archives that write outside the extraction directory,
+      or parser-exploiting documents targeting image and document libraries
+      (ImageTragick, malicious PDFs).
     impact: >
-      If this risk is unmitigated, attackers might be able to provide
-      malicious files to the application.
+      If this risk remains unmitigated, consequences range from remote code
+      execution on the server (an uploaded web shell under the web root), to
+      stored XSS or malware delivery to every user who downloads the file,
+      to denial of service through decompression bombs or disk exhaustion.
+      In cross-domain or transfer contexts, an unvalidated file is also the
+      most direct way to move malicious content between security domains.
     asvs: "V12 - File and Resources Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the technical asset itself
-      and of the data assets processed and stored.
+      Threagile scores this per accepting asset at a baseline Likelihood of
+      Very Likely, adjusted by RAA (+1 at 40% or higher, -1 below 15%) and
+      internet reachability (+1). Impact is Low, raised to Medium when the
+      asset processes Strictly-Confidential or Mission-Critical data.
+      Escalate to High where uploaded files are stored under a path the web
+      server will execute, or are opened by privileged staff.
     false_positives: >
-      Fully trusted (i.e. cryptographically signed or similar) files can be
-      considered as false positives after individual review.
+      File inputs that only accept cryptographically signed files from a
+      trusted source (verified before any parsing), or that pass through a
+      dedicated validation and content-disarm service before reaching this
+      asset, can be treated as false positives after review.
+    detection_logic: >
+      Upload test files to each file endpoint: a renamed executable with an
+      image extension, a polyglot (valid JPEG plus embedded script), an SVG
+      containing script, an EICAR test file, an oversized file, a
+      high-ratio zip bomb, and a zip containing a ../../ entry. Confirm each
+      is rejected or neutralized and that stored files are not reachable or
+      executable under the web root. Review code for use of the client
+      filename or Content-Type in storage decisions. Confirm anti-malware
+      scan events appear in logs for every upload.
+    references: >
+      CWE-434 (Unrestricted Upload of File with Dangerous Type); CWE-409
+      (Improper Handling of Highly Compressed Data); CAPEC-17 (Using
+      Malicious Files); MITRE ATT&CK T1505.003 (Web Shell); OWASP Top 10:2025
+      A06 (Insecure Design)
 
   missing-hardening:
     title: "Missing Hardening"
     description: >
-      Technical assets with a Relative Attacker Attractiveness (RAA) value of
-      55 % or higher should be explicitly hardened taking best practices and
-      vendor hardening guides into account.
+      This asset's Relative Attacker Attractiveness (RAA) is at or above 55%,
+      or at or above 40% for inherently high-value types (data stores,
+      application servers, identity providers, ERP systems), yet it is not
+      modeled as explicitly hardened against a recognized baseline. High-RAA
+      assets are where attackers concentrate effort, and default vendor
+      configurations commonly leave unused services running, sample
+      applications and default accounts present, verbose error output,
+      weak protocol and cipher settings, and unnecessary listening ports.
     impact: >
-      If this risk remains unmitigated, attackers might be able to easier
-      attack high-value targets.
+      If this risk remains unmitigated, every default weakness on the asset
+      an attacker most wants is available to them: known default
+      credentials, exposed management interfaces, unpatched optional
+      components, and permissive settings that turn a minor foothold into
+      privilege escalation. For DoD systems, an unhardened asset will also
+      generate STIG CAT I/II findings that block authorization.
     asvs: "V14 - Configuration Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the data processed or
-      stored in the technical asset.
-    false_positives: "Usually no false positives."
+      Threagile scores this at a baseline Likelihood of Likely, adjusted by
+      RAA (+1 at 40% or higher, which every matching asset already meets, so
+      in practice Very Likely or higher) and internet reachability (+1).
+      Impact is Low, raised to Medium when the asset processes
+      Strictly-Confidential or Mission-Critical integrity data. Open STIG
+      CAT I findings on the asset should be treated as High independently of
+      this score.
+    false_positives: >
+      Assets with a documented, current STIG or CIS benchmark scan showing
+      no open CAT I findings and justified deviations for the rest, or
+      managed PaaS services whose hardening is an inherited provider control,
+      can be treated as false positives after review.
+    detection_logic: >
+      Identify the applicable DISA STIG/SRG or CIS benchmark for each layer
+      of the asset and scan it: SCAP Compliance Checker or OpenSCAP for
+      operating systems, CIS-CAT or vendor tools (Oracle DBSAT) for
+      databases, kube-bench for Kubernetes, and Evaluate-STIG or manual
+      checklists for applications. Compare listening ports (ss -tlnp,
+      netstat) with the ports, protocols, and services list. Check for
+      default accounts and credentials. Track open findings over time in the
+      POA&M.
+    references: >
+      CWE-16 (Configuration); CWE-1188 (Initialization of a Resource with an
+      Insecure Default); MITRE ATT&CK T1190 (Exploit Public-Facing
+      Application); MITRE ATT&CK T1068 (Exploitation for Privilege
+      Escalation); OWASP Top 10:2025 A02 (Security Misconfiguration); NIST SP
+      800-53 CM-6, CM-7
 
   missing-identity-propagation:
     title: "Missing Identity Propagation"
     description: >
-      Technical assets (especially multi-tenant systems), which usually
-      process data for endusers should authorize every request based on the
-      identity of the enduser when the data flow is authenticated (i.e.
-      non-public). For DevOps usages at least a technical-user authorization
-      is required.
+      This service-like asset processes end-user data and receives
+      authenticated requests from another in-scope component, but the flow
+      is not authorized on the basis of the originating end user's identity:
+      the backend trusts the calling service and acts on whatever user or
+      object identifiers the caller supplies. Authorization therefore exists
+      only at the edge, and the backend cannot enforce per-user, per-object
+      access itself. DevOps flows are held to the lower bar of at least a
+      technical-user authorization.
     impact: >
-      If this risk is unmitigated, attackers might be able to access or modify
-      foreign data after a successful compromise of a component within the
-      system due to missing resource-based authorization checks.
+      If this risk remains unmitigated, an attacker who compromises any
+      upstream component, or finds an injection or SSRF flaw in it, can call
+      this backend directly and read or modify any user's records, since the
+      backend has no means to tell a legitimate on-behalf-of request from a
+      forged one. This turns a single-component compromise into a
+      multi-tenant data breach, and audit records attribute all activity to
+      the service account rather than the real user.
     asvs: "V4 - Access Control Verification Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating (medium or high) depends on the confidentiality,
-      integrity, and availability rating of the technical asset.
+      Threagile scores this per incoming authenticated flow at a baseline
+      Likelihood of Unlikely, adjusted by RAA (+1 at 40% or higher, -1 below
+      15%) and internet reachability (+1). Impact is Low, raised to Medium
+      when the asset is rated Strictly-Confidential confidentiality or
+      Mission-Critical integrity/availability. Escalate for multi-tenant
+      backends holding data of multiple organizations or classifications.
     false_positives: >
-      Technical assets which do not process requests regarding functionality
-      or data linked to end-users (customers) can be considered as false
-      positives after individual review.
+      Flows where the end-user token is in fact forwarded and validated
+      (fix the model's authorization field to enduser-identity-propagation),
+      and assets that do not serve user-linked data or functions, can be
+      treated as false positives after review.
+    detection_logic: >
+      Trace a user request end to end and confirm the backend receives a
+      signed user token (inspect headers at the backend, not the gateway)
+      and validates it. With a valid service-to-service credential but no
+      user token, or with a token for user A, request user B's objects from
+      the backend directly and confirm denial. Review backend code for
+      authorization decisions based on unsigned headers such as X-User-Id.
+      Check audit logs at the backend record the end-user principal.
+    references: >
+      CWE-639 (Authorization Bypass Through User-Controlled Key); CWE-285
+      (Improper Authorization); OWASP API Security Top 10:2023 API1 (Broken
+      Object Level Authorization), API5 (Broken Function Level
+      Authorization); OWASP Top 10:2025 A01 (Broken Access Control); NIST SP
+      800-53 AC-3; NIST SP 800-207 (Zero Trust Architecture)
 
   missing-identity-provider-isolation:
     title: "Missing Identity Provider Isolation"
     description: >
-      Highly sensitive identity provider assets and their identity
-      datastores should be isolated from other assets by their own network
-      segmentation trust-boundary (execution-environment boundaries do not
-      count as network isolation).
+      An identity provider or its identity store (directory, user database)
+      shares a network segment with non-identity assets, with no network
+      trust boundary between them; execution-environment boundaries do not
+      count. The risk is most severe when the identity components share the
+      same execution environment (same application server, database
+      instance, or host) as other workloads. Identity providers hold the
+      token-signing keys and credential stores that every other component
+      trusts, making them the highest-value lateral-movement target.
     impact: >
-      If this risk is unmitigated, attackers successfully attacking other
-      components of the system might have an easy path towards highly
-      sensitive identity provider assets and their identity datastores, as
-      they are not separated by network segmentation.
+      If this risk remains unmitigated, a compromise of any co-located
+      lower-value asset gives a direct network path to the identity tier,
+      from which an attacker can dump credential hashes, steal token-signing
+      keys to forge tokens or SAML assertions for any user (as in the Golden
+      SAML technique used in the SolarWinds intrusion), or add federation
+      trusts that persist after remediation. Identity compromise is
+      compromise of every relying system.
     asvs: "V1 - Architecture, Design and Threat Modeling Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Network_Segmentation_Cheat_Sheet.html"
     risk_assessment: >
-      Default is high impact. The impact is increased to very-high when the
-      asset missing the trust-boundary protection is rated as
-      strictly-confidential or mission-critical.
+      Threagile scores this at High Impact, raised to Very High when the
+      identity asset is Strictly-Confidential or Mission-Critical. Baseline
+      Likelihood is Unlikely, or Likely when non-identity assets share the
+      same execution environment, then adjusted by RAA (+1 at 40% or higher,
+      -1 below 15%) and internet reachability (+1).
     false_positives: >
-      When all assets within the network segmentation trust-boundary are
-      hardened and protected to the same extend as if all were identity
-      providers with data of highest sensitivity.
+      Segments in which every co-resident asset is hardened, monitored, and
+      administered to Tier-0 standard as if it were itself an identity
+      provider, or a managed cloud identity service (Entra ID, IAM Identity
+      Center) whose isolation is an inherited provider control and is merely
+      modeled in a shared boundary, can be treated as false positives after
+      review.
+    detection_logic: >
+      Map the identity provider and its store to their subnets, VNets/VPCs,
+      clusters, and hosts, and list every other asset in those same
+      segments. Review NSG/firewall and NetworkPolicy rules to confirm only
+      required authentication flows are admitted and that non-identity
+      workloads cannot reach the identity store directly (test with a
+      connection attempt from a neighboring workload). Confirm signing keys
+      reside in an HSM-backed vault. Alert on changes to federation trusts,
+      token-signing certificates, and new application credentials in the
+      identity provider audit log.
+    references: >
+      CWE-653 (Improper Isolation or Compartmentalization); MITRE ATT&CK
+      T1556 (Modify Authentication Process); MITRE ATT&CK T1606.002 (Forge
+      Web Credentials: SAML Tokens); MITRE ATT&CK T1003 (OS Credential
+      Dumping); NIST SP 800-53 SC-7, AC-6; NIST SP 800-207
 
   missing-identity-store:
     title: "Missing Identity Store"
     description: >
-      The modeled architecture does not contain an identity store, which might
-      be the risk of a model missing critical assets (and thus not seeing
-      their risks).
+      The model contains data flows authorized by end-user identity but no
+      in-scope identity store or identity provider. Something must be
+      authenticating those users and issuing the credentials or tokens that
+      the modeled assets trust, so the model is missing the most
+      security-critical component in the authentication chain. This is a
+      model completeness gap, not proof that identity is insecure.
     impact: >
-      If this risk is unmitigated, attackers might be able to exploit risks
-      unseen in this threat model in the identity provider/store that is
-      currently missing in the model.
+      If this risk remains unmitigated, risks to the component that issues
+      every identity the system trusts (credential storage, MFA enforcement,
+      signing key protection, federation trust, isolation) are never
+      evaluated, and the authorization package cannot show where
+      identification and authentication controls are implemented or
+      inherited.
     asvs: "V2 - Authentication Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the enduser-identity
-      authorized technical assets and their data assets processed and stored.
+      Threagile scores this once per model at a flat Likelihood of Unlikely.
+      Impact is Low, raised to Medium when any end-user-authorized target
+      asset (or the data it processes) is rated Confidential or higher
+      confidentiality or Critical or higher integrity/availability.
     false_positives: >
-      Models only offering data/services without any real authentication need
-      can be considered as false positives after individual review.
+      Models offering only public, unauthenticated data or services can be
+      treated as false positives after review. Where an enterprise identity
+      service is inherited, model it as an out-of-scope asset rather than
+      accepting the finding.
+    detection_logic: >
+      Check whether the model contains any asset with an identity-provider,
+      identity-store-ldap, or identity-store-database technology. Compare
+      against communication links with authorization
+      enduser-identity-propagation. Confirm with the application team, the
+      OIDC/SAML configuration (issuer URLs, metadata endpoints), and
+      application settings which identity provider actually authenticates
+      users, and add it to the model.
+    references: >
+      NIST SP 800-53 IA-2, IA-5, PL-8; NIST SP 800-63-3 (Digital Identity
+      Guidelines); DoD ICAM Reference Design
 
   missing-network-segmentation:
     title: "Missing Network Segmentation"
     description: >
-      Highly sensitive assets and/or datastores residing in the same network
-      segment than other lower sensitive assets (like webservers or content
-      management systems etc.) should be better protected by a network
-      segmentation trust-boundary.
+      A sensitive, high-attractiveness asset (RAA of 50% or higher) or a
+      data store shares a network segment, with no trust boundary between
+      them, with lower-trust components such as client systems, web servers,
+      web applications, CMSs, REST or SOAP services, build pipelines, source
+      repositories, or monitoring hosts, and those components do not have a
+      legitimate direct connection to it. In a flat segment, any host that
+      is compromised can reach every other host's listening services
+      directly.
     impact: >
-      If this risk is unmitigated, attackers successfully attacking other
-      components of the system might have an easy path towards more valuable
-      targets, as they are not separated by network segmentation.
+      If this risk remains unmitigated, compromise of the most exposed and
+      least hardened component in the segment, typically an internet-facing
+      web tier, gives an attacker direct network access to the high-value
+      asset's database ports, management interfaces, and unauthenticated
+      internal services, collapsing defense in depth into a single layer and
+      enabling rapid lateral movement.
     asvs: "V1 - Architecture, Design and Threat Modeling Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Network_Segmentation_Cheat_Sheet.html"
     risk_assessment: >
-      Default is low risk. The risk is increased to medium when the asset
-      missing the trust-boundary protection is rated as strictly-confidential
-      or mission-critical.
+      Threagile scores this at a baseline Likelihood of Unlikely, adjusted by
+      RAA (+1 at 40% or higher, which every matching asset already meets) and
+      internet reachability (+1). Impact is Low, raised to Medium when the
+      asset is Strictly-Confidential or Mission-Critical for integrity or
+      availability.
     false_positives: >
-      When all assets within the network segmentation trust-boundary are
-      hardened and protected to the same extend as if all were
-      containing/processing highly sensitive data.
+      Segments in which every co-resident asset is hardened and protected to
+      the same level as the most sensitive one, or where microsegmentation
+      (per-workload NSGs, Kubernetes NetworkPolicies, service-mesh
+      authorization) enforces the same isolation as a separate segment but
+      is not represented as a trust boundary in the model, can be treated as
+      false positives after review; prefer modeling the real boundary.
+    detection_logic: >
+      Export NSG/security-group and NetworkPolicy rules for the segment and
+      confirm the sensitive asset admits only its documented callers and
+      ports. From a lower-trust host in the same segment, attempt TCP
+      connections to the asset's service and management ports (nmap) and
+      expect them to be blocked. Review flow logs (NSG flow logs, VPC Flow
+      Logs) for traffic from unexpected sources. Run a Kubernetes
+      NetworkPolicy audit for namespaces with no default-deny policy.
+    references: >
+      CWE-653 (Improper Isolation or Compartmentalization); MITRE ATT&CK
+      TA0008 (Lateral Movement); MITRE ATT&CK T1210 (Exploitation of Remote
+      Services); NIST SP 800-53 SC-7, SC-7(5), AC-4; NIST SP 800-207
 
   missing-vault:
     title: "Missing Vault (Secret Storage)"
     description: >
-      In order to avoid the risk of secret leakage via config files (when
-      attacked through vulnerabilities being able to read files like
-      Path-Traversal and others), it is best practice to use a separate
-      hardened process with proper authentication, authorization, and audit
-      logging to access config secrets (like credentials, private keys, client
-      certificates, etc.). This component is usually some kind of Vault.
+      The model contains no vault or secret-storage asset, so components
+      that need credentials, private keys, or client certificates are
+      assumed to hold them in configuration files, environment variables,
+      container images, or deployment manifests. Secrets stored this way are
+      readable by any vulnerability that reads files or process environment
+      (path traversal, XXE, SSRF to a local endpoint, a debug endpoint dumping
+      environment variables), cannot be rotated centrally, and leave no
+      audit trail of access.
     impact: >
-      If this risk is unmitigated, attackers might be able to easier steal
-      config secrets (like credentials, private keys, client certificates,
-      etc.) once a vulnerability to access files is present and exploited.
+      If this risk remains unmitigated, a file-read or information-disclosure
+      flaw in any component yields the credentials for everything that
+      component connects to (databases, message brokers, cloud APIs,
+      partner services), escalating a low-severity read bug into full data
+      compromise. Without rotation and access logging, stolen secrets remain
+      valid indefinitely and their use cannot be traced.
     asvs: "V6 - Stored Cryptography Verification Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the technical asset itself
-      and of the data assets processed and stored.
+      Threagile scores this once per model at a flat Likelihood of Unlikely.
+      Impact is Low, raised to Medium when any in-scope asset (or the data it
+      processes) is rated Confidential or higher confidentiality or Critical
+      or higher integrity/availability.
     false_positives: >
-      Models where no technical assets have any kind of sensitive config data
-      to protect can be considered as false positives after individual review.
+      Models in which no component holds any secret (all authentication via
+      workload identity or managed identity with no stored credential) can
+      be treated as false positives after review. A vault that exists but is
+      not modeled should be added to the model rather than accepted.
+    detection_logic: >
+      Search configuration files, Kubernetes manifests and Secrets, Helm
+      values, container image environment (docker inspect), and app service
+      settings for credentials and keys (gitleaks/trufflehog in filesystem
+      mode, kubectl get secrets and configmaps). Confirm whether each
+      application authenticates to a vault with workload identity and
+      whether vault audit logs show its reads. List secrets and certificates
+      with no rotation in the last 90 days.
+    references: >
+      CWE-798 (Use of Hard-coded Credentials); CWE-522 (Insufficiently
+      Protected Credentials); CWE-312 (Cleartext Storage of Sensitive
+      Information); MITRE ATT&CK T1552.001 (Credentials In Files); MITRE
+      ATT&CK T1552.004 (Private Keys); NIST SP 800-53 IA-5, SC-12, SC-28
 
   missing-vault-isolation:
     title: "Missing Vault Isolation"
     description: >
-      Highly sensitive vault assets and their datastores should be isolated
-      from other assets by their own network segmentation trust-boundary
-      (execution-environment boundaries do not count as network isolation).
+      A vault asset, or the data store backing it, shares a network segment
+      with non-vault assets with no network trust boundary between them;
+      execution-environment boundaries do not count. The risk is most severe
+      when the vault or its storage backend runs in the same execution
+      environment (same host, cluster node pool, or database instance) as
+      application workloads. The vault concentrates every credential and
+      key in the system, so its exposure surface should be the smallest in
+      the architecture.
     impact: >
-      If this risk is unmitigated, attackers successfully attacking other
-      components of the system might have an easy path towards highly
-      sensitive vault assets and their datastores, as they are not separated
-      by network segmentation.
+      If this risk remains unmitigated, an attacker who compromises any
+      co-located workload has direct network access to the vault API and its
+      storage backend, where a single authorization misconfiguration, stolen
+      token, or unsealed backend snapshot exposes every secret the vault
+      holds and therefore every system those secrets unlock.
     asvs: "V1 - Architecture, Design and Threat Modeling Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Network_Segmentation_Cheat_Sheet.html"
     risk_assessment: >
-      Default is medium impact. The impact is increased to high when the asset
-      missing the trust-boundary protection is rated as strictly-confidential
-      or mission-critical.
+      Threagile scores this at Medium Impact, raised to High when the vault
+      asset is Strictly-Confidential or Mission-Critical. Baseline Likelihood
+      is Unlikely, or Likely when non-vault assets share the same execution
+      environment, then adjusted by RAA (+1 at 40% or higher, -1 below 15%)
+      and internet reachability (+1).
     false_positives: >
-      When all assets within the network segmentation trust-boundary are
-      hardened and protected to the same extend as if all were vaults with
-      data of highest sensitivity.
+      A managed cloud key vault with public network access disabled and
+      reachable only through private endpoints (whose isolation is an
+      inherited provider control even if modeled in a shared boundary), or a
+      segment where every co-resident asset is protected to vault level, can
+      be treated as a false positive after review.
+    detection_logic: >
+      Check the vault's network configuration for public network access
+      (Azure Key Vault publicNetworkAccess, AWS resource policies without
+      aws:SourceVpce conditions) and list the subnets allowed to reach its
+      private endpoint. For self-managed vaults, identify the hosts and
+      storage backend and list co-resident workloads. Attempt a connection
+      to the vault API from a workload that should not use it. Alert on vault
+      access from unexpected source IPs and on bulk secret-list operations.
+    references: >
+      CWE-653 (Improper Isolation or Compartmentalization); MITRE ATT&CK
+      T1555 (Credentials from Password Stores); MITRE ATT&CK T1552 (Unsecured
+      Credentials); NIST SP 800-53 SC-7, SC-12, AC-6
 
   missing-waf:
     title: "Missing Web Application Firewall (WAF)"
     description: >
-      To have a first line of filtering defense, security architectures with
-      web-services or web-applications should include a WAF in front of them.
-      Even though a WAF is not a replacement for security (all components must
-      be secure even without a WAF) it adds another layer of defense to the
-      overall system by delaying some attacks and having easier attack
-      alerting through it.
+      A web application or web service is reached across a network trust
+      boundary without a WAF in the path. Nothing therefore inspects HTTP
+      requests for common attack signatures (injection payloads, path
+      traversal sequences, known exploit strings for frameworks and
+      products), enforces protocol sanity, rate-limits scanners, or provides
+      a point to apply a virtual patch for a newly disclosed vulnerability
+      before a code fix can be deployed.
     impact: >
-      If this risk is unmitigated, attackers might be able to apply standard
-      attack pattern tests at great speed without any filtering.
+      If this risk remains unmitigated, automated scanners and exploit kits
+      can probe the application at full speed with no filtering or alerting,
+      mass-exploitation campaigns that follow a public CVE disclosure (for
+      example Log4Shell) reach the application unimpeded, and the
+      organization has no rapid compensating control while a patch is
+      prepared. A WAF does not fix vulnerabilities, but its absence removes
+      a detection and delay layer.
     asvs: "V1 - Architecture, Design and Threat Modeling Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Virtual_Patching_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the technical asset itself
-      and of the data assets processed and stored.
+      Threagile scores this at a baseline Likelihood of Unlikely, adjusted by
+      RAA (+1 at 40% or higher, -1 below 15%) and internet reachability (+1).
+      Impact is Low, raised to Medium when the asset processes
+      Strictly-Confidential or Mission-Critical data. Escalate for
+      internet-facing applications in DoD environments, where a WAF at the
+      boundary is an expected SCCA component.
     false_positives: >
-      Targets only accessible via WAFs or reverse proxies containing a WAF
-      component (like ModSecurity) can be considered as false positives after
-      individual review.
+      Targets reachable only through a WAF or a reverse proxy with an
+      enforcing WAF module (ModSecurity, Coraza, cloud WAF policy in
+      prevention mode) that the model does not show can be treated as false
+      positives after review; prefer modeling the WAF.
+    detection_logic: >
+      Trace the network path from each external caller to the application
+      and confirm a WAF is present and in prevention mode (Azure WAF policy
+      mode, AWS WAF web ACL association, ModSecurity SecRuleEngine On).
+      Confirm the origin rejects requests that bypass the WAF by calling the
+      origin directly. Send benign test signatures (e.g. a ' OR 1=1--
+      parameter, a ../../etc/passwd path) and confirm they are blocked and
+      logged. Review WAF logs in the SIEM for active rule hits.
+    references: >
+      CWE-693 (Protection Mechanism Failure); MITRE ATT&CK T1190 (Exploit
+      Public-Facing Application); MITRE ATT&CK T1595.002 (Vulnerability
+      Scanning); NIST SP 800-53 SC-7, SI-4
 
   mixed-targets-on-shared-runtime:
     title: "Mixed Targets on Shared Runtime"
     description: >
-      Different attacker targets (like frontend and backend/datastore
-      components) should not be running on the same shared (underlying)
-      runtime.
+      A shared runtime (VM host, Kubernetes cluster or node pool, container
+      host, application server) runs technical assets that belong to
+      different trust boundaries, or mixes attacker-facing frontend
+      components with backend or data-store components. The runtime's own
+      isolation (hypervisor, kernel namespaces, shared JVM or app pool) then
+      becomes the only barrier between a low-trust and a high-trust asset,
+      contrary to the network boundaries drawn in the model.
     impact: >
-      If this risk is unmitigated, attackers successfully attacking other
-      components of the system might have an easy path towards more valuable
-      targets, as they are running on the same shared runtime.
+      If this risk remains unmitigated, compromise of the most exposed asset
+      on the runtime (or a container/VM escape from it) gives direct access
+      to co-located higher-value assets' memory, filesystems, credentials,
+      and local network, and resource exhaustion in one asset degrades all
+      of them. The trust boundaries in the model overstate the real
+      isolation.
     asvs: "V1 - Architecture, Design and Threat Modeling Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Network_Segmentation_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating (low or medium) depends on the confidentiality,
-      integrity, and availability rating of the technical asset running on the
-      shared runtime.
+      Threagile scores this per shared runtime at a flat Likelihood of
+      Unlikely. Impact is Low, raised to Medium based on the highest
+      confidentiality, integrity, and availability rating of the assets
+      running on the shared runtime.
     false_positives: >
-      When all assets running on the shared runtime are hardened and protected
-      to the same extend as if all were containing/processing highly sensitive
-      data.
+      Shared runtimes where every hosted asset is hardened and protected to
+      the level of the most sensitive one, or where hard multi-tenancy
+      controls (dedicated node pools with taints, sandboxed runtimes,
+      separate VMs) give effective separation not represented in the model,
+      can be treated as false positives after review.
+    detection_logic: >
+      For each shared runtime, list the hosted workloads and their trust
+      boundaries (kubectl get pods -A -o wide grouped by node, hypervisor VM
+      inventory, app-server deployment lists). Flag nodes or hosts running
+      both internet-facing and data-tier workloads. Verify node-pool taints
+      and affinity rules for sensitive workloads. Check for shared service
+      accounts, shared filesystems, or shared host networking across tiers.
+    references: >
+      CWE-653 (Improper Isolation or Compartmentalization); MITRE ATT&CK
+      T1611 (Escape to Host); MITRE ATT&CK TA0008 (Lateral Movement); NIST SP
+      800-53 SC-2, SC-39; NIST SP 800-190
 
   path-traversal:
     title: "Path-Traversal"
     description: >
-      When a filesystem is accessed Path-Traversal or Local-File-Inclusion
-      (LFI) risks might arise. The risk rating depends on the sensitivity of
-      the technical asset itself and of the data assets processed or stored.
+      An in-scope caller accesses this file system or file server, and if
+      any part of a file path is derived from caller-controlled input (a
+      download filename, a template name, a document identifier used as a
+      path segment) without canonicalization and a base-directory check, an
+      attacker can supply sequences such as ../, encoded variants (%2e%2e%2f,
+      ..%c0%af), absolute paths, or Windows UNC and device names to read or
+      include files outside the intended directory.
     impact: >
-      If this risk is unmitigated, attackers might be able to read sensitive
-      files (configuration data, key/credential files, deployment files,
-      business data files, etc.) from the filesystem of affected components.
+      If this risk remains unmitigated, an attacker can read application
+      configuration files with database and API credentials, private keys
+      and certificates, cloud credential files, source code, /etc/passwd and
+      process environment (/proc/self/environ), and business data files of
+      other users. Where the traversal reaches a file write or include
+      path, it escalates to overwriting files or local file inclusion and
+      code execution.
     asvs: "V12 - File and Resources Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the data stored inside the
-      technical asset.
+      Threagile scores this per caller flow at a baseline Likelihood of Very
+      Likely (Likely for DevOps-usage flows), adjusted by RAA (+1 at 40% or
+      higher, -1 below 15%) and internet reachability (+1). Impact is
+      Medium, raised to High when the file system holds Strictly-Confidential
+      data. Escalate where key or credential files are readable by the
+      application's process account.
     false_positives: >
-      File accesses by filenames not consisting of parts controllable by the
-      caller can be considered as false positives after individual review.
+      File accesses whose paths are built entirely from server-side
+      constants or server-generated identifiers, with no caller-influenced
+      component on any code path, can be treated as false positives after
+      code review.
+    detection_logic: >
+      Run SAST (Semgrep, CodeQL path-injection queries) for file open, read,
+      include, and send-file calls whose path derives from request data. In
+      DAST, fuzz file parameters with traversal payload lists (encoded,
+      double-encoded, overlong UTF-8, null-byte, absolute path) and look for
+      known file contents such as root:x:0:0 or [boot loader]. Review the
+      process account's filesystem permissions on key and config files.
+      Alert on web logs containing ../ or %2e%2e sequences.
+    references: >
+      CWE-22 (Improper Limitation of a Pathname to a Restricted Directory);
+      CWE-98 (PHP Remote File Inclusion); CAPEC-126 (Path Traversal); MITRE
+      ATT&CK T1083 (File and Directory Discovery); MITRE ATT&CK T1005 (Data
+      from Local System); OWASP Top 10:2025 A01 (Broken Access Control)
 
   push-instead-of-pull-deployment:
     title: "Push instead of Pull Deployment"
     description: >
-      When comparing push-based vs. pull-based deployments from a security
-      perspective, pull-based deployments improve the overall security of the
-      deployment targets. Every exposed interface of a production system to
-      accept a deployment increases the attack surface of the production
-      system, thus a pull-based approach exposes less attack surface relevant
-      interfaces.
+      A build-pipeline asset writes deployments directly into a production
+      target (a non-read-only communication link from the pipeline to a
+      non-build asset running custom code). Push deployment requires the
+      target to expose an inbound administrative interface reachable from
+      the pipeline (SSH, WinRM, the Kubernetes API, a cloud deployment API)
+      and requires the pipeline to hold standing production credentials,
+      which makes the pipeline a single point of compromise for production.
     impact: >
-      If this risk is unmitigated, attackers might have more potential target
-      vectors for attacks, as the overall attack surface is unnecessarily
-      increased.
+      If this risk remains unmitigated, an attacker who compromises the CI
+      system (through a malicious pull request, a vulnerable plugin, a
+      stolen runner token, or a poisoned dependency executed during the
+      build) inherits the pipeline's production credentials and can deploy
+      arbitrary workloads or alter configuration in production directly,
+      bypassing review gates.
     asvs: "V1 - Architecture, Design and Threat Modeling Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/CI_CD_Security_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the highest sensitivity of the deployment
-      targets running custom-developed parts.
+      Threagile scores this per push deployment link at a flat Likelihood of
+      Unlikely. Impact is Low, raised to Medium when the deployment target
+      (or the data it processes) is rated Confidential or higher
+      confidentiality or Critical or higher integrity/availability. Escalate
+      where the pipeline holds long-lived production administrator
+      credentials.
     false_positives: >
-      Communication links that are not deployment paths can be considered as
-      false positives after individual review.
+      Communication links that are not deployment paths, and push
+      deployments that use per-run, short-lived, environment-scoped
+      credentials issued through OIDC federation with a mandatory production
+      approval gate, can be treated as false positives after review.
+    detection_logic: >
+      Read pipeline definitions for deployment steps (kubectl apply, helm
+      upgrade, az/aws deploy commands, SSH/WinRM) targeting production, and
+      list the credentials they use, their lifetime, and their scope (pipeline
+      secret stores, service connections). Check whether production exposes
+      management endpoints reachable from CI runner networks. Confirm
+      whether a GitOps controller (Argo CD, Flux) is the only writer to
+      production by reviewing Kubernetes audit logs for changes by other
+      principals.
+    references: >
+      CWE-668 (Exposure of Resource to Wrong Sphere); MITRE ATT&CK T1072
+      (Software Deployment Tools); MITRE ATT&CK T1195.002 (Compromise
+      Software Supply Chain); OWASP Top 10:2025 A03 (Software Supply Chain
+      Failures); NIST SP 800-53 CM-5, AC-17; NIST SP 800-204D
 
   search-query-injection:
     title: "Search-Query Injection"
     description: >
-      When a search engine server is accessed Search-Query Injection risks
-      might arise. See for example
-      https://github.com/veracode-research/solr-injection and
-      https://github.com/veracode-research/solr-injection/blob/master/slides/DEFCON-27-Michael-Stepankin-Apache-Solr-Injection.pdf
-      for more details (here related to Solr, but in general showcasing the
-      topic of search query injections).
+      An in-scope client queries this search engine (Elasticsearch,
+      OpenSearch, Solr) over HTTP(S) or binary protocols, and if caller input
+      is embedded into raw query syntax (Lucene query_string, Solr q with
+      local parameters) or caller-controlled request parameters are passed
+      through to the engine, an attacker can alter the query logic, broaden
+      results beyond their authorization, or invoke engine features never
+      intended for users: Solr local parameters, stream.url, the shards
+      parameter, the Velocity response writer, or Elasticsearch scripting.
     impact: >
-      If this risk remains unmitigated, attackers might be able to read more
-      data from the search index and eventually further escalate towards a
-      deeper system penetration via code executions.
+      If this risk remains unmitigated, an attacker can read documents
+      outside their authorization from the index (including fields hidden by
+      the UI), exhaust the cluster with expensive wildcard or regex queries,
+      and in vulnerable versions achieve SSRF or remote code execution on
+      the search nodes (Solr CVE-2017-12629 and CVE-2019-17558), from where
+      the full index and node credentials are exposed.
     asvs: "V5 - Validation, Sanitization and Encoding Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the search engine server
-      itself and of the data assets processed or stored.
+      Threagile scores this per caller flow at a baseline Likelihood of Very
+      Likely (Likely for DevOps-usage flows), adjusted by RAA (+1 at 40% or
+      higher, -1 below 15%) and internet reachability (+1). Impact is
+      Medium; High when the engine processes Strictly-Confidential or
+      Mission-Critical integrity data; Low when it holds only Internal-or-lower
+      confidentiality and Operational integrity data.
     false_positives: >
-      Server engine queries by search values not consisting of parts
-      controllable by the caller can be considered as false positives after
-      individual review.
+      Search requests built only with typed query-builder APIs that pass
+      caller input as term values, with no pass-through of request
+      parameters to the engine, can be treated as false positives after code
+      review.
+    detection_logic: >
+      Review code for raw query_string, Lucene syntax concatenation, or
+      forwarding of the incoming query string to the engine. In DAST, submit
+      Lucene/Solr syntax (field:*, OR *:*, {!xmlparser ...}, a shards= or
+      stream.url= parameter) and compare result counts and errors. Check
+      engine configuration for disabled dynamic scripting, enabled
+      authentication, and patched versions. Alert on engine slow-query logs
+      and on queries containing local-parameter syntax.
+    references: >
+      CWE-943 (Improper Neutralization of Special Elements in Data Query
+      Logic); CWE-74 (Injection); MITRE ATT&CK T1190 (Exploit Public-Facing
+      Application); OWASP Top 10:2025 A05 (Injection)
 
   service-registry-poisoning:
     title: "Service Registry Poisoning"
     description: >
-      When a service registry used for discovery of trusted service
-      endpoints Service Registry Poisoning risks might arise.
+      This service registry (Consul, etcd, Eureka, ZooKeeper, Kubernetes
+      service discovery) tells in-scope components where their trusted
+      dependencies are. If registrations and configuration keys can be
+      written without strong authentication and authorization, or if callers
+      accept whatever endpoint the registry returns without verifying its
+      identity, an attacker can register a malicious instance under a
+      legitimate service name, overwrite an endpoint, or alter configuration
+      values that services read at runtime.
     impact: >
-      If this risk remains unmitigated, attackers might be able to poison
-      the service registry with malicious service endpoints or malicious
-      lookup and config data leading to breach of sensitive data.
+      If this risk remains unmitigated, consumers send their requests, and
+      the credentials and sensitive data inside them, to an
+      attacker-controlled endpoint (adversary-in-the-middle), or load
+      attacker-supplied configuration that disables security features or
+      points to malicious resources. Because discovery is silent and
+      trusted, the redirection affects every consumer at once and is hard to
+      notice.
     asvs: "V10 - Malicious Code Verification Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Microservices_Security_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the technical assets
-      accessing the service registry as well as the data assets processed or
-      stored.
+      Threagile scores this per registry at a baseline Likelihood of
+      Unlikely, adjusted by RAA (+1 at 40% or higher, -1 below 15%) and
+      internet reachability (+1). Impact is Low, raised to Medium when the
+      registry, any caller, or any incoming flow involves Strictly-
+      Confidential or Mission-Critical data.
     false_positives: >
-      Service registries not used for service discovery can be considered as
-      false positives after individual review.
+      Registries not used for service discovery, and environments where
+      every consumer verifies the discovered endpoint with mutual TLS against
+      an issued service identity (making a poisoned entry fail closed), can
+      be treated as false positives after review.
+    detection_logic: >
+      Review registry ACL configuration (Consul acl.default_policy deny,
+      etcd --client-cert-auth and RBAC, Kubernetes RBAC for create/update on
+      endpoints and endpointslices) and list principals with write access.
+      Using a workload credential, attempt to register an entry for another
+      service name and confirm denial. Confirm service-to-service calls
+      enforce mTLS identity verification (mesh PeerAuthentication STRICT).
+      Alert on registry audit events for registrations from unexpected
+      sources or unexpected service names.
+    references: >
+      CWE-923 (Improper Restriction of Communication Channel to Intended
+      Endpoints); CWE-345 (Insufficient Verification of Data Authenticity);
+      MITRE ATT&CK T1557 (Adversary-in-the-Middle); NIST SP 800-53 SC-23,
+      AC-3; NIST SP 800-204A
 
   server-side-request-forgery:
     title: "Server-Side Request Forgery (SSRF)"
     description: >
-      When a server system (i.e. not a client) is accessing other server
-      systems via typical web protocols Server-Side Request Forgery (SSRF) or
-      Local-File-Inclusion (LFI) or Remote-File-Inclusion (RFI) risks might
-      arise.
+      This server-side asset makes outgoing HTTP(S) requests, and if the
+      destination URL, host, or path is built from caller-controlled input
+      (webhook URLs, link previews, import-from-URL features, PDF/HTML
+      renderers, XML or SVG processors), an attacker can make the server
+      send requests on their behalf to destinations the attacker cannot
+      reach directly: other services inside the same trust boundary, the
+      cloud instance metadata endpoint (169.254.169.254), localhost
+      administrative ports, or file:// and gopher:// handlers.
     impact: >
-      If this risk is unmitigated, attackers might be able to access sensitive
-      services or files of network-reachable components by modifying outgoing
-      calls of affected components.
+      If this risk remains unmitigated, an attacker can read data from
+      internal services that trust the server's network position, steal
+      cloud role credentials from the metadata service and use them against
+      the cloud control plane (the technique behind the 2019 Capital One
+      breach), scan and attack internal hosts, and read local files. The
+      server's network position effectively becomes the attacker's.
     asvs: "V12 - File and Resources Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating (low or medium) depends on the sensitivity of the data
-      assets receivable via web protocols from targets within the same network
-      trust-boundary as well on the sensitivity of the data assets receivable
-      via web protocols from the target asset itself. Also for cloud-based
-      environments the exploitation impact is at least medium, as cloud
-      backend services can be attacked via SSRF.
+      Threagile scores this per outgoing web flow at a baseline Likelihood of
+      Likely (Unlikely for DevOps-usage flows), adjusted by RAA (+1 at 40% or
+      higher, -1 below 15%) and internet reachability (+1). Impact is Low,
+      raised to Medium when the target or any web-reachable asset in the
+      same trust boundary processes Strictly-Confidential data, and raised to
+      at least Medium whenever the asset runs inside a cloud trust boundary,
+      because the metadata service is always reachable.
     false_positives: >
-      Servers not sending outgoing web requests can be considered as false
-      positives after review.
+      Servers whose outgoing request destinations are fixed in server-side
+      configuration with no caller influence over scheme, host, port, or
+      path can be treated as false positives after code review.
+    detection_logic: >
+      Review code for HTTP client calls (requests.get, HttpClient,
+      RestTemplate, fetch, curl) whose URL derives from request data. In
+      DAST, supply URLs pointing to an out-of-band collaborator (Burp
+      Collaborator, interactsh), to 169.254.169.254, to localhost ports, and
+      to redirecting and DNS-rebinding hosts, and observe callbacks or
+      response differences. Verify IMDSv2 enforcement and egress firewall
+      rules. Alert on outbound connections from application workloads to
+      the metadata IP or to internal ranges they do not normally call.
+    references: >
+      CWE-918 (Server-Side Request Forgery); CAPEC-664 (Server Side Request
+      Forgery); MITRE ATT&CK T1552.005 (Cloud Instance Metadata API); OWASP
+      Top 10:2025 A01 (Broken Access Control); OWASP API Security Top
+      10:2023 API7 (Server Side Request Forgery)
 
   sql-nosql-injection:
     title: "SQL/NoSQL-Injection"
     description: >
-      When a database is accessed via database access protocols
-      SQL/NoSQL-Injection risks might arise. The risk rating depends on the
-      sensitivity technical asset itself and of the data assets processed or
-      stored.
+      An in-scope client accesses this database over a database protocol,
+      and if any query is built by concatenating or formatting caller input
+      into SQL text, or by passing caller-supplied JSON objects directly into
+      a NoSQL query, an attacker can change the query's structure. Common
+      sources are dynamic WHERE, ORDER BY, and IN clauses, ORM raw-query
+      escapes, stored procedures using EXEC with concatenated strings, and
+      MongoDB operator injection ($ne, $gt, $where, $regex) via JSON request
+      bodies.
     impact: >
-      If this risk is unmitigated, attackers might be able to modify SQL/NoSQL
-      queries to steal and modify data and eventually further escalate towards
-      a deeper system penetration via code executions.
+      If this risk remains unmitigated, an attacker can read the entire
+      database (including credential hashes and other users' records),
+      bypass authentication, modify or delete data, and, depending on the
+      database account's privileges and engine features (xp_cmdshell,
+      COPY ... PROGRAM, UDFs, INTO OUTFILE), execute operating system
+      commands on the database server and pivot deeper into the network.
     asvs: "V5 - Validation, Sanitization and Encoding Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the data stored inside the
-      database.
+      Threagile scores this per caller flow at a baseline Likelihood of Very
+      Likely (Likely for DevOps-usage flows), adjusted by RAA (+1 at 40% or
+      higher, -1 below 15%) and internet reachability (+1). Impact is
+      Medium, raised to High when the database processes
+      Strictly-Confidential or Mission-Critical integrity data. Any confirmed
+      injection reachable from an end-user input should be treated as High.
     false_positives: >
-      Database accesses by queries not consisting of parts controllable by the
-      caller can be considered as false positives after individual review.
+      Database access where every query uses bound parameters or a query
+      builder, and identifiers that cannot be parameterized are validated
+      against fixed allowlists, can be treated as false positives after
+      code review.
+    detection_logic: >
+      Run SAST (Semgrep, CodeQL SQL-injection and NoSQL-injection queries,
+      SonarQube) for query execution calls that receive concatenated or
+      formatted strings, and for raw-query ORM methods. In DAST, run sqlmap
+      or ZAP/Burp injection scans on every parameter, header, and JSON body
+      field, including operator payloads such as {"$ne": null} for NoSQL
+      endpoints. Review the application's database account privileges.
+      Alert on database error rates and on query patterns such as UNION
+      SELECT, SLEEP(, or WAITFOR DELAY in database or WAF logs.
+    references: >
+      CWE-89 (SQL Injection); CWE-943 (Improper Neutralization of Special
+      Elements in Data Query Logic); CAPEC-66 (SQL Injection); CAPEC-676
+      (NoSQL Injection); MITRE ATT&CK T1190 (Exploit Public-Facing
+      Application); OWASP Top 10:2025 A05 (Injection)
 
   unchecked-deployment:
     title: "Unchecked Deployment"
     description: >
-      For each build-pipeline component Unchecked Deployment risks might arise
-      when the build-pipeline does not include established DevSecOps
-      best-practices. DevSecOps best-practices scan as part of CI/CD pipelines
-      for vulnerabilities in source- or byte-code, dependencies, container
-      layers, and dynamically against running test systems. There are several
-      open-source and commercial tools existing in the categories DAST, SAST,
-      and IAST.
+      This development-relevant asset (source repository, build pipeline,
+      artifact registry, or devops client) delivers code to deployment
+      targets without evidence of automated security testing gates in the
+      pipeline: static analysis of source, software composition analysis of
+      dependencies, container image scanning, infrastructure-as-code
+      scanning, and dynamic testing against a running test environment.
+      Vulnerabilities in custom code and known-vulnerable dependencies
+      therefore reach production on every release without review.
     impact: >
-      If this risk remains unmitigated, vulnerabilities in custom-developed
-      software or their dependencies might not be identified during continuous
-      deployment cycles.
+      If this risk remains unmitigated, injection flaws, insecure
+      configurations, and dependencies with published exploits (for example
+      Log4Shell in log4j-core, or vulnerable versions of common web
+      frameworks) are deployed continuously, and the organization has no
+      inventory (SBOM) to determine exposure when the next critical
+      dependency CVE is announced.
     asvs: "V14 - Configuration Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the highest rating of the technical assets
-      and data assets processed by deployment-receiving targets.
+      Threagile scores this at a baseline Likelihood of Unlikely, adjusted by
+      RAA (+1 at 40% or higher, -1 below 15%) and internet reachability (+1).
+      Impact is Low, raised to Medium when any code-deployment target (or the
+      data it processes) is rated Confidential or higher confidentiality or
+      Critical or higher integrity/availability.
     false_positives: >
-      When the build-pipeline does not build any software components it can be
-      considered a false positive after individual review.
+      Pipelines that build no software (infrastructure-only or
+      configuration-only), or that already run blocking SAST, SCA, image, and
+      DAST gates with documented thresholds (evidenced by pipeline
+      definitions and recent results), can be treated as false positives
+      after review.
+    detection_logic: >
+      Read the pipeline definitions and list which security scanners run,
+      whether each is blocking (fails the job) or advisory, and its severity
+      threshold. Confirm an SBOM is produced and retained per release. Pick
+      a recent release and verify scan results exist for its exact commit
+      and image digest. Introduce a known-vulnerable dependency on a test
+      branch and confirm the pipeline fails.
+    references: >
+      CWE-1395 (Dependency on Vulnerable Third-Party Component); CWE-1104
+      (Use of Unmaintained Third Party Components); MITRE ATT&CK T1195.001
+      (Compromise Software Dependencies and Development Tools); OWASP Top
+      10:2025 A03 (Software Supply Chain Failures); NIST SP 800-218 (SSDF)
+      PW.7, PW.8, RV.1; NIST SP 800-53 SA-11, RA-5
 
   unencrypted-asset:
     title: "Unencrypted Technical Assets"
     description: >
-      Due to the confidentiality rating of the technical asset itself and/or
-      the processed data assets this technical asset must be encrypted. The
-      risk rating depends on the sensitivity technical asset itself and of the
-      data assets stored.
+      This asset stores data assets rated Confidential or higher
+      confidentiality or Critical or higher integrity, but is modeled with no
+      encryption at rest. Its disks, database files, object storage, backups,
+      and snapshots therefore hold sensitive data in plaintext. Where the
+      stored data is Strictly-Confidential or Mission-Critical and the asset
+      typically stores end-user data, Threagile additionally expects
+      encryption with keys controlled by the data owner, not only
+      transparent storage-level encryption.
     impact: >
-      If this risk is unmitigated, attackers might be able to access
-      unencrypted data when successfully compromising sensitive components.
+      If this risk remains unmitigated, anyone who obtains the underlying
+      storage (a copied snapshot or backup, a decommissioned disk, a
+      misconfigured storage permission, a host-level compromise, or a cloud
+      operator with media access) reads the data directly with no further
+      control. For CUI this violates the encryption-at-rest requirements of
+      NIST SP 800-171 3.13.16 and NIST SP 800-53 SC-28, and a lost
+      unencrypted backup is itself a reportable breach.
     asvs: "V6 - Stored Cryptography Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
     risk_assessment: >
-      Depending on the confidentiality rating of the stored data-assets either
-      medium or high risk.
+      Threagile scores this at a baseline Likelihood of Unlikely, adjusted by
+      RAA (+1 at 40% or higher, -1 below 15%) and internet reachability (+1).
+      Impact is Medium, raised to High when stored data is
+      Strictly-Confidential or Mission-Critical integrity; a separate
+      Medium-impact finding is raised when such an asset is encrypted but
+      without end-user-controlled keys. Load balancers, reverse proxies,
+      WAFs, IDS/IPS, and embedded libraries are excluded.
     false_positives: >
-      When all sensitive data stored within the asset is already fully
-      encrypted on document or data level.
+      Assets whose sensitive data is already encrypted at the document or
+      field level before it is written, or managed services where
+      encryption at rest is enabled by the provider and cannot be disabled
+      (the model simply records encryption as none), can be treated as
+      false positives after verification; correct the model's encryption
+      field.
+    detection_logic: >
+      Query the cloud configuration for unencrypted resources (Azure Policy
+      or Defender for Cloud recommendations for TDE, storage, and disk
+      encryption; AWS Config rules encrypted-volumes, rds-storage-encrypted,
+      s3-default-encryption) and confirm whether customer-managed keys are
+      used where required. On self-managed hosts, check LUKS/BitLocker status
+      (lsblk -f, manage-bde -status). Verify that backups and snapshots
+      inherit encryption. Confirm the cryptographic module's FIPS 140
+      validation status.
+    references: >
+      CWE-311 (Missing Encryption of Sensitive Data); CWE-312 (Cleartext
+      Storage of Sensitive Information); MITRE ATT&CK T1005 (Data from Local
+      System); MITRE ATT&CK T1530 (Data from Cloud Storage); OWASP Top
+      10:2025 A04 (Cryptographic Failures); NIST SP 800-53 SC-28, SC-28(1);
+      NIST SP 800-171 3.13.16
 
   unencrypted-communication:
     title: "Unencrypted Communication"
     description: >
-      Due to the confidentiality and/or integrity rating of the data assets
-      transferred over the communication link this connection must be
-      encrypted.
+      This communication link carries data assets whose confidentiality or
+      integrity rating requires protection in transit, or carries
+      authentication data, over an unencrypted protocol (HTTP, LDAP, plain
+      JDBC/ODBC, SMTP, FTP, AMQP, Telnet). Monitoring traffic, local file
+      access, in-process calls, and inter-process communication are excluded.
+      Traffic is exposed to anyone positioned on the network path, including
+      compromised hosts in the same segment, network devices, and cloud
+      virtual network taps.
     impact: >
-      If this risk is unmitigated, network attackers might be able to to
-      eavesdrop on unencrypted sensitive data sent between components.
+      If this risk remains unmitigated, a network-positioned attacker can
+      read the data in transit (including passwords, session tokens, and API
+      keys sent over the link, which then grant further access) and can
+      modify requests and responses in transit without detection. For CUI,
+      unencrypted transmission violates NIST SP 800-171 3.13.8 and NIST SP
+      800-53 SC-8.
     asvs: "V9 - Communication Verification Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
+    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
     risk_assessment: >
-      Depending on the confidentiality rating of the transferred data-assets
-      either medium or high risk.
+      Threagile scores this per link at a baseline Likelihood of Unlikely,
+      or Likely when the link crosses a network trust boundary, adjusted by
+      RAA (+1 at 40% or higher, -1 below 15%) and internet reachability (+1).
+      Impact is Medium, raised to High when the link carries
+      Strictly-Confidential or Mission-Critical integrity data. Treat any
+      plaintext credential or token transfer across a trust boundary as High.
     false_positives: >
-      When all sensitive data sent over the communication link is already
-      fully encrypted on document or data level. Also intra-container/pod
-      communication can be considered false positive when container
-      orchestration platform handles encryption.
+      Links where all sensitive content is encrypted at the message or
+      document level end to end, and intra-pod or sidecar-mediated traffic
+      where a service mesh transparently enforces mTLS (fix the model's
+      protocol to reflect it), can be treated as false positives after
+      verification.
+    detection_logic: >
+      Scan service endpoints with testssl.sh, sslyze, or nmap
+      --script ssl-enum-ciphers to confirm TLS is required, plaintext ports
+      are closed, and only TLS 1.2+ with approved ciphers is offered. Check
+      database and broker client connection strings for encryption and
+      certificate validation settings (Encrypt=Strict, sslmode=verify-full).
+      Capture traffic on a test segment (tcpdump, Wireshark) to confirm no
+      cleartext payloads. Review mesh PeerAuthentication for STRICT mode.
+    references: >
+      CWE-319 (Cleartext Transmission of Sensitive Information); CAPEC-94
+      (Adversary in the Middle); MITRE ATT&CK T1040 (Network Sniffing); MITRE
+      ATT&CK T1557 (Adversary-in-the-Middle); OWASP Top 10:2025 A04
+      (Cryptographic Failures); NIST SP 800-53 SC-8, SC-8(1); NIST SP
+      800-52 Rev. 2
 
   unguarded-access-from-internet:
     title: "Unguarded Access From Internet"
     description: >
-      Internet-exposed assets must be guarded by a protecting service,
-      application, or reverse-proxy.
+      An in-scope asset rated Confidential or higher for confidentiality or
+      Critical or higher for integrity accepts flows directly from an
+      internet-located client, with no guarding component (reverse proxy,
+      API gateway, WAF, load balancer, bastion, or store-and-forward host)
+      in between. The asset's own network stack, TLS termination, protocol
+      parser, and authentication are therefore the first thing an internet
+      attacker touches. Load balancers themselves, and HTTP(S) access to
+      web servers and CMSs by design, are excluded.
     impact: >
-      If this risk is unmitigated, attackers might be able to directly attack
-      sensitive systems without any hardening components in-between due to
-      them being directly exposed on the internet.
+      If this risk remains unmitigated, internet-wide scanners and exploit
+      campaigns can reach the sensitive asset directly, with no
+      request normalization, filtering, rate limiting, or protocol break.
+      A single unpatched vulnerability or exposed management interface on
+      the asset becomes directly exploitable from anywhere, and the asset's
+      real IP and service fingerprints are publicly enumerable.
     asvs: "V1 - Architecture, Design and Threat Modeling Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html"
     risk_assessment: >
-      The matching technical assets are at low risk. When either the
-      confidentiality rating is strictly-confidential or the integrity rating
-      is mission-critical, the risk-rating is considered medium. For assets
-      with RAA values higher than 40 % the risk-rating increases.
+      Threagile scores this per internet flow at a baseline Likelihood of
+      Very Likely, adjusted by RAA (+1 at 40% or higher, -1 below 15%) and
+      internet reachability (+1). Impact is Low, raised to Medium when the
+      asset is Strictly-Confidential or Mission-Critical integrity. Any
+      directly exposed administrative protocol (SSH, RDP, database ports)
+      should be treated as High regardless of score.
     false_positives: >
-      When other means of filtering client requests are applied equivalent of
-      reverse-proxy, waf, or gateway components.
+      Assets where equivalent filtering is applied by a component not shown
+      in the model (cloud WAF or API gateway in front, or a zero-trust
+      access broker for administrative protocols) can be treated as false
+      positives after verification; prefer adding that component to the
+      model.
+    detection_logic: >
+      Enumerate public IP addresses and public endpoints in the cloud
+      inventory (Azure Resource Graph, AWS Config) and run an external port
+      scan (nmap, Shodan/Censys lookup of owned ranges) to list services
+      reachable from the internet. Map each reachable service back to the
+      model and confirm a guarding component sits in front. Check NSG and
+      security-group rules for 0.0.0.0/0 or Internet service-tag sources on
+      non-web ports.
+    references: >
+      CWE-668 (Exposure of Resource to Wrong Sphere); MITRE ATT&CK T1190
+      (Exploit Public-Facing Application); MITRE ATT&CK T1133 (External
+      Remote Services); NIST SP 800-53 SC-7, SC-7(5), AC-17; DISA Cloud
+      Computing SRG (SCCA)
 
   unguarded-direct-datastore-access:
     title: "Unguarded Direct Datastore Access"
     description: >
-      Datastores accessed across trust boundaries must be guarded by some
-      protecting service or application.
+      A data store rated Confidential or higher for confidentiality or
+      Critical or higher for integrity accepts connections directly from an
+      asset in a different network trust boundary, rather than only through
+      an application service that mediates access. The caller therefore
+      holds database credentials and a network path to the store's native
+      protocol. DevOps configuration and deployment access, LDAP identity
+      stores accessed by their identity provider, and file servers accessed
+      via file-transfer protocols are excluded.
     impact: >
-      If this risk is unmitigated, attackers might be able to directly attack
-      sensitive datastores without any protecting components in-between.
+      If this risk remains unmitigated, a compromise of the external caller
+      exposes the store's full native query capability (bulk reads, schema
+      discovery, writes, and engine-specific features) rather than only the
+      operations an application API would allow. Database-native protocols
+      also expose a broader vulnerability surface than a purpose-built API,
+      and access bypasses application-level authorization and audit.
     asvs: "V1 - Architecture, Design and Threat Modeling Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html"
     risk_assessment: >
-      The matching technical assets are at low risk. When either the
-      confidentiality rating is strictly-confidential or the integrity rating
-      is mission-critical, the risk-rating is considered medium. For assets
-      with RAA values higher than 40 % the risk-rating increases.
+      Threagile scores this per cross-boundary flow at a baseline Likelihood
+      of Likely, adjusted by RAA (+1 at 40% or higher, -1 below 15%) and
+      internet reachability (+1). Impact is Low, raised to Medium when the
+      store is Strictly-Confidential or Mission-Critical integrity.
+      Escalate where the external caller uses a shared or highly privileged
+      database account.
     false_positives: >
-      When the caller is considered fully trusted as if it was part of the
-      datastore itself.
+      Callers that are effectively part of the data store's own trust zone
+      (for example a dedicated replication or backup agent administered with
+      the store) can be treated as false positives after review.
+    detection_logic: >
+      List the datastore's allowed network sources (firewall rules, private
+      endpoint approvals, security groups, pg_hba.conf) and map each to its
+      trust boundary. Review database logins by source address and account
+      over a 30-day window (SQL audit, CloudWatch/Log Analytics) and flag
+      connections not originating from the application tier. Confirm public
+      network access is disabled.
+    references: >
+      CWE-668 (Exposure of Resource to Wrong Sphere); CWE-284 (Improper
+      Access Control); MITRE ATT&CK T1213 (Data from Information
+      Repositories); MITRE ATT&CK T1078 (Valid Accounts); NIST SP 800-53
+      AC-3, AC-4, SC-7
 
   untrusted-deserialization:
     title: "Untrusted Deserialization"
     description: >
-      When a technical asset accepts data in a specific serialized form (like
-      Java or .NET serialization), Untrusted Deserialization risks might
-      arise. See
-      https://christian-schneider.net/JavaDeserializationSecurityFAQ.html for
-      more details.
+      This asset accepts data in a native serialization format (Java
+      serialization, including RMI, JMX, EJB, and IIOP remoting; .NET
+      BinaryFormatter and related formatters; Python pickle; PHP
+      unserialize; Ruby Marshal) or through polymorphic JSON/YAML
+      deserialization that instantiates types named in the input. These
+      deserializers execute code paths in whatever classes the payload
+      names, so an attacker can chain gadget classes already on the
+      classpath (ysoserial and ysoserial.net catalog many) into arbitrary
+      code execution, without any bug in the application's own logic.
     impact: >
-      If this risk is unmitigated, attackers might be able to execute code on
-      target systems by exploiting untrusted deserialization endpoints.
+      If this risk remains unmitigated, an attacker who can deliver a
+      serialized payload to the endpoint achieves remote code execution with
+      the application's privileges, typically before any authentication or
+      validation code runs, giving full control of the host, its
+      credentials, and its network position. Examples include the Apache
+      Commons Collections gadget exploitation against WebLogic, JBoss, and
+      Jenkins.
     asvs: "V5 - Validation, Sanitization and Encoding Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the technical asset itself
-      and of the data assets processed and stored.
+      Threagile scores this at High Impact, raised to Very High when the
+      asset processes Strictly-Confidential or Mission-Critical data.
+      Baseline Likelihood is Likely, or Very Likely when serialized data
+      crosses a trust boundary, then adjusted by RAA (+1 at 40% or higher,
+      -1 below 15%) and internet reachability (+1). Confirmed native
+      deserialization of unauthenticated input should be treated as
+      Critical.
     false_positives: >
-      Fully trusted (i.e. cryptographically signed or similar) data
-      deserialized can be considered as false positives after individual
-      review.
+      Serialized data whose integrity is verified cryptographically (HMAC or
+      signature checked before deserialization) and that originates only
+      from trusted components, or endpoints that use a strict class
+      allowlist (JEP 290 filter) confirmed by testing, can be treated as
+      false positives after review.
+    detection_logic: >
+      Grep code and dependencies for ObjectInputStream.readObject,
+      BinaryFormatter.Deserialize, pickle.loads, unserialize(, Marshal.load,
+      yaml.load without SafeLoader, Jackson enableDefaultTyping or
+      @JsonTypeInfo with Id.CLASS, and Json.NET TypeNameHandling. Watch
+      traffic for serialized-object signatures (Java aced0005 or rO0AB in
+      base64, .NET AAEAAAD/////). Test endpoints with ysoserial or
+      ysoserial.net URLDNS/out-of-band payloads in a non-production
+      environment. Check RMI/JMX ports for network exposure.
+    references: >
+      CWE-502 (Deserialization of Untrusted Data); CAPEC-586 (Object
+      Injection); MITRE ATT&CK T1190 (Exploit Public-Facing Application);
+      OWASP Top 10:2025 A08 (Software or Data Integrity Failures)
 
   xml-external-entity:
     title: "XML External Entity (XXE)"
     description: >
-      When a technical asset accepts data in XML format, XML External Entity
-      (XXE) risks might arise.
+      This asset parses XML that a caller can influence (SOAP or XML APIs,
+      SAML assertions, SVG and Office document uploads, RSS or configuration
+      imports, XSLT input), and many XML parsers resolve document type
+      definitions and external entities by default. An attacker-supplied
+      DOCTYPE declaring an entity with a SYSTEM identifier such as
+      file:///etc/passwd or http://169.254.169.254/ causes the parser itself
+      to read local files or make network requests, and nested entity
+      definitions (billion laughs) exhaust memory.
     impact: >
-      If this risk is unmitigated, attackers might be able to read sensitive
-      files (configuration data, key/credential files, deployment files,
-      business data files, etc.) form the filesystem of affected components
-      and/or access sensitive services or files of other components.
-    asvs: "V14 - Configuration Verification Requirements"
+      If this risk remains unmitigated, an attacker can read files from the
+      parsing server (configuration files with credentials, private keys,
+      source code), perform server-side request forgery to internal services
+      and cloud metadata endpoints, exfiltrate data out-of-band through
+      parameter entities when responses are not reflected, and cause denial
+      of service. In SAML processing, XXE can expose the service provider's
+      own signing material.
+    asvs: "V5 - Validation, Sanitization and Encoding Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html"
     risk_assessment: >
-      The risk rating depends on the sensitivity of the technical asset itself
-      and of the data assets processed and stored. Also for cloud-based
-      environments the exploitation impact is at least medium, as cloud
-      backend services can be attacked via SSRF (and XXE vulnerabilities are
-      often also SSRF vulnerabilities).
+      Threagile scores this at a baseline Likelihood of Very Likely, adjusted
+      by RAA (+1 at 40% or higher, -1 below 15%) and internet reachability
+      (+1). Impact is Medium, raised to High when the asset processes
+      Strictly-Confidential data. In cloud environments treat the impact as
+      at least Medium regardless, since XXE is also an SSRF primitive
+      against the instance metadata service.
     false_positives: >
-      Fully trusted (i.e. cryptographically signed or similar) XML data can be
-      considered as false positives after individual review.
-
+      XML accepted only from trusted, authenticated components and verified
+      by signature before parsing, or parsers confirmed (by configuration
+      review and testing) to reject DOCTYPE declarations, can be treated as
+      false positives after review.
+    detection_logic: >
+      Review parser construction for every XML entry point
+      (DocumentBuilderFactory, SAXParserFactory, XMLInputFactory,
+      XmlReaderSettings, lxml, libxml2) and confirm DTD processing is
+      disabled. In DAST, submit payloads with an external entity pointing to
+      an out-of-band collaborator and to a known local file, including
+      inside uploaded SVG and DOCX files and SAML responses, and watch for
+      callbacks or reflected content. Alert on outbound requests from parser
+      hosts to unexpected destinations.
+    references: >
+      CWE-611 (Improper Restriction of XML External Entity Reference);
+      CWE-776 (Improper Restriction of Recursive Entity References in DTDs);
+      CAPEC-221 (Data Serialization External Entities Blowup); MITRE ATT&CK
+      T1190 (Exploit Public-Facing Application); OWASP Top 10:2025 A02
+      (Security Misconfiguration)
