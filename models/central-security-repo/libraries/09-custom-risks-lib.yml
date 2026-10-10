@@ -204,7 +204,7 @@ custom_risk_definitions:
     description: 'This asset relies on a self-managed directory service that does not inherit the enterprise identity team''s Tier-0 hardening, leaving it exposed to attacks such as unconstrained delegation, AdminSDHolder tampering, or an unrotated krbtgt credential.'
     impact: 'If this risk remains unmitigated, compromise of the directory''s Tier-0 infrastructure lets an attacker forge authentication for any identity it manages, with persistence that survives ordinary password resets.'
     asvs: V2 - Authentication
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Active_Directory_Security_Cheat_Sheet.html
+    cheat_sheet: https://learn.microsoft.com/en-us/security/privileged-access-workstations/privileged-access-access-model
     action: Audit this directory for unconstrained delegation, AdminSDHolder tampering, missing SID filtering on trusts, and unsigned LDAP, and rotate krbtgt credential material using the required two-pass procedure.
     mitigation: Eliminate unconstrained Kerberos delegation in favor of constrained or resource-based constrained delegation. Audit and alert on AdminSDHolder ACL changes. Enable SID filtering on every cross-forest/cross-domain trust this directory participates in. Require LDAP signing and channel binding, rejecting unsigned binds. Rotate the krbtgt account password twice in sequence (a single rotation is insufficient — the account retains two valid password versions) on a recurring schedule and immediately after any suspected compromise.
     references: NIST SP 800-53 IA-5 (Authenticator Management); NIST SP 800-53 AC-6 (Least Privilege); MITRE ATT&CK T1558 (Steal or Forge Kerberos Tickets)
@@ -222,7 +222,7 @@ custom_risk_definitions:
     description: 'This asset relies on a self-managed certificate authority with an enrollment template that lets a low-privileged requester supply its own subject name.'
     impact: 'If this risk remains unmitigated, a low-privileged requester can obtain a certificate asserting a privileged identity, bypassing authentication for every system that trusts this CA.'
     asvs: V2 - Authentication
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Active_Directory_Security_Cheat_Sheet.html
+    cheat_sheet: https://learn.microsoft.com/en-us/security/privileged-access-workstations/privileged-access-access-model
     action: Audit every certificate template on this CA for subject-name enrollee control, and remove or restrict any template permitting a low-privileged requester to specify a privileged subject name.
     mitigation: Review every enrollment template's permissions and the CA's `EDITF_ATTRIBUTESUBJECTALTNAME2` flag for enrollee-suppliable subject names. Restrict enrollment on any template that grants a broad principal group (e.g., Domain Users) enrollment rights combined with client authentication EKU and enrollee-suppliable subject name. Require manager approval or issuance-policy-gated enrollment for any template capable of producing a certificate usable for authentication as a privileged identity.
     references: NIST SP 800-53 SC-17 (Public Key Infrastructure Certificates); MITRE ATT&CK T1649 (Steal or Forge Authentication Certificates)
@@ -240,7 +240,7 @@ custom_risk_definitions:
     description: 'This asset runs a self-managed hybrid identity synchronization server that holds working credentials for both the on-premises directory and the cloud identity tenant it bridges.'
     impact: 'If this risk remains unmitigated, compromise of the sync server lets an attacker pivot between the on-premises directory and the cloud tenant, bypassing tier separation designed around each side individually.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Active_Directory_Security_Cheat_Sheet.html
+    cheat_sheet: https://learn.microsoft.com/en-us/security/privileged-access-workstations/privileged-access-access-model
     action: Administer this hybrid sync server with the same Tier-0 rigor as the directory infrastructure it bridges — not as ordinary application infrastructure.
     mitigation: Restrict administrative access to the hybrid sync server to the same privileged-access tier as the directory infrastructure it connects to, not to general application/infrastructure administrators. Monitor the server for credential-extraction attempts (it typically holds a highly privileged service account on both sides of the bridge). Isolate it on a management network segment distinct from general application infrastructure, and patch it on an accelerated cadence given its Tier-0-equivalent blast radius.
     references: NIST SP 800-53 AC-6 (Least Privilege); NIST SP 800-53 SC-7 (Boundary Protection); MITRE ATT&CK T1556 (Modify Authentication Process)
@@ -339,7 +339,7 @@ custom_risk_definitions:
     description: 'Break-glass emergency access for this self-managed asset either depends on the primary identity platform it is meant to provide emergency access around, or has never actually been exercised.'
     impact: 'If this risk remains unmitigated, the break-glass procedure can fail during the exact primary-platform outage or compromise scenario it was designed for.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Emergency_Access_Cheat_Sheet.html
+    cheat_sheet: https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/security-emergency-access
     action: Ensure break-glass credentials for this asset do not depend on the primary identity platform for storage or retrieval, and exercise the break-glass procedure on a recurring schedule.
     mitigation: Store break-glass credentials in a vault or safe with an access path independent of the primary identity platform being protected against, so a primary-platform outage or compromise does not also block emergency access. Exercise the actual break-glass procedure (not a tabletop review) on a recurring schedule, updating the documented steps with anything the exercise reveals is missing or outdated.
     references: NIST SP 800-53 CP-2 (Contingency Plan); NIST SP 800-53 IA-5 (Authenticator Management)
@@ -524,7 +524,7 @@ custom_risk_definitions:
     description: 'This asset''s self-managed wireless network has no confirmed detection for a rogue access point impersonating its own SSID.'
     impact: 'If this risk remains unmitigated, a nearby evil-twin access point can harvest client credentials directly over the air, bypassing every wired-side control.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Wireless_Security_Cheat_Sheet.html
+    cheat_sheet: https://csrc.nist.gov/pubs/sp/800/153/final
     action: Deploy rogue access point / evil-twin detection for this self-managed wireless network, and require mutual authentication (e.g., EAP-TLS or a certificate-validated method) that resists credential harvesting by an impersonating access point.
     mitigation: Deploy wireless intrusion detection capable of identifying rogue/impersonating access points broadcasting this network's SSID, alerting the SOC on detection. Require a wireless authentication method with mutual/server certificate validation (EAP-TLS, or PEAP/EAP-TTLS with certificate pinning) so a client can detect and reject an impersonating access point rather than a credential-harvesting method that any access point broadcasting the right SSID can capture.
     references: NIST SP 800-53 SC-40 (Wireless Link Protection); NIST SP 800-153 (Guidelines for Securing WLANs)
@@ -880,7 +880,7 @@ custom_risk_definitions:
     description: 'The asset supports bulk data import or export without per-record authorization checks or bounded scope, exposing it to formula injection, mass overwrite, and unbounded data exposure.'
     impact: 'If this risk remains unmitigated, a low-privilege user can export an entire dataset beyond what individual record access would allow, or overwrite authoritative records at scale.'
     asvs: V5 - Validation, Sanitization and Encoding / V4 - Access Control
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/CSV_Injection_Prevention_Cheat_Sheet.html
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html
     action: Sanitize all exported cell values against formula injection, enforce per-user scope on export queries, and enforce authorization checks on bulk import operations.
     mitigation: Sanitize all string values written to CSV/Excel exports by prefixing dangerous leading characters (=, +, -, @, tab, carriage return) with a single quote or space. Enforce per-user data scope on all export queries — apply the same row-level security as individual record access, never export the full table. Implement hard size limits on both import and export operations with pagination. Require re-authentication or MFA confirmation before bulk export of CUI. Log all bulk export operations with the requesting user identity, timestamp, and record count.
     references: OWASP CSV Injection; NIST SP 800-53 AC-3 (Access Enforcement); NIST SP 800-53 SC-5 (DoS Protection)
@@ -995,7 +995,7 @@ custom_risk_definitions:
     description: 'The asset uses an application-level cache to serve responses, with cache keys that may not incorporate every parameter affecting the response, or a cache server reachable without authentication.'
     impact: 'If this risk remains unmitigated, one user''s cached response -- including sensitive data -- can be served to a different user, or a cache server can be read or written directly by anyone on the internal network.'
     asvs: V8 - Data Protection / V13 - API
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Cache_Poisoning_Prevention_Cheat_Sheet.html
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Web_Cache_Security_Cheat_Sheet.html
     action: Include all response-influencing parameters in cache keys, enforce authentication on cache servers, and apply CUI-appropriate TTLs.
     mitigation: Include all request parameters that influence the response (user ID, tenant ID, role, content-type) in cache key construction — never cache user-specific responses under user-agnostic keys. Require authentication (Redis AUTH with a strong password or Azure Cache for Redis with Entra ID auth) on all cache server connections. Apply network micro-segmentation to restrict cache server access to only the application pods that require it. Set TTLs on all cache entries containing user data — do not cache CUI without a TTL of 15 minutes or less. Never cache responses containing session tokens, credentials, or CUI at a shared cache layer — use client-side or private caches for sensitive per-user data.
     references: NIST SP 800-53 SC-28 (Protection of Information at Rest); NIST SP 800-53 AC-3 (Access Enforcement); OWASP Cache Poisoning
@@ -1153,7 +1153,7 @@ custom_risk_definitions:
     description: 'This internet-facing asset''s DNS record points at a cloud resource that is not reconciled against that resource''s actual live state.'
     impact: 'If this risk remains unmitigated, a deprovisioned resource''s name becomes reclaimable, letting an attacker stand up content or a certificate under the organization''s own trusted subdomain.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/DNS_Security_Cheat_Sheet.html
+    cheat_sheet: https://learn.microsoft.com/en-us/azure/security/fundamentals/subdomain-takeover
     action: Reconcile this asset's DNS records against live resource state on a recurring basis, and remove any DNS record for a resource that has been deprovisioned or renamed.
     mitigation: Maintain an inventory of every DNS record pointing at a cloud-managed resource, and reconcile it against actual live resource state on a recurring schedule (e.g., via cloud provider APIs) — not only at the time a resource is decommissioned, since that is exactly the step that gets missed. Remove the DNS record as part of the same change that deprovisions or renames the underlying resource, not as a separate follow-up task. Where the platform supports it, use a DNS record type that fails closed (resolves to nothing) rather than remaining claimable when its target is gone.
     references: NIST SP 800-53 SC-20 (Secure Name/Address Resolution Service); OWASP Testing Guide (Subdomain Takeover)
@@ -1474,7 +1474,7 @@ custom_risk_definitions:
     description: 'This asset processes or stores PII on individuals, but no current Privacy Impact Assessment documents what is collected, why, and how it is protected, as required by Section 208 of the E-Government Act of 2002.'
     impact: 'If this risk remains unmitigated, privacy risks in the system''s actual design go unreviewed until an incident, audit, or FOIA request forces the question, at which point remediation is far more disruptive than a documented assessment would have been.'
     asvs: V8 - Data Protection
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html
     action: Document a Privacy Impact Assessment for this system covering what PII is collected, the legal authority for collecting it, how it is used and shared, retention, and safeguards, and reassess it whenever PII handling changes materially.
     mitigation: Complete a Privacy Impact Assessment (PIA) per the sponsoring agency's PIA template and Section 208 of the E-Government Act of 2002, documenting what PII this asset collects, the legal authority for collecting it, how it is used and shared, retention, and the safeguards protecting it. Route the PIA through the organization's Senior Agency Official for Privacy (or equivalent) for review and publication where publicly releasable. Reassess and update the PIA whenever the system's PII collection, use, or sharing changes materially, not on a fixed calendar alone.
     references: E-Government Act of 2002, Section 208 (Privacy Impact Assessments); OMB Circular A-130; DoD Instruction 5400.16 (DoD Privacy Impact Assessment Guidance)
@@ -1510,7 +1510,7 @@ custom_risk_definitions:
     description: 'One or more of this asset''s data egress paths -- bulk export, attachment, or file transfer -- is not inspected against data classification labels before content leaves.'
     impact: 'If this risk remains unmitigated, a malicious insider or compromised account can move CUI out through a legitimate export feature without triggering any control.'
     asvs: V8 - Data Protection
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html
+    cheat_sheet: https://csrc.nist.gov/pubs/sp/800/60/v1/r1/final
     action: Route every bulk-export, attachment, and outbound file-transfer path through the enterprise DLP inspection point before content leaves the asset's boundary.
     mitigation: Inspect outbound content at every egress path (export endpoint, email-sending integration, upload-to-external-destination feature) against the enterprise DLP engine's classification-aware policy before the transfer completes. Where DLP inspection cannot be inserted inline, log the full content manifest of every bulk export to the SIEM so post-hoc review is possible. Treat an export feature added after the DLP policy was last reviewed as out of compliance until the policy is extended to cover it.
     references: NIST SP 800-53 AC-4 (Information Flow Enforcement); NIST SP 800-53 SC-7(10) (Boundary Protection — Prevent Exfiltration); DoDI 8500.01 (Cybersecurity)
@@ -1534,7 +1534,7 @@ custom_risk_definitions:
     description: 'Media moved from a higher-classification enclave to a lower one is handled under a generic sanitization procedure rather than a distinct, verified downgrading process.'
     impact: 'If this risk remains unmitigated, residual higher-classification content surviving an incomplete downgrade is disclosed directly into a lower-classification environment.'
     asvs: V8 - Data Protection
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html
+    cheat_sheet: https://csrc.nist.gov/pubs/sp/800/60/v1/r1/final
     action: Apply a documented, independently verified downgrading procedure — distinct from routine media destruction — to any media or dataset moved to a lower classification enclave, per NIST SP 800-53 MP-8.
     mitigation: Document a downgrading procedure separate from the standard media sanitization/disposal procedure, covering content review for residual higher-classification material, technical sanitization of any metadata or embedded artifacts (document properties, deleted-but-recoverable content, thumbnails), and independent verification by a second reviewer before the media or dataset is released to the lower enclave. Log every downgrade action with the reviewer identity and verification result.
     references: NIST SP 800-53 MP-8 (Media Downgrading); NIST SP 800-53 MP-6 (Media Sanitization); CNSSI 1253; DoD 5200.01 (DoD Information Security Program)
@@ -1552,7 +1552,7 @@ custom_risk_definitions:
     description: 'A dataset slated for release has been de-identified but never tested against a motivated-intruder re-identification attempt using auxiliary data an adversary could reasonably access.'
     impact: 'If this risk remains unmitigated, a dataset believed to be anonymized can be re-identified after release, constituting a privacy disclosure.'
     asvs: V8 - Data Protection
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html
     action: Run a motivated-intruder re-identification test against the de-identified dataset using realistic auxiliary data before release, and document the result as part of the release approval.
     mitigation: Before release, conduct a re-identification risk assessment following NIST SP 800-188 methodology — attempt re-identification using auxiliary data an adversary could plausibly obtain, quantify the proportion of records at risk, and apply additional statistical disclosure limitation (generalization, suppression, k-anonymity/differential privacy techniques) until the residual risk is acceptable to the data owner. Re-run the assessment if the dataset is updated or if a new plausible auxiliary source becomes available before subsequent releases.
     references: NIST SP 800-188 (De-Identification of Government Datasets); NIST SP 800-53 SI-12 (Information Management and Retention)
@@ -1570,7 +1570,7 @@ custom_risk_definitions:
     description: 'A file released beyond its originating boundary carries no persistent rights binding that travels with the copy.'
     impact: 'If this risk remains unmitigated, the releasing organization has no technical means to restrict, expire, or revoke access to a released copy after the fact.'
     asvs: V8 - Data Protection
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html
+    cheat_sheet: https://csrc.nist.gov/pubs/sp/800/60/v1/r1/final
     action: Apply the enterprise rights-management capability (persistent encryption bound to identity/policy, with revocation support) to files released outside the originating boundary, rather than relying on recipient-side policy alone.
     mitigation: Route file releases through the enterprise Information Rights Management / Enterprise Digital Rights Management capability so the exported file remains encrypted and bound to an access policy the releasing organization controls, including expiration and revocation, independent of where the copy is subsequently stored. Reserve unprotected release for cases where the recipient system cannot honor rights-managed content and document that exception.
     references: NIST SP 800-53 AC-21 (Information Sharing); NIST SP 800-53 SC-28 (Protection of Information at Rest); DoD Enterprise Rights Management guidance
@@ -1707,7 +1707,7 @@ custom_risk_definitions:
     description: 'A business-critical or mission-critical asset has no documented answer to whether it may be automatically isolated during a suspected compromise or requires human approval first.'
     impact: 'If this risk remains unmitigated, response to an active incident is delayed by an ad hoc approval decision, or the asset is isolated in a way that causes unintended operational impact.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Incident_Response_Cheat_Sheet.html
+    cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
     action: Document, for this asset, whether automated containment/isolation is permitted, requires human approval, or is prohibited, and record that disposition where the incident response team can find it during an active incident.
     mitigation: For every asset tagged business-critical or mission-critical, record a containment disposition (auto-isolation permitted / human approval required / auto-isolation prohibited) in the asset's own documentation or the incident response runbook, decided in advance by the asset owner together with the response team — not improvised during an incident. Where auto-isolation is prohibited (e.g., a safety-relevant or highly available system), document the manual containment procedure to use instead.
     references: NIST SP 800-53 IR-4 (Incident Handling); NIST SP 800-61r2 (Computer Security Incident Handling Guide)
@@ -1743,7 +1743,7 @@ custom_risk_definitions:
     description: 'This business-critical or mission-critical asset falls under an incident response plan that has never been exercised through a tabletop or live-fire drill, only documented.'
     impact: 'If this risk remains unmitigated, roles, escalation paths, and technical procedures assumed to work during an actual incident are tested for the first time under real pressure, when gaps are most costly to discover.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Incident_Response_Cheat_Sheet.html
+    cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
     action: Conduct a tabletop or live-fire incident response exercise covering this asset's likely compromise scenarios on a recurring schedule, and update the plan with anything the exercise reveals is missing or outdated.
     mitigation: Schedule a recurring incident response exercise (tabletop at minimum, live-fire where feasible) that walks through a realistic compromise scenario for this asset — detection, containment, eradication, recovery, and stakeholder notification — using only the documented plan rather than institutional knowledge. Involve every role the plan assigns responsibilities to, not just the security team. Record findings and update the plan before the next ATO renewal.
     references: NIST SP 800-53 IR-3 (Incident Response Testing); NIST SP 800-61r2 (Computer Security Incident Handling Guide)
@@ -1761,7 +1761,7 @@ custom_risk_definitions:
     description: 'This business-critical or mission-critical asset has no documented procedure identifying the contract-mandated cyber incident reporting timeline or the party responsible for executing it.'
     impact: 'If this risk remains unmitigated, a genuine incident is discovered without a clear owner or timeline for DoD-mandated reporting, risking a missed 72-hour reporting window and the contractual and legal consequences that follow.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Incident_Response_Cheat_Sheet.html
+    cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
     action: Document the cyber incident reporting procedure required by this system's contract (e.g., DFARS 252.204-7012's 72-hour DIBNet reporting requirement for a covered contractor information system), naming the party responsible for executing it.
     mitigation: Identify which contracts covering this asset carry DFARS 252.204-7012 (or an equivalent DoD cyber incident reporting clause), and document the exact reporting timeline, the DIBNet submission process, and the specific role responsible for initiating it once an incident affecting covered defense information is confirmed. Rehearse the reporting step itself (not just detection/containment) during incident response exercises so the 72-hour clock is a practiced procedure, not a first-time scramble.
     references: DFARS 252.204-7012 (Safeguarding Covered Defense Information and Cyber Incident Reporting); NIST SP 800-53 IR-6 (Incident Reporting); NIST SP 800-171
@@ -1779,7 +1779,7 @@ custom_risk_definitions:
     description: 'This business-critical or mission-critical asset has no documented procedure for acquiring, logging, and transferring forensic evidence during an incident affecting it.'
     impact: 'If this risk remains unmitigated, evidence collected during an incident cannot be shown to be unaltered or continuously accounted for, undermining its use in legal proceedings, contract disputes, or a defensible after-action record.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Incident_Response_Cheat_Sheet.html
+    cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
     action: Document a forensic evidence-handling procedure for this asset covering acquisition, custody logging, storage, and transfer, and assign ownership of executing it during an incident.
     mitigation: Establish a documented forensic evidence-handling procedure covering how evidence relevant to this asset (disk/memory images, logs, network captures) is acquired, hashed at acquisition time, logged in a continuous custody record (who held it, when, why), stored, and transferred — modeled on standard forensic chain-of-custody practice. Assign a named role responsible for executing this procedure during an incident, distinct from whoever performs containment, so evidence handling isn't improvised under pressure.
     references: NIST SP 800-53 IR-4 (Incident Handling); NIST SP 800-86 (Guide to Integrating Forensic Techniques into Incident Response)
@@ -1839,7 +1839,7 @@ custom_risk_definitions:
     description: 'The backup store uses a retention lock a sufficiently privileged account can shorten or remove, rather than a compliance-mode lock no account can alter before the retention period expires.'
     impact: 'If this risk remains unmitigated, a privileged account -- including one obtained by an attacker -- can delete backups within the stated retention window.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Ransomware_Prevention_Best_Practices_Cheat_Sheet.html
+    cheat_sheet: https://www.cisa.gov/stopransomware/ransomware-guide
     action: Enable a compliance-mode (not governance-mode) immutability lock on the backup store, verified to be irreversible by any account for the duration of the retention period.
     mitigation: Enable immutable backup storage in compliance mode (e.g., Azure Backup vault immutability with the "immutable and cannot be reverted" setting locked, not merely enabled) so that no account, including the backup vault's own owner, can shorten retention or delete backups before expiry. Verify this by attempting to disable the lock with a fully privileged test account in a non-production vault and confirming the platform refuses the operation.
     references: NIST SP 800-53 CP-9 (Information System Backup); NIST SP 800-53 SI-4(24) (Indicators of Compromise); CISA Ransomware Guide (Immutable Backup Storage)
@@ -1875,7 +1875,7 @@ custom_risk_definitions:
     description: 'This asset has no documented RTO/RPO derived from its criticality tier, or its declared figures have never been validated against an actual restore test.'
     impact: 'If this risk remains unmitigated, an actual incident reveals the asset''s true recovery time and data-loss window for the first time, when the gap can no longer be closed quietly.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Ransomware_Prevention_Best_Practices_Cheat_Sheet.html
+    cheat_sheet: https://www.cisa.gov/stopransomware/ransomware-guide
     action: Document an RTO and RPO for this asset derived from its business-criticality tier, and validate both figures against the result of an actual restore test.
     mitigation: Assign an RTO and RPO to this asset based on its business-criticality tier (Threagile's business_criticality/availability rating), documented in the COOP plan. Validate both figures against the measured duration and data-loss window of an actual restore test — not an estimate — and revise the documented target if the test result exceeds it, rather than leaving a target on record that the asset has never actually met.
     references: NIST SP 800-53 CP-2 (Contingency Plan); NIST SP 800-53 CP-10 (Information System Recovery and Reconstitution); DoD COOP requirements
@@ -1893,7 +1893,7 @@ custom_risk_definitions:
     description: 'Backups for this asset pass integrity checks, but no restoration has actually been performed using only the written procedure rather than institutional knowledge.'
     impact: 'If this risk remains unmitigated, an incomplete or outdated restoration procedure is discovered during an actual incident, at the worst possible time to discover it.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Ransomware_Prevention_Best_Practices_Cheat_Sheet.html
+    cheat_sheet: https://www.cisa.gov/stopransomware/ransomware-guide
     action: Perform a full restoration of this asset from a real stored backup, using only the written restoration procedure, on a recurring schedule.
     mitigation: Conduct a restoration exercise at least annually (more frequently for business-critical/mission-critical assets) in which a person other than the backup job's original author executes the documented restoration procedure against a real stored backup into an isolated environment, and validates the restored system actually functions. Update the written procedure with anything the exercise revealed was missing, undocumented, or dependent on tribal knowledge.
     references: NIST SP 800-53 CP-4 (Contingency Plan Testing); NIST SP 800-53 CP-9 (Information System Backup)
@@ -1911,7 +1911,7 @@ custom_risk_definitions:
     description: 'This asset is a SaaS tenant or vendor-hosted service the enterprise backup platform cannot enroll, with no export job routing its data into enterprise-controlled storage.'
     impact: 'If this risk remains unmitigated, the asset has no recovery path at all if the vendor tenant is deleted, compromised, or becomes unavailable.'
     asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Ransomware_Prevention_Best_Practices_Cheat_Sheet.html
+    cheat_sheet: https://www.cisa.gov/stopransomware/ransomware-guide
     action: Configure a native export mechanism or a purpose-built export job to route this asset's data into enterprise-controlled backup storage on a recurring schedule, independent of the vendor's own in-tenant retention.
     mitigation: Identify whether the vendor/SaaS platform provides a native data-export API or scheduled export feature, and route that export into enterprise-controlled storage under the same immutability and access-isolation controls as other backups. Where no native export exists, build a purpose-written export job against the vendor's API. Do not accept the vendor's own in-tenant retention, recycle bin, or version history as satisfying this control — it remains inside the vendor's control plane and does not survive tenant-level compromise or deletion.
     references: NIST SP 800-53 CP-9 (Information System Backup); NIST SP 800-53 SA-9 (External System Services)
