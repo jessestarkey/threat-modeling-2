@@ -100,6 +100,12 @@ tags_available:
   - mgmt:self-managed-network   # Asset's network segmentation, wireless, or external routing is configured by the app team itself, not inherited from the landing zone — trigger for the self-managed network segmentation, rogue AP, and RPKI risks
   - mgmt:self-managed-network-hardened # Default-deny segmentation, rogue AP detection, and RPKI route origin validation are confirmed for this self-managed network — suppresses the self-managed network risks
 
+  # Deliberately NOT mgmt:self-managed-* -- workload role assignments are owned by the app
+  # team even when the landing zone itself is inherited, so these apply to every ordinary
+  # app workload regardless of self-managed status.
+  - mgmt:workload-identity-assigned        # Asset authenticates to cloud/platform control-plane APIs via its own managed identity, service principal, or service account rather than a human's own credential — trigger for the over-privileged workload identity risk
+  - mgmt:workload-identity-least-privilege # This workload identity's role assignments are scoped to only the specific resources and actions its function requires — no subscription/resource-group-wide or wildcard data-plane roles — and its credential/token endpoint is not reachable from code outside this asset's own trust boundary — suppresses the over-privileged workload identity risk
+
   # =============================================================================
   # BEHAVIORAL FEATURE TAGS
   # These tags describe what an asset DOES — specific capabilities that introduce
@@ -131,6 +137,7 @@ tags_available:
   # --- Application Feature Risks ---
   - feature:search-index            # Asset has query capabilities over a search index (e.g., Elasticsearch, Lucene, Solr, Azure AI Search)
   - feature:websocket               # Asset uses persistent WebSocket connections for real-time communication
+  - feature:browser-facing          # Asset serves HTTP responses directly to a web browser (API responses consumed by frontend JavaScript, or rendered pages) where CORS and framing policy apply
   - feature:background-jobs         # Asset processes jobs from a queue or scheduler where job parameters originate from earlier user-supplied input (distinct from app:async-worker which is the infrastructure label)
   - feature:caching-layer           # Asset uses an application-level cache (Redis, Memcached, in-process LRU) to serve responses to users
   - feature:ugc-rendering           # Asset renders content created by one user to be displayed to another user (e.g., comments, forum posts, wiki pages) — XSS risk is covered by Threagile's native cross-site-scripting rule; this tag is retained for model completeness
@@ -159,6 +166,7 @@ tags_available:
   - ops:requires-backup            # Asset requires backup for DR/COOP — presence triggers backup integrity risk
   - ops:api-abuse-logging-enabled  # Public API logs rate-limit rejections, authorization failures, and object-ID request patterns with caller-identity correlation — suppresses the API abuse/enumeration logging gap risk
   - ops:dns-record-reconciled      # Asset's DNS records are reconciled against live resource state on a recurring schedule — suppresses the dangling-dns-subdomain-takeover risk
+  - ops:cors-csp-hardened          # CORS is restricted to an explicit allow-list of trusted origins with credentials disabled for cross-origin requests, and a restrictive frame-ancestors/X-Frame-Options directive is enforced on every rendered page — suppresses the permissive-cors-framing-policy risk
   # ops:security-event-logging-enabled has been removed: it only ever suppressed the
   # baseline-security-event-logging-gap risk, now ported into the jessestarkey/threagile fork
   # as a native script rule that fires unconditionally. See docs/risk-methodology.md.

@@ -336,6 +336,24 @@ custom_risk_definitions:
     stride: denial-of-service
     risks_identified: {}
 
+  Over-Privileged Workload Identity and Cloud Control-Plane Pivot:
+    id: overprivileged-workload-identity
+    baseline_likelihood: likely
+    baseline_impact: very-high
+    description: 'This asset''s managed identity, service principal, or Kubernetes service account holds role assignments wider than its function needs -- subscription- or resource-group-scoped Contributor/Owner, or wildcard data-plane roles -- or its credential/token is reachable through the cloud instance metadata service or an automounted service-account token from code an attacker could influence.'
+    impact: 'If this risk remains unmitigated, compromising the workload turns directly into cloud control-plane access: creating credentials, assigning roles, or reading every vault and store the identity''s own role assignment can reach, independent of whether the application itself was the actual target.'
+    asvs: V1 - Architecture, Design and Threat Modeling
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+    action: Scope this workload identity's role assignments to only the specific resources and actions its function requires, and confirm its credential/token endpoint is not reachable from code outside this asset's own trust boundary.
+    mitigation: Replace broad subscription- or resource-group-scoped role assignments (Contributor, Owner, or wildcard data-plane roles) with custom roles scoped to the exact resources and actions this workload genuinely needs. Where the platform supports it, prefer workload-identity federation over a long-lived service-principal secret. Restrict access to the cloud instance metadata service (IMDS) or automounted Kubernetes service-account token to the specific code paths that need it -- do not leave it reachable from general request-handling code (e.g. via an unpatched SSRF path) or from every pod in a namespace by default. Periodically review actual role usage against the assignment and remove unused grants.
+    references: NIST SP 800-53 AC-6 (Least Privilege); MITRE ATT&CK T1078.004, T1098.001, T1098.003, T1552.005, T1548.005
+    risk_assessment: Critical for any workload identity holding subscription-/resource-group-wide or wildcard data-plane roles with no documented least-privilege review, or whose credential endpoint is reachable from code outside its own trust boundary.
+    false_positives: The asset is tagged mgmt:workload-identity-least-privilege confirming its role assignments are scoped to only the specific resources and actions its function requires, with no subscription/resource-group-wide or wildcard data-plane roles, and its credential/token endpoint is not reachable from code outside this asset's own trust boundary.
+    function: architecture
+    stride: elevation-of-privilege
+    detection_logic: Audit the identity's actual role assignments against its documented function, flagging any subscription-/resource-group-scoped or wildcard data-plane role. Review network/code paths that could reach the instance metadata service or an automounted service-account token from outside this asset's own trust boundary.
+    risks_identified: {}
+
   # #############################################################################
   # DOMAIN 2: DEVICE AND INFRASTRUCTURE
   # #############################################################################
@@ -549,7 +567,7 @@ custom_risk_definitions:
     risk_assessment: High. The audit trail is the primary compensating control for misclassification risk. Its absence elevates residual risk to Critical.
     false_positives: Transfer audit records capture full submission context, are forwarded to a write-once SIEM, and anomaly detection on transfer patterns is active and tuned.
     function: operations
-    stride: information-disclosure
+    stride: repudiation
     detection_logic: 'Monitor transfer logs for: atypical submission volumes relative to user baseline; marking values inconsistent with a user''s historical pattern; submissions outside normal working hours; bulk submissions immediately preceded by privilege changes.'
     risks_identified: {}
 
@@ -889,6 +907,24 @@ custom_risk_definitions:
     detection_logic: Test WebSocket upgrade endpoints by sending requests with a modified Origin header from a different domain and verifying the connection is rejected. Verify that ws:// (non-TLS) upgrade requests are rejected. Test session expiry handling by establishing a WebSocket connection, invalidating the session server-side, and verifying subsequent messages are rejected.
     risks_identified: {}
 
+  Permissive CORS and Missing Browser Framing/Content Policy:
+    id: permissive-cors-framing-policy
+    baseline_likelihood: likely
+    baseline_impact: medium
+    description: 'This browser-facing asset either reflects arbitrary origins in its CORS policy with credentials allowed, or lacks a restrictive Content-Security-Policy frame-ancestors (or X-Frame-Options) directive on its rendered pages.'
+    impact: 'If this risk remains unmitigated, a hostile site can read this asset''s authenticated API responses cross-origin, or overlay its UI to capture clicks on privileged actions (clickjacking/UI redressing), without the victim''s awareness.'
+    asvs: V14 - Configuration
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Clickjacking_Defense_Cheat_Sheet.html
+    action: Restrict CORS to an explicit allow-list of trusted origins with credentials disabled for cross-origin requests, and enforce a restrictive Content-Security-Policy frame-ancestors directive on every rendered page.
+    mitigation: Replace a reflected or wildcard Access-Control-Allow-Origin with an explicit allow-list of trusted origins, and never combine a wildcard origin with Access-Control-Allow-Credentials. Set a restrictive Content-Security-Policy frame-ancestors directive (or the legacy X-Frame-Options header) on every page capable of a privileged action, permitting framing only from origins that genuinely need to embed it, none by default. Treat this as a response-header configuration distinct from CSRF protection -- CORS/framing policy governs cross-origin reads and UI embedding, not forged same-origin-looking requests, which CSRF tokens address separately.
+    references: OWASP Top 10:2025 A02; CWE-942; CWE-1021; MITRE CAPEC-103, CAPEC-111
+    risk_assessment: Medium for any browser-facing asset with a permissive CORS policy or no frame-ancestors/X-Frame-Options directive. Escalates to High where a privileged, state-changing action is reachable from a framed or cross-origin-read page.
+    false_positives: The asset is tagged ops:cors-csp-hardened confirming CORS is restricted to an explicit allow-list with credentials disabled for cross-origin requests, and a restrictive frame-ancestors/X-Frame-Options directive is enforced on every rendered page.
+    function: architecture
+    stride: spoofing
+    detection_logic: Send a cross-origin request with an untrusted Origin header and credentials, confirming it is rejected rather than reflected. Load a privileged page inside an iframe from an untrusted origin and confirm the browser blocks rendering per the frame-ancestors/X-Frame-Options policy.
+    risks_identified: {}
+
   Background Job Parameter Injection and Authorization Bypass:
     id: background-job-security
     baseline_likelihood: likely
@@ -1123,7 +1159,7 @@ custom_risk_definitions:
     cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
     action: 'Enforce strict content isolation: all externally sourced data must be structurally isolated from the instruction channel.'
     mitigation: Wrap all external content in clearly delimited data-only structural markers and instruct the model that content within those markers is passive data, never commands. Apply a secondary content safety classifier to all retrieved external content before it enters the context window. Implement human-in-the-loop confirmation before any tool action initiated in response to externally-sourced context. Implement output filtering to detect exfiltration patterns in model responses (base64 payloads, suspicious URLs). Monitor for rendered markdown that includes external image or link beacons.
-    references: MITRE ATLAS AML.T0051.001 (Indirect Prompt Injection), AML.T0051.002 (Triggered), AML.T0066 (Retrieval Content Crafting), AML.T0067 (Trusted Output Components Manipulation), AML.T0073 (Impersonation), AML.T0074 (Masquerading), AML.T0093 (Prompt Infiltration via Public-Facing App), AML.T0094 (Delay Execution); OWASP LLM02:2025
+    references: MITRE ATLAS AML.T0051.001 (Indirect Prompt Injection), AML.T0051.002 (Triggered), AML.T0066 (Retrieval Content Crafting), AML.T0067 (Trusted Output Components Manipulation), AML.T0073 (Impersonation), AML.T0074 (Masquerading), AML.T0093 (Prompt Infiltration via Public-Facing App), AML.T0094 (Delay Execution); OWASP LLM01:2025
     risk_assessment: Critical in any agentic or RAG deployment that processes untrusted third-party content and has tool-use or write capabilities.
     false_positives: External content is always passed through a fully controlled sanitization pipeline and the LLM has no tool access and no ability to render active content.
     function: architecture
@@ -1159,7 +1195,7 @@ custom_risk_definitions:
     cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
     action: Maintain a cryptographically signed allowlist of approved tools and require explicit human confirmation for consequential tool invocations.
     mitigation: Pin all tool definitions to cryptographically verified versions. Prohibit dynamic tool registration at runtime. Enforce credential isolation — tools should use scoped, short-lived tokens, never long-lived shared secrets. Rate-limit and alert on anomalous tool call volume per user or session. Log all tool invocations with full argument context for SOC review.
-    references: MITRE ATLAS AML.T0053 (AI Agent Tool Invocation), AML.T0083 (Credentials from AI Agent Config), AML.T0085.001 (Data from AI Agent Tools), AML.T0086 (Exfiltration via Agent Tool Invocation), AML.T0098 (Tool Credential Harvesting), AML.T0099 (Tool Data Poisoning), AML.T0100 (AI Agent Clickbait), AML.T0104 (Publish Poisoned Tool), AML.T0110 (AI Agent Tool Poisoning), AML.T0011.002 (Poisoned AI Agent Tool); OWASP LLM07:2025
+    references: MITRE ATLAS AML.T0053 (AI Agent Tool Invocation), AML.T0083 (Credentials from AI Agent Config), AML.T0085.001 (Data from AI Agent Tools), AML.T0086 (Exfiltration via Agent Tool Invocation), AML.T0098 (Tool Credential Harvesting), AML.T0099 (Tool Data Poisoning), AML.T0100 (AI Agent Clickbait), AML.T0104 (Publish Poisoned Tool), AML.T0110 (AI Agent Tool Poisoning), AML.T0011.002 (Poisoned AI Agent Tool); OWASP LLM06:2025
     risk_assessment: Critical for write-capable tool access. High for read-only tool access where sensitive data is reachable.
     false_positives: The LLM has zero tool access and is used exclusively for stateless text generation.
     function: architecture
@@ -1177,7 +1213,7 @@ custom_risk_definitions:
     cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
     action: Apply integrity controls to all persisted agent memory and enforce strict access control on memory write paths.
     mitigation: Cryptographically sign or hash all persisted memory entries and verify integrity before loading. Restrict write access to memory stores to the authenticated agent runtime only. Implement memory content validation on load — flag entries that contain instruction-like language. Log all memory write and modification events. Implement session memory expiry and enforce periodic re-authentication of memory state.
-    references: MITRE ATLAS AML.T0080 (AI Agent Context Poisoning — T0080.000 Memory, T0080.001 Thread), AML.T0081 (Modify AI Agent Configuration), AML.T0092 (Manipulate User LLM Chat History); OWASP LLM07:2025
+    references: MITRE ATLAS AML.T0080 (AI Agent Context Poisoning — T0080.000 Memory, T0080.001 Thread), AML.T0081 (Modify AI Agent Configuration), AML.T0092 (Manipulate User LLM Chat History); OWASP LLM04:2025, LLM06:2025
     risk_assessment: High for persistent-memory agentic systems with multi-session continuity. Medium for in-session-only memory with no cross-session persistence.
     false_positives: Agent uses in-context-window-only memory with no external persistence layer; memory is discarded entirely at session end.
     function: architecture
@@ -1553,7 +1589,7 @@ custom_risk_definitions:
     risk_assessment: High for any public API where object identifiers are part of the request path/body and no correlation rule exists for per-caller authorization-failure or object-enumeration patterns.
     false_positives: The endpoint logs rate-limit rejections, authorization failures, and object-ID request patterns with caller-identity correlation, and a SIEM detection rule is confirmed active against that log stream.
     function: operations
-    stride: information-disclosure
+    stride: repudiation
     risks_identified: {}
 
   # Container Orchestrator Control-Plane Audit Logging Gap has been ported into the

@@ -535,6 +535,8 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'feature:email-sending' in tags: inject("Email Header Injection and Sending Abuse", "Email Header Injection Risk")
         if 'feature:graphql-endpoint' in tags: inject("GraphQL Introspection, Query Depth, and Authorization Gaps", "GraphQL Security Risk")
         if 'feature:websocket' in tags: inject("WebSocket Origin Validation and Authentication Gaps", "WebSocket Security Risk")
+        if 'feature:browser-facing' in tags and 'ops:cors-csp-hardened' not in tags:
+            inject("Permissive CORS and Missing Browser Framing/Content Policy", "CORS/Framing Policy Gap Risk")
         if 'feature:saml-sp' in tags: inject("SAML Assertion Vulnerabilities", "SAML Security Risk")
         if 'feature:password-reset' in tags: inject("Insecure Password Reset and Credential Recovery", "Password Reset Risk")
         if 'feature:admin-panel' in tags: inject("Exposed Administrative Interface Without Hardened Access Controls", "Admin Panel Exposure Risk")
@@ -546,6 +548,14 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             inject("Standing Privileged Access with No Administrative Tiering", "Standing Privilege Risk")
             inject("Privileged Session Credential Disclosure Without Vaulting or Brokering", "Credential Disclosure Risk")
             inject("Break-Glass Emergency Access Circular Dependency or Untested Procedure", "Break-Glass Gap Risk")
+
+        # Deliberately NOT nested under mgmt:self-managed-*: workload role assignments are
+        # owned by the app team even when the landing zone itself is inherited, so this
+        # applies to every ordinary app workload regardless of self-managed status -- unlike
+        # Standing Privileged Access above, which is specifically about human admin
+        # credentials on a self-managed PAM deployment.
+        if 'mgmt:workload-identity-assigned' in tags and 'mgmt:workload-identity-least-privilege' not in tags:
+            inject("Over-Privileged Workload Identity and Cloud Control-Plane Pivot", "Workload Identity Overprivilege Risk")
 
         # --- 2. MITRE ATLAS AI/ML THREAT VECTORS ---
         # One inject call per risk category, keyed to the new tag namespace.
