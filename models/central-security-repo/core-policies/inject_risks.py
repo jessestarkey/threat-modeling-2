@@ -93,6 +93,30 @@ STRIDE_TO_CIA_DIMENSION = {
     "denial-of-service": "availability",
 }
 
+# Technology-name sets (canonical + every alias) mirroring the matching
+# entry's own `aliases:` list in pkg/types/technologies.yaml in the
+# jessestarkey/threagile fork. Used below in place of a same-named ai:*
+# tag for a handful of checks that still live in Python but whose trigger
+# condition is better read off the asset's own native `technology:` field
+# -- a tag naming the same concept as a technology an app can already
+# select is a second, unenforced source of truth for the same fact. This
+# is a human-maintained mirror, not a read of that file (a different
+# repo), the same convention 03-tags-lib.yml's relationship to this
+# file's tag checks already documents -- keep in sync by hand if that
+# file's aliases change. See docs/risk-methodology.md.
+RAG_PIPELINE_TECHNOLOGIES = {
+    "ai-rag-pipeline", "rag-pipeline", "retrieval-augmented-generation", "vector-search-pipeline",
+}
+AGENT_ORCHESTRATOR_TECHNOLOGIES = {
+    "ai-agent-orchestrator", "agent-orchestrator", "langchain", "autogen", "crewai", "react-agent-loop",
+}
+MULTI_AGENT_GATEWAY_TECHNOLOGIES = {
+    "ai-multi-agent-gateway", "multi-agent-gateway", "a2a-gateway", "mcp-server", "agent-registry",
+}
+DATASET_STORE_TECHNOLOGIES = {
+    "ai-dataset-store", "dataset-store", "training-data-store",
+}
+
 # Likelihood x Impact -> Severity, via a weight-product-and-threshold
 # formula rather than a hand-authored rank-sum lookup table (an earlier
 # version of this file used the latter -- see git history). Switched to
@@ -456,7 +480,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # responsibility.
         if asset_data.get('out_of_scope'): continue
         tags = asset_data.get('tags', [])
-        if not tags: continue
+        asset_technology = asset_data.get('technology')
         asset_id = asset_data.get('id')
         asset_is_internet_reachable = 'net:internet-reachable' in tags
         asset_raa = raa_by_id.get(asset_id, 1.0)
@@ -545,10 +569,12 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # jessestarkey/threagile fork as a native script rule
         # (pkg/risks/scripts/atlas-rag-poisoning-exfil.yaml), triggered off the new native
         # rag-pipeline technology instead of the ai:rag-pipeline tag. Removed here rather than
-        # left duplicated. The tag itself stays -- still read just below for the indirect prompt
-        # injection half, which is a different category not yet ported. See
-        # docs/risk-methodology.md for the full rationale.
-        if 'ai:rag-pipeline' in tags:
+        # left duplicated. The ai:rag-pipeline TAG is also now fully removed from
+        # 03-tags-lib.yml -- the indirect-prompt-injection half just below reads the asset's
+        # own native `technology:` field instead, since a tag naming the same concept as a
+        # selectable technology was a second, unenforced source of truth for the same fact.
+        # See docs/risk-methodology.md for the full rationale.
+        if asset_technology in RAG_PIPELINE_TECHNOLOGIES:
             # RAG retrieval is inherently an indirect prompt injection surface
             inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "RAG Indirect Injection Risk")
 
@@ -563,11 +589,13 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # jessestarkey/threagile fork as a native script rule
         # (pkg/risks/scripts/atlas-agent-orchestration-hijack.yaml), triggered off the new
         # native agent-orchestrator technology instead of the ai:agent-orchestrator tag.
-        # Removed here rather than left duplicated. The tag itself stays -- still read just
-        # below for the indirect prompt injection half, and further below for the AI
-        # OT-actuation check, neither of which is ported yet. See docs/risk-methodology.md for
-        # the full rationale.
-        if 'ai:agent-orchestrator' in tags:
+        # Removed here rather than left duplicated. The ai:agent-orchestrator TAG is also now
+        # fully removed from 03-tags-lib.yml -- the indirect-prompt-injection half just below
+        # reads the asset's own native `technology:` field instead, same reasoning as the
+        # rag-pipeline case above. (The AI OT-actuation check below reads only
+        # ai:ot-adjacent-output, standalone -- it never depended on this tag.) See
+        # docs/risk-methodology.md for the full rationale.
+        if asset_technology in AGENT_ORCHESTRATOR_TECHNOLOGIES:
             # Orchestrators that process external content also inherit indirect injection
             if 'ai:indirect-prompt-input' not in tags:
                 inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "Agent Indirect Injection Risk")
@@ -611,9 +639,11 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # into the jessestarkey/threagile fork as a native script rule
         # (pkg/risks/scripts/atlas-dataset-store-attack.yaml), triggered off the new native
         # dataset-store technology instead of the ai:dataset-store tag. Removed here rather than
-        # left duplicated. The tag itself stays -- still read further below by the Missing Data
-        # Provenance and Lineage Chain-of-Custody check, which also reads the unrelated
-        # data:external-feed-ingest tag and isn't portable the same way.
+        # left duplicated. The ai:dataset-store TAG is also now fully removed from
+        # 03-tags-lib.yml -- the Missing Data Provenance and Lineage Chain-of-Custody check
+        # further below reads the asset's own native `technology:` field instead (ORed with
+        # the unrelated data:external-feed-ingest tag, which stays as-is), same reasoning as
+        # the rag-pipeline/agent-orchestrator cases above.
 
         # NOTE: "ATLAS: AI Model Registry Supply Chain and Reputation Attack" has been ported
         # into the jessestarkey/threagile fork as a native script rule
@@ -644,16 +674,19 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # been ported into the jessestarkey/threagile fork as a native script rule
         # (pkg/risks/scripts/maestro-l7-agent-ecosystem-identity.yaml), triggered off the new
         # native multi-agent-gateway technology instead of the ai:multi-agent-boundary tag.
-        # Removed here rather than left duplicated. The tag itself stays -- still read just
-        # below for the indirect-prompt-injection piggyback.
-        if 'ai:multi-agent-boundary' in tags:
-            # Multi-agent boundaries also inherit indirect prompt injection since agents
+        # Removed here rather than left duplicated. The ai:multi-agent-boundary TAG is also
+        # now fully removed from 03-tags-lib.yml -- the indirect-prompt-injection piggyback
+        # just below reads the asset's own native `technology:` field instead, same reasoning
+        # as the rag-pipeline/agent-orchestrator/dataset-store cases above.
+        if asset_technology in MULTI_AGENT_GATEWAY_TECHNOLOGIES:
+            # Multi-agent gateways also inherit indirect prompt injection since agents
             # interpret messages from other agents as instructions -- but only when
             # the asset isn't already directly tagged ai:indirect-prompt-input, the
-            # same guard the ai:agent-orchestrator branch above already uses, to
+            # same guard the agent-orchestrator branch above already uses, to
             # avoid double-injecting the same category onto the same asset under two
-            # different titles (e.g. every MCP server, which carries both tags at
-            # once now that each one's own content-relay role is tagged explicitly).
+            # different titles (e.g. every MCP server, which also carries the
+            # indirect-prompt-input tag once its own content-relay role is tagged
+            # explicitly).
             if 'ai:indirect-prompt-input' not in tags:
                 inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "Cross-Agent Injection Risk")
 
@@ -860,7 +893,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'data:pii' in tags and 'data:pia-documented' not in tags:
             inject("Missing Privacy Impact Assessment", "Missing PIA Risk")
 
-        if ('data:external-feed-ingest' in tags or 'ai:dataset-store' in tags) and 'data:provenance-tracked' not in tags:
+        if ('data:external-feed-ingest' in tags or asset_technology in DATASET_STORE_TECHNOLOGIES) and 'data:provenance-tracked' not in tags:
             inject("Missing Data Provenance and Lineage Chain-of-Custody", "Data Provenance Gap Risk")
 
         if 'feature:import-export' in tags and 'ops:dlp-egress-inspected' not in tags:

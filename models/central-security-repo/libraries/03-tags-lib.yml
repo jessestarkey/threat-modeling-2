@@ -188,7 +188,7 @@ tags_available:
   # pattern as the Infrastructure Hardening tags above.
   # =============================================================================
 
-  - data:external-feed-ingest      # Asset ingests data from an external or third-party source on an ongoing basis (a partner feed, an upstream integration) — trigger for the provenance/lineage chain-of-custody risk, alongside ai:dataset-store
+  - data:external-feed-ingest      # Asset ingests data from an external or third-party source on an ongoing basis (a partner feed, an upstream integration) — trigger for the provenance/lineage chain-of-custody risk, alongside the native dataset-store technology
   - data:release-candidate         # Asset produces files or datasets intended for release or broad sharing outside their originating boundary — trigger for the re-identification and data-rights-management risks
   - data:provenance-tracked        # Ingested external content is checked against an append-only origin/integrity record at consumption time — suppresses the missing-data-provenance-chain risk
   - ops:dlp-egress-inspected       # This asset's export/attachment/outbound-transfer paths are routed through classification-aware DLP inspection — suppresses the dlp-egress-blind-spot risk
@@ -245,20 +245,27 @@ tags_available:
   - ai:indirect-prompt-input # Asset processes content from third-party/external/user-controlled sources interpreted by an LLM (e.g., emails, web pages, documents, search results, calendar events)
 
   # --- RAG and Knowledge Base Surface ---
-  - ai:rag-pipeline        # Asset is a Retrieval-Augmented Generation pipeline (vector DB + retrieval + LLM grounding) — still used by the indirect-prompt-injection piggyback; its own ATLAS category is now native (rag-pipeline technology)
-  # ai:rag-ingest-pipeline has been removed: fully handled by the native rag-ingest-pipeline
-  # technology attribute in the jessestarkey/threagile fork. See docs/risk-methodology.md.
+  # ai:rag-pipeline and ai:rag-ingest-pipeline have both been removed: fully handled by the
+  # native rag-pipeline/rag-ingest-pipeline technology attributes in the jessestarkey/threagile
+  # fork, including the indirect-prompt-injection piggyback this tag used to gate -- that check
+  # now reads the asset's own native `technology:` field instead of a tag naming the same
+  # concept. See docs/risk-methodology.md.
 
   # --- Agentic and Tool-Use Surface ---
-  - ai:agent-orchestrator  # Asset is an AI agent orchestration layer that plans, decomposes tasks, and dispatches tool calls (e.g., LangChain, AutoGen, CrewAI, custom ReAct loop) — still used by the indirect-prompt-injection piggyback and the AI OT-actuation check; its own ATLAS category is now native (agent-orchestrator technology)
+  # ai:agent-orchestrator has been removed: fully handled by the native agent-orchestrator
+  # technology attribute in the jessestarkey/threagile fork, including the
+  # indirect-prompt-injection piggyback this tag used to gate -- same reasoning as
+  # ai:rag-pipeline above. See docs/risk-methodology.md.
   - ai:plugin-tool-use     # LLM or agent is granted tool/plugin/function-calling capabilities that invoke external APIs or execute actions
   - ai:agent-memory        # Asset maintains persistent memory or session state for an AI agent across turns or sessions
   - ai:agent-framework     # Asset is an AI agent framework or its transitive dependency graph (e.g., LangChain, AutoGen, Semantic Kernel and their PyPI/npm deps) — flags the framework code layer as a supply chain surface
 
   # --- Training and Data Pipeline Surface ---
-  # ai:training-pipeline has been removed: fully handled by the native training-pipeline
-  # technology attribute in the jessestarkey/threagile fork. See docs/risk-methodology.md.
-  - ai:dataset-store     # Asset is the authoritative storage layer for training, evaluation, or fine-tuning datasets — still used by the Missing Data Provenance and Lineage Chain-of-Custody check; its own ATLAS category is now native (dataset-store technology)
+  # ai:training-pipeline and ai:dataset-store have both been removed: fully handled by the
+  # native training-pipeline/dataset-store technology attributes in the jessestarkey/threagile
+  # fork, including the Missing Data Provenance and Lineage Chain-of-Custody check
+  # ai:dataset-store used to gate -- same reasoning as ai:rag-pipeline above. See
+  # docs/risk-methodology.md.
 
   # --- Supply Chain Surface ---
   # ai:model-registry has been removed: fully handled by the native model-registry technology
@@ -275,7 +282,10 @@ tags_available:
   # technology attribute in the jessestarkey/threagile fork. See docs/risk-methodology.md.
 
   # --- Agent Ecosystem and Identity (MAESTRO L7) ---
-  - ai:multi-agent-boundary # Asset is a trust boundary where multiple AI agents interact across identity domains (e.g., A2A gateway, MCP server, agent registry) — still used by the indirect-prompt-injection piggyback; its own MAESTRO L7 category is now native (multi-agent-gateway technology)
+  # ai:multi-agent-boundary has been removed: fully handled by the native multi-agent-gateway
+  # technology attribute in the jessestarkey/threagile fork, including the
+  # indirect-prompt-injection piggyback this tag used to gate -- same reasoning as
+  # ai:rag-pipeline above. See docs/risk-methodology.md.
 
   # --- Operational and Deployment Hardening Surface ---
   # Trigger tags (mark an asset as having this exposure) and their
