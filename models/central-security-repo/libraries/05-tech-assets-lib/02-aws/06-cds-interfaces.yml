@@ -7,3 +7,100 @@
   # UCDMO-approved CDS. The CDS itself is outside the ATO boundary and is
   # modeled as an external entity. Apply cds: tags to trigger CDS-specific
   # risk injections. See 03-authoritative-tags.yml for tag definitions.
+
+  # ============================================================================
+  # 6b. THE CDS APPLIANCE ITSELF (Out of Scope)
+  # Pick whichever of these two matches the actual CDS product your app
+  # transfers through -- a software-mediated guard (bidirectional, does its
+  # own content inspection) or a hardware data diode (strictly one-way, no
+  # inspection of its own). Modeled as technology: cds-guard / cds-data-diode
+  # with out_of_scope: true to indicate the appliance itself is
+  # government-furnished, separately accredited equipment outside this app's
+  # own ATO boundary -- not something this app operates or hardens. If your
+  # app DOES self-operate its own guard/diode rather than treating it as
+  # externally furnished, drop out_of_scope and type: external-entity and
+  # model it as a normal in-scope process asset instead; the jessestarkey/
+  # threagile fork's native script rules for these technologies only fire on
+  # in-scope assets, so a self-operated guard/diode gets real coverage this
+  # way that an out-of-scope one deliberately does not. Identical to the
+  # Azure sibling file -- a CDS guard/diode is not a cloud-provider-specific
+  # service.
+  # ============================================================================
+
+  External CDS Guard:
+    id: external-cds-guard
+    description: >
+      A government-furnished, separately accredited Cross-Domain Solution (CDS) guard
+      mediating content transfer between this system's classification domain and another.
+      Bidirectional, software-mediated appliance (e.g. a UCDMO-approved guard product)
+      performing automated content, malware, and classification-marking checks, often with
+      human-in-the-loop review before release.
+    type: external-entity
+    usage: business
+    out_of_scope: true
+    justification_out_of_scope: >
+      The CDS guard itself is government-furnished equipment, separately accredited under its
+      own ATO and outside this system's own Accreditation Boundary. This application's
+      responsibility ends at its own submitter/receiver/broker interface assets (see 03-tags-
+      lib.yml's cds: tags) -- the guard's own internal hardening, rule-set currency, and
+      bypass-path controls are the accrediting authority's responsibility, not this
+      application's.
+    size: component
+    technology: cds-guard
+    internet: false
+    machine: physical
+    encryption: none
+    owner: External CDS accrediting authority
+    confidentiality: strictly-confidential
+    integrity: mission-critical
+    availability: critical
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): The guard mediates content crossing a
+      classification boundary and is assumed to handle the most sensitive data this system's
+      transfer workflow can produce.
+
+      Integrity (Mission-Critical): A failure of the guard's inspection or release-decision
+      logic is a classification-boundary violation, the most severe integrity failure this
+      system's architecture can produce.
+
+      Availability (Critical): Transfer workflows depend on the guard, but a guard outage
+      blocks transfers rather than causing a boundary violation, so this is rated one tier
+      below Integrity.
+
+  External CDS Data Diode:
+    id: external-cds-data-diode
+    description: >
+      A government-furnished, separately accredited hardware data diode providing a strictly
+      one-way transfer path between this system's classification domain and another, with no
+      physical return channel.
+    type: external-entity
+    usage: business
+    out_of_scope: true
+    justification_out_of_scope: >
+      The data diode itself is government-furnished equipment, separately accredited under its
+      own ATO and outside this system's own Accreditation Boundary. This application's
+      responsibility ends at its own submitter/receiver interface asset on whichever side it
+      sits -- the diode's own physical unidirectionality verification is the accrediting
+      authority's responsibility, not this application's.
+    size: component
+    technology: cds-data-diode
+    internet: false
+    machine: physical
+    encryption: none
+    owner: External CDS accrediting authority
+    confidentiality: strictly-confidential
+    integrity: mission-critical
+    availability: important
+    justification_cia_rating: >
+      Confidentiality (Strictly-Confidential): The diode carries content crossing a
+      classification boundary and is assumed to carry the most sensitive data this system's
+      transfer workflow can produce.
+
+      Integrity (Mission-Critical): An undetected return channel or an unfiltered corrupted
+      feed is a classification-boundary violation, the most severe integrity failure this
+      system's architecture can produce.
+
+      Availability (Important): A diode outage blocks the one-way feed but has no bearing on
+      content already transferred -- a materially lower consequence than the guard's own
+      availability loss, which can interrupt an active, in-progress multi-step review
+      workflow.
