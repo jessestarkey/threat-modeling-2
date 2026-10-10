@@ -94,6 +94,7 @@ custom_risk_definitions:
     false_positives: None. This is an explicit policy waiver.
     function: architecture
     stride: spoofing
+    cwe: 308
     risks_identified: {}
 
   Insecure Password Reset and Credential Recovery:
@@ -111,6 +112,7 @@ custom_risk_definitions:
     false_positives: Credential recovery is fully delegated to the enterprise IdP (e.g., Entra ID self-service password reset) with no custom reset token issuance or validation in the application.
     function: architecture
     stride: spoofing
+    cwe: 640
     detection_logic: Request password resets for the same account in rapid succession and verify that only the most recently issued token is valid. Verify that a used token cannot be reused. Test for host header injection by sending a reset request with a modified Host header and verifying the reset email contains the configured base URL, not the injected host. Test for account enumeration by comparing response time and body for registered vs. unregistered addresses.
     risks_identified: {}
 
@@ -129,6 +131,7 @@ custom_risk_definitions:
     false_positives: Asset delegates all OAuth/OIDC handling to a hardened upstream IdP (e.g., Entra ID, Okta) with no custom token issuance or validation logic — the asset only consumes pre-validated identity assertions.
     function: architecture
     stride: spoofing
+    cwe: 287
     detection_logic: Run OAuth-specific DAST tests (e.g., OWASP ZAP OAuth scanner, Burp Suite OAuth extension) against all authorization endpoints. Verify redirect_uri enforcement by attempting registration and use of variant URIs. Test JWT validation by submitting tokens with alg:none and algorithm-confused signatures. Monitor authorization server logs for redirect_uri mismatch attempts.
     risks_identified: {}
 
@@ -147,6 +150,7 @@ custom_risk_definitions:
     false_positives: SAML processing is fully delegated to a hardened platform IdP integration (e.g., Azure AD SAML app with no custom assertion processing code) — the application does not parse or validate SAML XML directly.
     function: architecture
     stride: spoofing
+    cwe: 347
     detection_logic: Test for XSW vulnerabilities using SAMLRaider (Burp Suite extension) against all SAML assertion endpoints. Test for XXE by injecting a DOCTYPE declaration into a SAML request and monitoring for outbound DNS or HTTP requests. Verify that assertions with invalid Recipient, expired timestamps, or mismatched AudienceRestriction are rejected.
     risks_identified: {}
 
@@ -172,6 +176,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ops:token-binding-enforced confirming session and refresh tokens are bound to the issuing client via DPoP or mutual TLS.
     function: architecture
     stride: spoofing
+    cwe: 294
     risks_identified: {}
 
   OAuth Illicit Consent Grant via Malicious Application Registration:
@@ -189,6 +194,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ops:oauth-consent-governed confirming administrator consent is required for high-privilege scope requests and user self-service consent is restricted to a verified-publisher allow-list.
     function: architecture
     stride: spoofing
+    cwe: 285
     risks_identified: {}
 
   Self-Managed Directory Tier-0 Infrastructure Compromise:
@@ -206,6 +212,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-identity-hardened confirming unconstrained delegation, AdminSDHolder tampering, trust SID filtering, and LDAP signing have been audited, and krbtgt rotation follows the required two-pass procedure. Not applicable if this asset authenticates exclusively through the enterprise-managed identity tenant.
     function: architecture
     stride: spoofing
+    cwe: 269
     risks_identified: {}
 
   Self-Managed Certificate Authority Template Privilege Escalation:
@@ -223,6 +230,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-identity-hardened confirming every enrollment template has been audited against ESC1-class misconfiguration. Not applicable if this asset relies exclusively on the enterprise-managed PKI.
     function: architecture
     stride: spoofing
+    cwe: 269
     risks_identified: {}
 
   Self-Managed Hybrid Identity Synchronization Server Compromise:
@@ -240,6 +248,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-identity-hardened confirming this server is administered at Tier-0 rigor, network-isolated from general application infrastructure, and monitored for credential extraction.
     function: operations
     stride: elevation-of-privilege
+    cwe: 522
     risks_identified: {}
 
   # --- 1.2 AUTHORIZATION ---
@@ -265,6 +274,7 @@ custom_risk_definitions:
     false_positives: Admin interface is served on a separate internal-only domain with NSG-enforced IP restriction to a privileged access workstation range and requires a separate MFA step-up authentication — confirmed in the network architecture documentation.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 284
     detection_logic: Attempt to access known admin URL patterns (/admin, /manage, /console, /dashboard) with a standard user token and verify access is denied with 403. Verify NSG rules restrict the admin endpoint to the approved IP range. Monitor admin panel access logs for access from IP addresses outside the approved management range.
     risks_identified: {}
 
@@ -283,6 +293,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ops:vendor-access-case-bound confirming vendor remote support access is scoped to a specific support case with automatic expiry.
     function: operations
     stride: elevation-of-privilege
+    cwe: 269
     risks_identified: {}
 
   Standing Privileged Access with No Administrative Tiering:
@@ -300,6 +311,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-pam-hardened confirming just-in-time privilege activation and administrative tiering are both enforced. Not applicable if privileged access to this asset is governed by the enterprise PAM program.
     function: operations
     stride: elevation-of-privilege
+    cwe: 269
     risks_identified: {}
 
   Privileged Session Credential Disclosure Without Vaulting or Brokering:
@@ -317,6 +329,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-pam-hardened confirming administrative access to shared credentials is brokered through a vaulted session with no direct disclosure. Not applicable if privileged access to this asset is governed by the enterprise PAM program.
     function: operations
     stride: elevation-of-privilege
+    cwe: 522
     risks_identified: {}
 
   Break-Glass Emergency Access Circular Dependency or Untested Procedure:
@@ -334,6 +347,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-pam-hardened confirming break-glass credentials have an access path independent of the primary identity platform and the procedure has been exercised within the current ATO period. Not applicable if this asset relies on the enterprise PAM/break-glass program.
     function: operations
     stride: denial-of-service
+    cwe: 1008
     risks_identified: {}
 
   Over-Privileged Workload Identity and Cloud Control-Plane Pivot:
@@ -351,6 +365,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:workload-identity-least-privilege confirming its role assignments are scoped to only the specific resources and actions its function requires, with no subscription/resource-group-wide or wildcard data-plane roles, and its credential/token endpoint is not reachable from code outside this asset's own trust boundary.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 250
     detection_logic: Audit the identity's actual role assignments against its documented function, flagging any subscription-/resource-group-scoped or wildcard data-plane role. Review network/code paths that could reach the instance metadata service or an automounted service-account token from outside this asset's own trust boundary.
     risks_identified: {}
 
@@ -384,6 +399,7 @@ custom_risk_definitions:
     false_positives: None. This is an explicit policy waiver.
     function: operations
     stride: elevation-of-privilege
+    cwe: 250
     detection_logic: 'Query the cluster (kubectl get pods -o json) for containers whose securityContext omits runAsNonRoot: true or explicitly sets runAsUser: 0. Confirm a matching exception:runs-as-root waiver and AO acceptance record exists for every match.'
     risks_identified: {}
 
@@ -412,6 +428,7 @@ custom_risk_definitions:
     false_positives: None. This is an explicit policy waiver.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 668
     detection_logic: Scan Network Security Groups (NSGs) for rules allowing inbound port 22 or 3389 from broadly scoped subnets.
     risks_identified: {}
 
@@ -430,6 +447,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-hardware-hardened confirming BMC credentials are non-default and rotated, unused services are disabled, and network access is isolated to a dedicated management segment. Not applicable to virtual/cloud-provisioned compute with no accessible BMC layer.
     function: operations
     stride: elevation-of-privilege
+    cwe: 284
     risks_identified: {}
 
   Self-Managed Below-OS Firmware Persistence Gap:
@@ -447,6 +465,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-hardware-hardened confirming firmware across UEFI/BIOS, TPM, BMC, and option-ROMs is inventoried and patched on a defined cadence. Not applicable to virtual/cloud-provisioned compute where firmware is the cloud provider's responsibility.
     function: operations
     stride: tampering
+    cwe: 1395
     risks_identified: {}
 
   Self-Managed Boot Integrity Bypass:
@@ -464,6 +483,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-hardware-hardened confirming secure boot is enabled and TPM-backed measured-boot attestation is verified. Not applicable to virtual/cloud-provisioned compute where boot-chain integrity is the cloud provider's responsibility.
     function: architecture
     stride: tampering
+    cwe: 1326
     risks_identified: {}
 
   # #############################################################################
@@ -494,6 +514,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-network-hardened confirming default-deny macro- and micro-segmentation is implemented against a documented communication baseline. Not applicable to assets in the enterprise-managed landing zone, where segmentation is a platform-inherited control.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 653
     risks_identified: {}
 
   Rogue Access Point and Evil-Twin Credential Harvesting on Self-Managed Wireless:
@@ -511,6 +532,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-network-hardened confirming rogue access point detection is active and wireless authentication resists credential harvesting. Not applicable to assets with no self-managed wireless network, or where wireless is provided by the enterprise-managed landing zone.
     function: operations
     stride: spoofing
+    cwe: 300
     risks_identified: {}
 
   Missing Route Origin Validation on Self-Managed External Routing:
@@ -528,6 +550,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged mgmt:self-managed-network-hardened confirming RPKI route origin validation and ROA registration are in place for this asset's routing adjacencies. Not applicable to assets with no self-managed external routing, or where routing is provided by the enterprise-managed landing zone.
     function: architecture
     stride: spoofing
+    cwe: 346
     risks_identified: {}
 
   # --- 3.2 CROSS-DOMAIN SOLUTION (CDS) INTERFACES ---
@@ -550,6 +573,7 @@ custom_risk_definitions:
     false_positives: Marking validation is enforced at the server-side API layer on every ingestion path, values are validated against a hardcoded approved vocabulary allowlist, and no direct queue write access exists that bypasses the application.
     function: architecture
     stride: information-disclosure
+    cwe: 345
     detection_logic: Monitor transfer submission logs for marking field values outside the approved vocabulary. Alert on any direct broker queue write events not originating from the validated application ingestion path. Include schema validation pass/fail status in all transfer audit records.
     risks_identified: {}
 
@@ -568,6 +592,7 @@ custom_risk_definitions:
     false_positives: Transfer audit records capture full submission context, are forwarded to a write-once SIEM, and anomaly detection on transfer patterns is active and tuned.
     function: operations
     stride: repudiation
+    cwe: 778
     detection_logic: 'Monitor transfer logs for: atypical submission volumes relative to user baseline; marking values inconsistent with a user''s historical pattern; submissions outside normal working hours; bulk submissions immediately preceded by privilege changes.'
     risks_identified: {}
 
@@ -587,6 +612,7 @@ custom_risk_definitions:
     false_positives: All inbound CDS content passes through the same validation and malware scanning pipeline as direct user uploads with no bypass based on CDS transfer origin.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 20
     detection_logic: Monitor inbound CDS content validation results and alert on failures — particularly format mismatches between declared and actual content type. Track parser exceptions on CDS-sourced content as potential exploitation indicators.
     risks_identified: {}
 
@@ -606,6 +632,7 @@ custom_risk_definitions:
     false_positives: Broker write access is restricted to the application service account enforced at the queue policy level, message integrity signing is implemented, and queue access logs are forwarded to the SIEM with alerting on unexpected write origins.
     function: architecture
     stride: tampering
+    cwe: 284
     detection_logic: Monitor broker access logs for enqueue events from any identity other than the approved application service account. Alert on message integrity verification failures at dequeue. Monitor queue depth anomalies indicating bulk injection outside normal transfer patterns.
     risks_identified: {}
 
@@ -625,6 +652,7 @@ custom_risk_definitions:
     false_positives: All content undergoes multi-layer automated sanitization followed by mandatory human release authority review and approval before reaching the transfer queue, with full audit logging of both steps.
     function: architecture
     stride: information-disclosure
+    cwe: 212
     detection_logic: Audit transfer submission logs for content that bypassed the sanitization or human review step. Monitor for bulk submission patterns that may indicate review fatigue or process circumvention. Implement post-transfer sampling — periodically inspect low-side received content for residual above-releasable markers as a quality assurance check.
     risks_identified: {}
 
@@ -643,6 +671,7 @@ custom_risk_definitions:
     false_positives: Every submission path enforces approval gating at the server-side middleware layer, high-side broker write access is restricted to the post-approval application service account, and approval tokens are cryptographically verified at queue write time.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 841
     detection_logic: Monitor high-side broker queue write logs for messages lacking valid approval tokens. Alert on any submission API call path that does not route through the approval middleware. Audit the approval workflow for race conditions by monitoring the time delta between approval events and queue write events.
     risks_identified: {}
 
@@ -661,6 +690,7 @@ custom_risk_definitions:
     false_positives: Separation of duties is enforced between the submitter and release authority roles with no individual holding both, two-person integrity is required for release of sensitive content, UEBA-based behavioral monitoring is deployed on submission activity, and submission-pattern anomalies are correlated with the organization's insider threat program.
     function: architecture
     stride: information-disclosure
+    cwe: 654
     detection_logic: Monitor for submission-pattern deviations from an individual's historical baseline — unusual volume, timing outside normal working hours, content sensitivity inconsistent with role, or submissions shortly before a known separation date. Alert on any release approved without a distinct second-party reviewer when dual authorization is configured. Correlate CDS submission activity with other insider threat indicators available to the organization's insider threat program (e.g., adverse HR actions, anomalous data staging or access patterns on the high-side network prior to submission).
     risks_identified: {}
 
@@ -680,6 +710,7 @@ custom_risk_definitions:
     false_positives: Inbound low-side data is treated as untrusted and undergoes independent schema validation, anomaly detection, and provenance logging before being used in any high-side analytical or operational workflow.
     function: architecture
     stride: tampering
+    cwe: 345
     detection_logic: Monitor inbound low-side data for statistical anomalies relative to historical baselines. Alert on content that passes CDS inspection but fails high-side schema validation or business logic checks. Maintain audit records of inbound transfer provenance for forensic reconstruction.
     risks_identified: {}
 
@@ -699,6 +730,7 @@ custom_risk_definitions:
     false_positives: Write access to the high-side outbound queue is restricted to the post-approval service account enforced at the queue policy level, message integrity signing is implemented, and all queue access events are logged and alerted on anomalous writes.
     function: architecture
     stride: tampering
+    cwe: 284
     detection_logic: Monitor high-side broker queue write logs for any enqueue event from an identity other than the approved post-approval service account. Alert on message integrity verification failures at dequeue. Monitor queue depth for anomalous accumulation that may indicate staged bulk content awaiting submission outside the normal workflow.
     risks_identified: {}
 
@@ -718,6 +750,7 @@ custom_risk_definitions:
     false_positives: Covert channel analysis has been formally conducted and documented per NIST SP 800-53 SC-31 for this interface, confirming transfer rate normalization, binary-only CDS response signaling, and metadata normalization are implemented.
     function: architecture
     stride: information-disclosure
+    cwe: 514
     detection_logic: Monitor transfer inter-arrival times for non-random patterns using statistical tests (chi-squared, entropy analysis) that may indicate timing channel use. Audit approved metadata fields for unnecessary precision or variability that could carry a storage channel payload.
     risks_identified: {}
 
@@ -741,6 +774,7 @@ custom_risk_definitions:
     false_positives: Input is strictly validated against a hardcoded, safe regex allow-list before any backend processing.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 1336
     detection_logic: Utilize robust SAST/DAST tools in the CI/CD pipeline to specifically flag unsafe execution functions.
     risks_identified: {}
 
@@ -759,6 +793,7 @@ custom_risk_definitions:
     false_positives: 'The application only stores files blindly in blob storage without actively parsing their internal contents. NOTE: Threagile''s built-in ''xml-external-entity'' rule may generate a partially overlapping finding on assets with XML data flows, and its built-in ''missing-file-validation'' rule fires on the same file-accepting assets more generically (filename/type validation only); this entry provides broader coverage including Zip Bomb and LFI vectors and fires on the feature:file-upload-processing tag regardless of data flow modeling completeness.'
     function: architecture
     stride: tampering
+    cwe: 611
     detection_logic: Scan source code via SAST for insecure XML parser configurations and monitor WAF logs for standard XXE payloads.
     risks_identified: {}
 
@@ -777,6 +812,7 @@ custom_risk_definitions:
     false_positives: 'All deserialization of externally-sourced data uses type-safe formats (JSON, Protobuf) with schema validation — no native object serialization formats are accepted from user-controlled input. NOTE: Threagile''s built-in ''deserialization-of-untrusted-data'' rule may generate an overlapping finding if data flows are fully modeled; this injected risk provides coverage when the data flow model is sparse.'
     function: architecture
     stride: elevation-of-privilege
+    cwe: 502
     detection_logic: Run SAST rules targeting unsafe deserialization calls (ObjectInputStream, BinaryFormatter, pickle.loads, Marshal.load, YAML.load) in the CI/CD pipeline. Monitor Java application logs for ClassNotFoundException or InvalidClassException which may indicate probing with malformed gadget chains. Deploy a Java agent (e.g., SerialKiller) to intercept and log all deserialization events in production.
     risks_identified: {}
 
@@ -795,6 +831,7 @@ custom_risk_definitions:
     false_positives: The PDF renderer runs in a fully network-isolated sandbox with JavaScript and external resource loading disabled, and all user-supplied content is sanitized with a vetted HTML sanitizer before template insertion.
     function: architecture
     stride: information-disclosure
+    cwe: 918
     detection_logic: Test PDF generation endpoints by injecting SSRF payloads into user-controlled fields (iframe pointing to IMDS URL, external image URL to a collaborator server). Verify the renderer is network-isolated by attempting to render a template that fetches an external URL and confirming no outbound request is made. Monitor the PDF renderer process for unexpected outbound network connections.
     risks_identified: {}
 
@@ -813,6 +850,7 @@ custom_risk_definitions:
     false_positives: All email recipient addresses are drawn exclusively from a pre-validated internal directory with no user-supplied address input — user input only influences email body content which is sanitized before insertion.
     function: architecture
     stride: spoofing
+    cwe: 93
     detection_logic: Test all email-triggering endpoints by injecting CRLF sequences into user-controlled fields (name, subject, message) and verifying the resulting email headers do not contain injected values. Verify DMARC enforcement by querying the sending domain's DNS TXT record for p=reject. Monitor outbound email volume for anomalous spikes that may indicate relay abuse.
     risks_identified: {}
 
@@ -831,6 +869,7 @@ custom_risk_definitions:
     false_positives: The webhook endpoint is protected by mutual TLS client certificate authentication with the sending system's certificate pinned — no HMAC signature is needed because the transport layer provides equivalent integrity assurance.
     function: architecture
     stride: spoofing
+    cwe: 347
     detection_logic: Test webhook endpoints by sending requests without a signature header, with an invalid signature, and with a replayed valid signature outside the allowed timestamp window — all should be rejected with 401/403. Monitor webhook ingestion logs for signature verification failures and alert on failure rate spikes.
     risks_identified: {}
 
@@ -849,6 +888,7 @@ custom_risk_definitions:
     false_positives: Export operations enforce row-level security identical to individual record access, all exported string values are sanitized against formula injection, and export size is bounded by a hard per-request limit.
     function: architecture
     stride: information-disclosure
+    cwe: 862
     detection_logic: Test export endpoints by requesting exports with a low-privilege token and verifying the result set does not include records beyond the token's authorized scope. Submit import files containing formula injection payloads and verify they are sanitized in subsequent exports. Monitor export API calls for unusually large result sets relative to the requesting user's normal access pattern.
     risks_identified: {}
 
@@ -867,6 +907,7 @@ custom_risk_definitions:
     false_positives: Introspection is disabled in production, query depth and complexity limits are enforced, and all resolvers have been audited for field-level authorization coverage — documented with test evidence.
     function: architecture
     stride: information-disclosure
+    cwe: 200
     detection_logic: Test for introspection by sending a standard __schema query and verifying it is rejected in production. Attempt deeply nested queries and verify they are rejected before execution. Test field-level authorization by requesting sensitive fields with a low-privilege token and verifying they return an authorization error rather than null or empty data.
     risks_identified: {}
 
@@ -886,6 +927,7 @@ custom_risk_definitions:
     false_positives: The search index only contains public, non-sensitive data.
     function: architecture
     stride: information-disclosure
+    cwe: 285
     detection_logic: Monitor database/index performance metrics for long-running or computationally expensive queries. Implement SAST to verify query sanitization.
     risks_identified: {}
 
@@ -904,6 +946,7 @@ custom_risk_definitions:
     false_positives: WebSocket upgrade requests validate the Origin header against a strict allowlist, require explicit token-based authentication independent of cookies, and all connections use wss://.
     function: architecture
     stride: spoofing
+    cwe: 1385
     detection_logic: Test WebSocket upgrade endpoints by sending requests with a modified Origin header from a different domain and verifying the connection is rejected. Verify that ws:// (non-TLS) upgrade requests are rejected. Test session expiry handling by establishing a WebSocket connection, invalidating the session server-side, and verifying subsequent messages are rejected.
     risks_identified: {}
 
@@ -922,6 +965,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ops:cors-csp-hardened confirming CORS is restricted to an explicit allow-list with credentials disabled for cross-origin requests, and a restrictive frame-ancestors/X-Frame-Options directive is enforced on every rendered page.
     function: architecture
     stride: spoofing
+    cwe: 942
     detection_logic: Send a cross-origin request with an untrusted Origin header and credentials, confirming it is rejected rather than reflected. Load a privileged page inside an iframe from an untrusted origin and confirm the browser blocks rendering per the frame-ancestors/X-Frame-Options policy.
     risks_identified: {}
 
@@ -940,6 +984,7 @@ custom_risk_definitions:
     false_positives: All background jobs re-validate user permissions at execution time, job queues are accessible only to the application service account, and no CUI is stored in job payloads.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 863
     detection_logic: Test TOCTOU by enqueuing a job with a user token, revoking the user's permissions before the job executes, and verifying the job is rejected at execution time. Attempt to write directly to the job queue with a non-service-account credential and verify it is rejected. Monitor job execution logs for authorization failures that may indicate parameter injection attempts.
     risks_identified: {}
 
@@ -958,6 +1003,7 @@ custom_risk_definitions:
     false_positives: Cache server requires authentication, is network-restricted to only authorized application pods, cache keys include all user- and tenant-scoping parameters, and no CUI or session data is stored at the shared cache layer.
     function: architecture
     stride: information-disclosure
+    cwe: 524
     detection_logic: Scan internal network for unauthenticated Redis/Memcached ports (6379, 11211) accessible from application pods. Test cache key scoping by making the same request as two different users and verifying the responses are not interchangeable. Inspect cache TTL configuration for entries containing sensitive data and alert on TTL-less entries.
     risks_identified: {}
 
@@ -976,6 +1022,7 @@ custom_risk_definitions:
     false_positives: All installed plugins are internally developed, cryptographically signed by an internal PKI, and have passed mandatory security review — no third-party marketplace plugins are present.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 829
     detection_logic: Audit the application's installed plugin registry on a scheduled basis and alert on any plugin not present in the approved allow-list. Monitor application process network connections for unexpected outbound destinations that may indicate exfiltrating plugin behavior. Enable application-level plugin activity logging if the platform supports it.
     risks_identified: {}
 
@@ -994,6 +1041,7 @@ custom_risk_definitions:
     false_positives: Clipboard redirection is disabled at the host pool level and enforced by Azure Policy with no active exceptions on file.
     function: operations
     stride: information-disclosure
+    cwe: 200
     detection_logic: Enable AVD host diagnostics and forward WVDConnections and WVDCheckpoints logs to the SIEM. Alert on sessions originating from devices not meeting Conditional Access compliance requirements. Monitor Microsoft Defender for Endpoint clipboard activity telemetry on enrolled GFE endpoints for anomalous copy volume from VDI process contexts.
     risks_identified: {}
 
@@ -1018,6 +1066,7 @@ custom_risk_definitions:
     false_positives: API is shielded by an upstream enterprise API Gateway that successfully handles rate limits.
     function: operations
     stride: denial-of-service
+    cwe: 770
     detection_logic: Monitor Azure App Gateway or Nginx Ingress metrics for anomalous high-frequency requests from individual IPs or bearer tokens.
     risks_identified: {}
 
@@ -1036,6 +1085,7 @@ custom_risk_definitions:
     false_positives: A single authoritative API inventory exists, every reachable version is present in it, and every deprecated version has been formally decommissioned (returns 410 Gone or is removed from the ingress) rather than merely undocumented.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 1059
     detection_logic: Run an external attack-surface scan against the organization's own registered IP ranges/subdomains and diff discovered API endpoints/versions against the authoritative inventory; flag anything reachable but not inventoried. Audit the API gateway's routing configuration for registered routes with no corresponding entry in current API documentation.
     risks_identified: {}
 
@@ -1054,6 +1104,7 @@ custom_risk_definitions:
     false_positives: Every identified sensitive business flow on this asset has a flow-specific anti-automation control (CAPTCHA, behavioral fingerprinting, flow-scoped velocity limits, or step-up authentication) confirmed active, distinct from generic API rate limiting.
     function: architecture
     stride: denial-of-service
+    cwe: 799
     detection_logic: Monitor flow completion timing and velocity per identity/session for patterns inconsistent with human interaction (near-instant completion, suspiciously uniform inter-request timing, abnormal completion-to-abandonment ratios). Run bot-detection/behavioral-fingerprinting tooling against the flow's entry point specifically.
     risks_identified: {}
 
@@ -1072,6 +1123,7 @@ custom_risk_definitions:
     false_positives: Every external API response is validated against an explicit schema with size/depth limits enforced, and response content is sanitized identically to direct user input before use.
     function: architecture
     stride: tampering
+    cwe: 20
     detection_logic: Audit integration code for direct deserialization of external API responses without schema validation. Monitor for anomalous response sizes, depths, or processing latency from each external API dependency as a signal of upstream compromise or malfunction.
     risks_identified: {}
 
@@ -1090,6 +1142,7 @@ custom_risk_definitions:
     false_positives: Asset is tagged ops:waf-enabled confirming a WAF with a managed ruleset in Prevention mode is deployed and confirmed in the ingress path.
     function: architecture
     stride: tampering
+    cwe: 693
     detection_logic: Verify Azure Application Gateway or Front Door resource configuration via Azure Resource Graph query — check WAF policy assignment and mode. Alert via Azure Policy on any internet-facing Application Gateway without an associated WAF policy in Prevention mode.
     risks_identified: {}
 
@@ -1108,6 +1161,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ops:dns-record-reconciled confirming its DNS records are reconciled against live resource state on a recurring schedule.
     function: operations
     stride: spoofing
+    cwe: 672
     risks_identified: {}
 
   # --- 4.4 LOGGING AND OBSERVABILITY ---
@@ -1146,6 +1200,7 @@ custom_risk_definitions:
     false_positives: Asset passes user input to a fully isolated, stateless model with no system prompt containing privileged data and no tool access.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 1427
     detection_logic: Monitor inference logs for anomalous instruction patterns (role-switch phrases, 'ignore previous instructions', base64 payloads). Alert on model outputs that echo back apparent system prompt text or produce unusually long, structured responses to short inputs.
     risks_identified: {}
 
@@ -1164,6 +1219,7 @@ custom_risk_definitions:
     false_positives: External content is always passed through a fully controlled sanitization pipeline and the LLM has no tool access and no ability to render active content.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 1427
     detection_logic: Trace which external documents entered any LLM context window. Flag tool calls that were not explicitly initiated by the human user turn. Alert on model outputs containing base64 strings, external URLs not in an approved allowlist, or markdown image tags.
     risks_identified: {}
 
@@ -1200,6 +1256,7 @@ custom_risk_definitions:
     false_positives: The LLM has zero tool access and is used exclusively for stateless text generation.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 829
     detection_logic: Alert on tool invocations to external endpoints not in the pre-approved allowlist. Monitor for credential access patterns from tool execution contexts. Audit tool definition registries for unauthorized modifications.
     risks_identified: {}
 
@@ -1218,6 +1275,7 @@ custom_risk_definitions:
     false_positives: Agent uses in-context-window-only memory with no external persistence layer; memory is discarded entirely at session end.
     function: architecture
     stride: tampering
+    cwe: 345
     detection_logic: Audit memory store write logs. Alert on memory entries created or modified outside of authenticated agent runtime sessions. Monitor for memory entries containing syntactic patterns characteristic of prompt injection (e.g., instruction-like imperative sentences, role-switch phrases).
     risks_identified: {}
 
@@ -1282,6 +1340,7 @@ custom_risk_definitions:
     false_positives: All framework dependencies are sourced from a fully air-gapped, internally mirrored registry where every package version has been manually reviewed and signed before admission.
     function: architecture
     stride: tampering
+    cwe: 1357
     detection_logic: Run SCA scans on every CI/CD build and alert on newly introduced CVEs or suspicious new transitive dependencies. Monitor for unexpected network egress from the agent runtime process at startup.
     risks_identified: {}
 
@@ -1314,6 +1373,7 @@ custom_risk_definitions:
     false_positives: AI system output is strictly advisory with no technical path to actuation, or every actuation path is confirmed to route through a human approval gate the AI system cannot complete or bypass.
     function: architecture
     stride: elevation-of-privilege
+    cwe: 1426
     risks_identified: {}
 
   # Ungoverned Production System Prompt Change has been ported into the
@@ -1344,6 +1404,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ai:model-package-signed confirming the model package is signed with an externally-held key and verified at every load, not only at transfer time.
     function: architecture
     stride: tampering
+    cwe: 494
     risks_identified: {}
 
   # Missing Model Rollback and Kill-Switch Mechanism, No Canary Prompt Testing Against
@@ -1374,6 +1435,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ai:vendor-model-governed confirming a data-transmission classification restriction is enforced, a training-use opt-out is on file, the API key is vaulted/rotated as an internal secret, and vendor security posture is reviewed on a recurring cadence.
     function: architecture
     stride: information-disclosure
+    cwe: 201
     risks_identified: {}
 
   AI-Generated Decision Support Without Verification Signal:
@@ -1391,6 +1453,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ai:output-confidence-disclosed confirming AI-generated output feeding decisions carries citations, confidence indicators, or a mandatory human-verification step before the decision is finalized.
     function: operations
     stride: tampering
+    cwe: 1426
     risks_identified: {}
 
   # #############################################################################
@@ -1419,6 +1482,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged data:pia-documented confirming a current Privacy Impact Assessment covers this asset's actual PII collection, use, and sharing, and has been reviewed since the last material change.
     function: operations
     stride: information-disclosure
+    cwe: 359
     risks_identified: {}
 
   Missing Data Provenance and Lineage Chain-of-Custody:
@@ -1436,6 +1500,7 @@ custom_risk_definitions:
     false_positives: The ingest pipeline verifies a cryptographic signature or hash manifest against each batch at consumption time and writes the result to a provenance log the pipeline itself cannot modify.
     function: architecture
     stride: tampering
+    cwe: 345
     risks_identified: {}
 
   Data Loss Prevention Egress Path Blind Spot:
@@ -1453,6 +1518,7 @@ custom_risk_definitions:
     false_positives: All identified egress paths for this asset are enumerated in the DLP policy and confirmed to route through classification-aware inspection before content leaves.
     function: architecture
     stride: information-disclosure
+    cwe: 200
     risks_identified: {}
 
   # Missing Data Retention and Disposition Schedule has been ported into the
@@ -1476,6 +1542,7 @@ custom_risk_definitions:
     false_positives: A documented downgrading procedure with independent second-reviewer verification is in place and evidenced by a per-transaction log, distinct from the routine media sanitization procedure.
     function: architecture
     stride: information-disclosure
+    cwe: 212
     risks_identified: {}
 
   Released Dataset Re-Identification Risk:
@@ -1493,6 +1560,7 @@ custom_risk_definitions:
     false_positives: A motivated-intruder re-identification test following NIST SP 800-188 has been conducted and documented for this specific release, with residual risk formally accepted by the data owner.
     function: architecture
     stride: information-disclosure
+    cwe: 202
     risks_identified: {}
 
   Missing Data Rights Management on Released Files:
@@ -1510,6 +1578,7 @@ custom_risk_definitions:
     false_positives: Released files are routed through an enterprise rights-management capability providing persistent, revocable access control, or the release is to a fully trusted internal recipient under the same authorization boundary.
     function: architecture
     stride: information-disclosure
+    cwe: 311
     risks_identified: {}
 
   # Data Store Audit Logging and Anomalous Access Detection Gap has been ported into the
@@ -1535,6 +1604,7 @@ custom_risk_definitions:
     false_positives: Asset handles only publicly releasable, non-CUI data with no confidentiality requirement, confirmed by data classification review — or FIPS validated module usage is documented in the SSP with a valid CMVP certificate number.
     function: architecture
     stride: information-disclosure
+    cwe: 1240
     detection_logic: 'Run DISA STIG compliance scans (ACAS/Nessus) targeting cryptographic configuration checks. For AKS: verify node pool FIPS status via `az aks nodepool show --query fipsEnabled`. For application crypto: use SAST rules to flag crypto library imports that are not FIPS-validated variants.'
     risks_identified: {}
 
@@ -1553,6 +1623,7 @@ custom_risk_definitions:
     false_positives: TLS configuration has been audited and confirmed to support only TLS 1.2+ with an approved cipher suite list, documented in the SSP with the scan output as evidence.
     function: architecture
     stride: information-disclosure
+    cwe: 327
     detection_logic: Run testssl.sh or sslyze against all TLS endpoints in the CI/CD pipeline and fail the build on detection of deprecated protocols or weak ciphers. Integrate Azure Security Center TLS recommendations into the compliance dashboard. Schedule quarterly TLS configuration scans via ACAS/Nessus.
     risks_identified: {}
 
@@ -1590,6 +1661,7 @@ custom_risk_definitions:
     false_positives: The endpoint logs rate-limit rejections, authorization failures, and object-ID request patterns with caller-identity correlation, and a SIEM detection rule is confirmed active against that log stream.
     function: operations
     stride: repudiation
+    cwe: 778
     risks_identified: {}
 
   # Container Orchestrator Control-Plane Audit Logging Gap has been ported into the
@@ -1613,6 +1685,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged net:ids-monitored confirming network-based intrusion detection or NDR coverage is deployed and actively alerting on the traffic path to and from this asset.
     function: operations
     stride: information-disclosure
+    cwe: 778
     detection_logic: Confirm NIDS/NDR sensor placement covers 100% of the asset's ingress/egress paths (no unmonitored network segment), and validate alerting is live by running a benign signature-triggering test and confirming a SOC-visible alert fires.
     risks_identified: {}
 
@@ -1642,6 +1715,7 @@ custom_risk_definitions:
     false_positives: A containment disposition for this asset is documented in the incident response runbook and was agreed by both the asset owner and the response team.
     function: operations
     stride: denial-of-service
+    cwe: 1059
     risks_identified: {}
 
   Undocumented Credential Blast Radius for Incident-Driven Rotation:
@@ -1659,6 +1733,7 @@ custom_risk_definitions:
     false_positives: A current credential/secret consumer inventory exists for this asset and rotation of every entry has been exercised (not merely documented) within the current ATO period.
     function: operations
     stride: elevation-of-privilege
+    cwe: 1059
     risks_identified: {}
 
   Untested Incident Response Plan:
@@ -1676,6 +1751,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ir:plan-tested confirming a tabletop or live-fire incident response exercise covering this asset has been conducted within the current ATO period.
     function: operations
     stride: denial-of-service
+    cwe: 1008
     risks_identified: {}
 
   DFARS 252.204-7012 72-Hour Cyber Incident Reporting Gap:
@@ -1693,6 +1769,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ir:breach-notification-procedure-documented confirming a documented reporting procedure identifies the contract-mandated timeline and the responsible party, and the procedure has been rehearsed.
     function: operations
     stride: denial-of-service
+    cwe: 1059
     risks_identified: {}
 
   Forensic Evidence Chain-of-Custody Gap:
@@ -1710,6 +1787,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ir:evidence-handling-documented confirming a documented forensic evidence-handling procedure (acquisition, custody log, storage, transfer) exists and names a responsible role.
     function: operations
     stride: repudiation
+    cwe: 1059
     risks_identified: {}
 
   # #############################################################################
@@ -1732,6 +1810,7 @@ custom_risk_definitions:
     false_positives: Backup encryption, geographic separation, access isolation, and recovery testing are all documented in the COOP plan and have been validated within the current ATO period.
     function: operations
     stride: information-disclosure
+    cwe: 693
     detection_logic: Monitor Azure Backup job status and alert on any job failure within the defined backup window. Audit backup storage account access policies to verify no production workload identities have write access. Schedule annual recovery test exercises and track completion in the POA&M.
     risks_identified: {}
 
@@ -1750,6 +1829,7 @@ custom_risk_definitions:
     false_positives: Backup administration is confirmed to be a distinct role from production administration, and destructive backup operations require dual authorization and step-up authentication, verified by an access review within the current ATO period.
     function: operations
     stride: tampering
+    cwe: 653
     risks_identified: {}
 
   Backup Immutability Not Enforced:
@@ -1767,6 +1847,7 @@ custom_risk_definitions:
     false_positives: The backup store's immutability lock is confirmed to be in compliance mode (irreversible by any account, including the vault's own owner, for the retention period), verified by a test of the lock itself rather than by policy documentation alone.
     function: operations
     stride: tampering
+    cwe: 284
     risks_identified: {}
 
   Backup Encryption Key Rotation and Retention Mismatch:
@@ -1784,6 +1865,7 @@ custom_risk_definitions:
     false_positives: Backup encryption key rotation is documented and confirmed to retain superseded key versions for the life of every backup they encrypted, or the backup platform uses envelope encryption that decouples key rotation from existing backup decryptability.
     function: operations
     stride: information-disclosure
+    cwe: 1008
     risks_identified: {}
 
   Recovery Objective Definition Gap:
@@ -1801,6 +1883,7 @@ custom_risk_definitions:
     false_positives: An RTO and RPO are documented for this asset and have been validated against the measured result of an actual restore test within the current ATO period.
     function: operations
     stride: denial-of-service
+    cwe: 1059
     risks_identified: {}
 
   Untested Restoration Procedure:
@@ -1818,6 +1901,7 @@ custom_risk_definitions:
     false_positives: A full restoration exercise using only the written procedure, performed by someone other than the procedure's author, has been completed successfully within the current ATO period.
     function: operations
     stride: denial-of-service
+    cwe: 1059
     risks_identified: {}
 
   Unsupported or SaaS Service Backup Gap:
@@ -1835,6 +1919,7 @@ custom_risk_definitions:
     false_positives: The asset is tagged ops:saas-export-configured confirming a native or purpose-built export job routes its data into enterprise-controlled backup storage on a recurring schedule, independent of the vendor's own in-tenant retention.
     function: operations
     stride: denial-of-service
+    cwe: 1008
     risks_identified: {}
 
   # #############################################################################
@@ -1857,6 +1942,7 @@ custom_risk_definitions:
     false_positives: None. This is an explicit policy waiver.
     function: architecture
     stride: information-disclosure
+    cwe: 319
     risks_identified: {}
 
   EOL Component in ATO Boundary:
@@ -1874,6 +1960,7 @@ custom_risk_definitions:
     false_positives: None. This is an explicit policy exception. AO risk acceptance must be on file.
     function: operations
     stride: elevation-of-privilege
+    cwe: 1104
     detection_logic: Integrate SCA tooling (e.g., OWASP Dependency-Check, Grype, Snyk) into the CI/CD pipeline with EOL version database checks. Subscribe to vendor EOL announcement feeds and NVD CVE notifications for all components in the SBOM. Query Azure Advisor and Microsoft Defender for Cloud for EOL runtime and OS version alerts.
     risks_identified: {}
 
