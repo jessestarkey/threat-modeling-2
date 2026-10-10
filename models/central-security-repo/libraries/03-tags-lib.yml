@@ -154,7 +154,7 @@ tags_available:
   # docs/risk-methodology.md for the full rationale.
 
   # --- Service Hardening (absence fires risk) ---
-  - ops:waf-enabled                # A WAF with a managed ruleset in Prevention mode is confirmed in the ingress path — suppresses the WAF coverage risk on zone:dmz assets
+  - ops:waf-enabled                # A WAF with a managed ruleset in Prevention mode is confirmed in the ingress path — suppresses the WAF coverage risk on zone:dmz assets whose own technology isn't already waf (which auto-suppresses); use this tag for a separate upstream WAF asset (e.g. an external CDN-level WAF) not modeled as this asset's own technology
   - net:ids-monitored              # Network-based intrusion detection/traffic-anomaly monitoring observes traffic to and from this asset — suppresses the network-ids-blind-spot risk on internet-reachable/zone:dmz assets
   - ops:requires-backup            # Asset requires backup for DR/COOP — presence triggers backup integrity risk
   - ops:api-abuse-logging-enabled  # Public API logs rate-limit rejections, authorization failures, and object-ID request patterns with caller-identity correlation — suppresses the API abuse/enumeration logging gap risk

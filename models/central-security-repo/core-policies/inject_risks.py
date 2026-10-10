@@ -826,8 +826,16 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ops:vendor-hosted-service' in tags and 'ops:saas-export-configured' not in tags:
             inject("Unsupported or SaaS Service Backup Gap", "SaaS Backup Gap Risk")
 
-        # Internet-facing assets without confirmed WAF
-        if 'zone:dmz' in tags and 'ops:waf-enabled' not in tags:
+        # Internet-facing assets without confirmed WAF. Auto-suppressed when the asset's own
+        # native `technology:` is already `waf` -- that's Threagile's own technology value for
+        # "this asset IS a web application firewall," a stronger and less error-prone signal
+        # than relying on a human to also remember the ops:waf-enabled tag on top of it (found
+        # via real data: both of confluence's zone:dmz gateway assets already set
+        # technology: waf and additionally carried ops:waf-enabled, which was pure duplication).
+        # ops:waf-enabled stays as an explicit fallback for the case this native check can't
+        # see -- a separate upstream WAF asset (e.g. an external CDN-level WAF) not modeled as
+        # this asset's own technology.
+        if 'zone:dmz' in tags and asset_technology != 'waf' and 'ops:waf-enabled' not in tags:
             inject("Missing Web Application Firewall on Internet-Facing Asset", "Missing WAF Risk")
 
         # Internet-facing assets without reconciled DNS records
