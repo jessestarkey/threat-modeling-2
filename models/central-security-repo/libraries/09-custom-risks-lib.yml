@@ -1217,23 +1217,13 @@ custom_risk_definitions:
   # model-registry technology instead of the ai:model-registry tag. Removed here rather than
   # left duplicated. See docs/risk-methodology.md for the full rationale.
 
-  'ATLAS: AI Model Intellectual Property Theft and Proxy Model Creation':
-    id: atlas-model-ip-theft
-    baseline_likelihood: likely
-    baseline_impact: medium
-    description: 'The asset sits at a boundary where systematic inference queries can be used to reconstruct a functional proxy of the model or recover details of its training data.'
-    impact: 'If this risk remains unmitigated, an adversary can replicate proprietary model capabilities at no cost and use the proxy to stage further attacks offline.'
-    asvs: V11 - Business Logic
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Apply output perturbation, strict query budgets, and anomalous query pattern monitoring to all model access interfaces.
-    mitigation: Apply calibrated output perturbation (confidence truncation, sampling noise) to degrade extraction signal. Enforce per-user query budgets and hard rate limits. Require authenticated access with scoped, short-lived tokens. Restrict direct access to model weight files to privileged service accounts only. Monitor query logs for model extraction signatures.
-    references: MITRE ATLAS AML.T0005 (Create Proxy AI Model — T0005.000-.002), AML.T0024.001 (Invert AI Model), AML.T0024.002 (Extract AI Model), AML.T0035 (AI Artifact Collection), AML.T0043.000 (White-Box Optimization), AML.T0048.004 (AI Intellectual Property Theft); NIST AI RMF GOVERN 6.2
-    risk_assessment: High for externally accessible inference endpoints serving proprietary models. Medium for internal-only models with strict access controls.
-    false_positives: Model weights are stored exclusively in a write-protected internal artifact store with no public or semi-public access path.
-    function: architecture
-    stride: information-disclosure
-    detection_logic: Monitor inference API query logs for statistical extraction patterns (systematic grid sweeps, near-boundary probing, anomalously high per-user query volume). Alert on bulk access attempts to model weight storage paths.
-    risks_identified: {}
+  # 'ATLAS: AI Model Intellectual Property Theft and Proxy Model Creation' has been removed,
+  # not ported -- its own description ("systematic inference queries... reconstruct a
+  # functional proxy of the model or recover details of its training data") describes the
+  # same attack as the already-native atlas-inference-api-abuse.yaml ("systematically
+  # queried to extract a functional copy of the model, infer training data membership"),
+  # confirmed by the overlapping MITRE ATLAS technique references (AML.T0005, AML.T0024)
+  # cited by both. See docs/risk-methodology.md for the full rationale.
 
   # =====================================================================
   # Threats identified by MAESTRO's 7-layer model not fully addressed
@@ -1297,22 +1287,11 @@ custom_risk_definitions:
   # ai:user-prompt-input/ai:llm-endpoint/ai:agent-orchestrator tags. Removed here rather than
   # left duplicated. See docs/risk-methodology.md for the full rationale.
 
-  On-Device Model Extraction Resistance Gap:
-    id: on-device-model-extraction-gap
-    baseline_likelihood: unlikely
-    baseline_impact: medium
-    description: 'This model is fielded onto edge or embedded hardware an adversary could gain physical custody of, but runs outside a trusted execution environment or secure enclave.'
-    impact: 'If this risk remains unmitigated, physical custody of the device yields the full model to an adversary with no detection or revocation possible afterward.'
-    asvs: V6 - Cryptography
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Mobile_Application_Security_Cheat_Sheet.html
-    action: Deploy models to edge/embedded devices only within a Trusted Execution Environment or secure enclave, encrypted at rest, with debug/side-channel access disabled on production hardware.
-    mitigation: Host model weights within a hardware-backed TEE or secure enclave on the device (e.g., ARM TrustZone, a dedicated security chip) rather than in general-purpose storage or memory reachable by the device's main OS. Encrypt model artifacts at rest on the device, with the decryption key never persisted outside the enclave. Disable JTAG/debug interfaces and other side-channel access paths on production hardware builds.
-    references: NIST AI RMF (MANAGE 2.3); MAESTRO L1 (Foundation Models) / L6 (Security and Compliance); NIST SP 800-53 SC-28 (Protection of Information at Rest)
-    risk_assessment: High for any model deployed to edge/embedded hardware an adversary could physically obtain, where the model does not run within a TEE/secure enclave.
-    false_positives: The asset is tagged ai:secure-enclave-protected confirming the model runs and is encrypted within a hardware-backed TEE/secure enclave on the device, with debug interfaces disabled.
-    function: architecture
-    stride: information-disclosure
-    risks_identified: {}
+  # 'On-Device Model Extraction Resistance Gap' has been ported into the jessestarkey/
+  # threagile fork as a native script rule (pkg/risks/scripts/on-device-model-extraction-
+  # gap.yaml), triggered off the native `machine` field plus the ai-model-serving/
+  # ai-llm-endpoint technology attributes instead of the ai:on-device-inference tag. Removed
+  # here rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   Offline or Air-Gapped Model Package Integrity Gap:
     id: air-gapped-model-package-integrity-gap

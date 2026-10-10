@@ -646,9 +646,14 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # rather than left duplicated. The tag itself stays -- still read further below for the
         # registry-source check, not yet ported.
 
-        # Model IP exfiltration boundary (model extraction, proxy creation, IP theft)
-        if 'ai:model-exfil-risk' in tags:
-            inject("ATLAS: AI Model Intellectual Property Theft and Proxy Model Creation", "Model IP Theft Risk")
+        # NOTE: "ATLAS: AI Model Intellectual Property Theft and Proxy Model Creation" has been
+        # removed, not ported -- re-reading its own description ("sits at a boundary where
+        # systematic inference queries can be used to reconstruct a functional proxy of the
+        # model or recover details of its training data") against the already-native
+        # atlas-inference-api-abuse.yaml ("systematically queried to extract a functional copy
+        # of the model, infer training data membership") showed they were describing the same
+        # attack, not two distinct ones. This was ai:model-exfil-risk's only use, so the tag is
+        # now fully removed from 03-tags-lib.yml too. See docs/risk-methodology.md.
 
         # --- 2b. MAESTRO GAP COVERAGE ---
         # Agent framework dependency supply chain (MAESTRO L3)
@@ -703,8 +708,19 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # each still has one other, unrelated use (the indirect-prompt-injection piggyback)
         # elsewhere in this file. See docs/risk-methodology.md for the full rationale.
 
-        if 'ai:on-device-inference' in tags and 'ai:secure-enclave-protected' not in tags:
-            inject("On-Device Model Extraction Resistance Gap", "On-Device Extraction Risk")
+        # NOTE: "On-Device Model Extraction Resistance Gap" has been ported into the
+        # jessestarkey/threagile fork as a native script rule
+        # (pkg/risks/scripts/on-device-model-extraction-gap.yaml), triggered off the native
+        # `machine` field (physical, matched by excluding virtual/container/serverless rather
+        # than equal-matching physical directly -- it's machine's zero value with yaml
+        # omitempty, so it never survives the script engine's own internal re-serialization as
+        # a literal string) combined with the ai-model-serving/ai-llm-endpoint technology
+        # attributes, instead of the ai:on-device-inference tag. Removed here rather than left
+        # duplicated. This was ai:on-device-inference's and ai:secure-enclave-protected's only
+        # use, so both tags are now fully removed from 03-tags-lib.yml too. The sibling
+        # "Offline or Air-Gapped Model Package Integrity Gap" stays below -- "air-gapped/
+        # disconnected" has no native field to trigger off (internet: false is set on far too
+        # many ordinary internal assets to serve as a proxy). See docs/risk-methodology.md.
 
         if 'ai:air-gapped-model-delivery' in tags and 'ai:model-package-signed' not in tags:
             inject("Offline or Air-Gapped Model Package Integrity Gap", "Air-Gapped Model Integrity Risk")

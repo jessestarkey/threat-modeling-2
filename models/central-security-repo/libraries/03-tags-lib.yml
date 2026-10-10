@@ -269,8 +269,9 @@ tags_available:
 
   # --- Supply Chain Surface ---
   # ai:model-registry has been removed: fully handled by the native model-registry technology
-  # attribute in the jessestarkey/threagile fork. See docs/risk-methodology.md.
-  - ai:model-exfil-risk # Asset sits at a data boundary where model weights, architecture, or training data could be extracted
+  # attribute in the jessestarkey/threagile fork. ai:model-exfil-risk has also been removed:
+  # its category was removed outright, not ported -- it was redundant with the already-native
+  # atlas-inference-api-abuse.yaml. See docs/risk-methodology.md.
 
   # --- Evaluation and Observability Surface (MAESTRO L5) ---
   # ai:eval-pipeline and ai:observability-stack have been removed: fully handled by the native
@@ -292,8 +293,10 @@ tags_available:
   # matching positive-confirmation suppression tags, for the AI
   # operational/deployment risks beyond standard ATLAS/MAESTRO coverage.
   - ai:ot-adjacent-output        # Asset's output has a path to an OT actuator or safety-critical process — trigger for the ai-ot-actuation-boundary-gap risk
-  - ai:on-device-inference       # Model is fielded onto edge/embedded hardware an adversary could gain physical custody of — trigger for the on-device-model-extraction-gap risk
-  - ai:secure-enclave-protected  # Model runs and is encrypted within a hardware-backed TEE/secure enclave on the device, with debug interfaces disabled — suppresses the on-device-model-extraction-gap risk
+  # ai:on-device-inference and ai:secure-enclave-protected have both been removed: fully
+  # handled by the native on-device-model-extraction-gap script rule in the
+  # jessestarkey/threagile fork, triggered off the native `machine` field plus the
+  # ai-model-serving/ai-llm-endpoint technology attributes. See docs/risk-methodology.md.
   - ai:air-gapped-model-delivery # Model is delivered into a disconnected/air-gapped enclave — trigger for the air-gapped-model-package-integrity-gap risk
   - ai:model-package-signed      # Model package (weights, tokenizer, config, manifest) is signed with an externally-held key and verified at every load — suppresses the air-gapped-model-package-integrity-gap risk
   # ai:system-prompt-governed, ai:rollback-capable, ai:canary-tested, and
