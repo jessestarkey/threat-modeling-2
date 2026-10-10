@@ -576,17 +576,22 @@ def load_custom_risk_defs() -> dict:
 def load_builtin_risk_defs() -> dict:
     """Returns {category_id: definition_dict} for Threagile's own built-in
     risk categories, sourced from 10-threagile-builtin-risks-lib.yml (see
-    that file's header for provenance -- it's Threagile's own upstream
-    text, not ours, extracted once from the pinned Docker image rather
-    than hand-authored). Distinct file from 09-custom-risks-lib.yml since
-    this content isn't ours to maintain the way our own risk definitions
-    are, but merged into the same enrichment lookup at the call site so
-    the template doesn't need to care which source a given category's
-    enrichment came from. Covers only the ~32 built-ins that actually
-    fired somewhere across our real models plus Threagile's own example
-    model -- a built-in category with no entry here (never fired
-    anywhere, or a pure model-failure category) simply has no enrichment,
-    same as every built-in category before this file existed."""
+    that file's header for full provenance). Started as a one-time
+    extraction of Threagile's own upstream text, but description/impact/
+    risk_assessment/detection_logic/references are now hand-authored and
+    actively maintained here, same as 09-custom-risks-lib.yml is for our
+    custom categories -- merged into the same enrichment lookup at the
+    call site so the template doesn't need to care which source a given
+    category's enrichment came from. Action/Mitigation are NOT in this
+    file: those come from Threagile's own risks.xlsx export, populated
+    from the hardcoded Action:/Mitigation: string literals in each rule's
+    Go source in the jessestarkey/threagile fork (pkg/risks/builtin/
+    *_rule.go) -- edit them there, this file's loader has nothing to do
+    with them. Covers only the ~35 built-ins that actually fired
+    somewhere across our real models plus Threagile's own example model
+    -- a built-in category with no entry here (never fired anywhere, or
+    a pure model-failure category) simply has no enrichment, same as
+    every built-in category before this file existed."""
     path = LIBRARIES_DIR / "10-threagile-builtin-risks-lib.yml"
     if not path.exists():
         return {}
