@@ -786,6 +786,17 @@ def merge_findings(risks_json: list, xlsx_by_id: dict, assets_by_id: dict,
         elif r.get("most_relevant_communication_link"):
             # Already a descriptive string, not an id -- no lookup needed.
             subject = r["most_relevant_communication_link"]
+        elif r.get("data_breach_technical_assets"):
+            # No single subject at all -- a genuinely model-wide finding
+            # (e.g. inject_risks.py's model-level IR-readiness categories)
+            # that still names every asset it actually concerns, just not
+            # as a singular anchor. Falls back to this rather than leaving
+            # the Asset column blank -- previously true of this field for
+            # every finding that populates it, including Threagile's own
+            # missing-cloud-hardening rule, which was never rendered
+            # anywhere despite carrying exactly this information.
+            ids = r["data_breach_technical_assets"]
+            subject = ", ".join(assets_by_id.get(aid, aid) for aid in ids)
         else:
             subject = ""
 

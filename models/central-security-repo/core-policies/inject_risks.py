@@ -1003,8 +1003,15 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
     # compute_impact(), and omits most_relevant_technical_asset entirely
     # (schema-valid -- confirmed against support/schema.json in the
     # jessestarkey/threagile fork, which marks every most_relevant_* field
-    # on a risks_identified entry as nullable, not required).
-    def inject_model_level(cid, title):
+    # on a risks_identified entry as nullable, not required). The specific
+    # assets still lacking the tag ARE carried through, though, via
+    # data_breach_technical_assets -- one finding, not N, but the actual
+    # scope of which assets are uncovered stays visible in the report
+    # (generate_report.py's merge_findings() falls back to this list,
+    # resolved to asset titles, when no singular most_relevant_* anchor is
+    # set) rather than just disappearing because there's no single asset
+    # to name in the usual Asset column.
+    def inject_model_level(cid, title, affected_asset_ids):
         definition = risk_defs[cid]
         likelihood = definition["baseline_likelihood"]
         impact = definition["baseline_impact"]
@@ -1017,16 +1024,20 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             "exploitation_likelihood": likelihood,
             "exploitation_impact": impact,
             "data_breach_probability": "possible",
+            "data_breach_technical_assets": affected_asset_ids,
         }
 
     if model_is_business_critical:
         in_scope_assets = [a for a in tech_assets.values() if not a.get('out_of_scope')]
-        if not any('ir:plan-tested' in a.get('tags', []) for a in in_scope_assets):
-            inject_model_level("Untested Incident Response Plan", "Untested IR Plan Risk")
-        if not any('ir:breach-notification-procedure-documented' in a.get('tags', []) for a in in_scope_assets):
-            inject_model_level("DFARS 252.204-7012 72-Hour Cyber Incident Reporting Gap", "Breach Notification Gap Risk")
-        if not any('ir:evidence-handling-documented' in a.get('tags', []) for a in in_scope_assets):
-            inject_model_level("Forensic Evidence Chain-of-Custody Gap", "Chain-of-Custody Gap Risk")
+        untested_ir_plan_assets = [a.get('id') for a in in_scope_assets if 'ir:plan-tested' not in a.get('tags', [])]
+        if untested_ir_plan_assets:
+            inject_model_level("Untested Incident Response Plan", "Untested IR Plan Risk", untested_ir_plan_assets)
+        missing_breach_notification_assets = [a.get('id') for a in in_scope_assets if 'ir:breach-notification-procedure-documented' not in a.get('tags', [])]
+        if missing_breach_notification_assets:
+            inject_model_level("DFARS 252.204-7012 72-Hour Cyber Incident Reporting Gap", "Breach Notification Gap Risk", missing_breach_notification_assets)
+        missing_evidence_handling_assets = [a.get('id') for a in in_scope_assets if 'ir:evidence-handling-documented' not in a.get('tags', [])]
+        if missing_evidence_handling_assets:
+            inject_model_level("Forensic Evidence Chain-of-Custody Gap", "Chain-of-Custody Gap Risk", missing_evidence_handling_assets)
 
     # 5. Convert to this engine's custom_risk_categories schema: a list of
     # category objects with an explicit 'title' field, not a dict keyed by
