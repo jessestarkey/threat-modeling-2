@@ -82,7 +82,7 @@ custom_risk_definitions:
   'Policy Exception: Local Authentication':
     id: policy-exception-local-auth
     baseline_likelihood: likely
-    baseline_impact: medium
+    baseline_impact: high
     description: 'This application maintains a local credential store that bypasses the enterprise identity provider and mandatory MFA enforcement.'
     impact: 'If this risk remains unmitigated, the local store becomes a backdoor that can be brute-forced or credential-stuffed independent of enterprise conditional access policies.'
     asvs: V2 - Authentication
@@ -99,8 +99,8 @@ custom_risk_definitions:
 
   Insecure Password Reset and Credential Recovery:
     id: insecure-password-reset
-    baseline_likelihood: very-likely
-    baseline_impact: medium
+    baseline_likelihood: likely
+    baseline_impact: high
     description: 'The asset''s self-service password reset flow uses predictable or reusable reset tokens, excessive token lifetimes, or responses that reveal whether an email address is registered.'
     impact: 'If this risk remains unmitigated, an attacker can take over accounts without knowing the current password, or enumerate valid accounts to target with further attacks.'
     asvs: V2 - Authentication
@@ -119,7 +119,7 @@ custom_risk_definitions:
   OAuth 2.0 and OIDC Implementation Vulnerabilities:
     id: oauth-oidc-vulnerabilities
     baseline_likelihood: likely
-    baseline_impact: medium
+    baseline_impact: high
     description: 'The asset issues or validates OAuth 2.0/OIDC tokens with implementation weaknesses such as unvalidated redirect URIs, a missing or unchecked state parameter, or improper JWT signature algorithm handling.'
     impact: 'If this risk remains unmitigated, an attacker can intercept authorization codes, replay tokens, or forge arbitrary tokens to gain authenticated access as another user.'
     asvs: V3 - Session Management / V2 - Authentication
@@ -199,7 +199,7 @@ custom_risk_definitions:
 
   Self-Managed Directory Tier-0 Infrastructure Compromise:
     id: self-managed-directory-tier0-compromise
-    baseline_likelihood: unlikely
+    baseline_likelihood: possible
     baseline_impact: very-high
     description: 'This asset relies on a self-managed directory service that does not inherit the enterprise identity team''s Tier-0 hardening, leaving it exposed to attacks such as unconstrained delegation, AdminSDHolder tampering, or an unrotated krbtgt credential.'
     impact: 'If this risk remains unmitigated, compromise of the directory''s Tier-0 infrastructure lets an attacker forge authentication for any identity it manages, with persistence that survives ordinary password resets.'
@@ -235,7 +235,7 @@ custom_risk_definitions:
 
   Self-Managed Hybrid Identity Synchronization Server Compromise:
     id: self-managed-hybrid-sync-compromise
-    baseline_likelihood: unlikely
+    baseline_likelihood: possible
     baseline_impact: very-high
     description: 'This asset runs a self-managed hybrid identity synchronization server that holds working credentials for both the on-premises directory and the cloud identity tenant it bridges.'
     impact: 'If this risk remains unmitigated, compromise of the sync server lets an attacker pivot between the on-premises directory and the cloud tenant, bypassing tier separation designed around each side individually.'
@@ -262,7 +262,7 @@ custom_risk_definitions:
   Exposed Administrative Interface Without Hardened Access Controls:
     id: exposed-admin-panel
     baseline_likelihood: very-likely
-    baseline_impact: medium
+    baseline_impact: high
     description: 'The asset exposes an administrative interface reachable with standard application authentication alone, with no additional access control such as IP restriction, a separate factor, or server-side enforcement of role checks.'
     impact: 'If this risk remains unmitigated, compromise of an admin session yields control over all application data, user accounts, and configuration.'
     asvs: V4 - Access Control
@@ -280,8 +280,8 @@ custom_risk_definitions:
 
   Third-Party Vendor Remote Support Access Lifecycle Gap:
     id: vendor-remote-support-access-gap
-    baseline_likelihood: unlikely
-    baseline_impact: medium
+    baseline_likelihood: possible
+    baseline_impact: high
     description: 'This asset grants a third-party vendor''s support engineer remote access that is not scoped to a specific support case and does not deactivate automatically when the case closes.'
     impact: 'If this risk remains unmitigated, vendor access can remain active long after the support engagement ends, as a standing external access path an attacker who compromises the vendor could reuse.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -317,7 +317,7 @@ custom_risk_definitions:
   Privileged Session Credential Disclosure Without Vaulting or Brokering:
     id: privileged-session-credential-disclosure
     baseline_likelihood: likely
-    baseline_impact: medium
+    baseline_impact: high
     description: 'Shared administrative credentials for this self-managed asset are disclosed directly to administrators rather than checked out from a vault and brokered through a session that never reveals the secret.'
     impact: 'If this risk remains unmitigated, a disclosed shared credential can be retained or reused outside any brokered session, and rotating it after personnel turnover requires identifying every system it was ever used against.'
     asvs: V2 - Authentication
@@ -386,7 +386,7 @@ custom_risk_definitions:
 
   Container Runs as Root (Policy Exception):
     id: container-runs-as-root
-    baseline_likelihood: very-likely
+    baseline_likelihood: likely
     baseline_impact: high
     description: 'This container executes as the root user or with elevated Linux capabilities rather than the least privilege its function requires.'
     impact: 'If this risk remains unmitigated, an attacker who compromises the container has a substantially easier path to escalate privileges on the underlying node.'
@@ -416,7 +416,7 @@ custom_risk_definitions:
   'Policy Exception: Direct Admin Access':
     id: policy-exception-direct-admin-access
     baseline_likelihood: likely
-    baseline_impact: medium
+    baseline_impact: high
     description: 'The virtual machine has direct administrative ports exposed rather than routed through a bastion host or just-in-time access.'
     impact: 'If this risk remains unmitigated, the VM is continuously exposed to brute-force, credential-stuffing, and exploitation attempts against its remote management service.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -471,7 +471,7 @@ custom_risk_definitions:
   Self-Managed Boot Integrity Bypass:
     id: self-managed-boot-integrity-bypass
     baseline_likelihood: unlikely
-    baseline_impact: medium
+    baseline_impact: very-high
     description: 'This self-managed physical host has no secure boot or measured-boot attestation confirmed, so its boot-chain integrity is unverifiable.'
     impact: 'If this risk remains unmitigated, a tampered bootloader or bootkit survives indefinitely and produces no signal to any control that only runs after the OS has loaded.'
     asvs: V14 - Configuration
@@ -780,7 +780,7 @@ custom_risk_definitions:
 
   Malicious File Parsing and XXE:
     id: malicious-file-parsing
-    baseline_likelihood: very-likely
+    baseline_likelihood: likely
     baseline_impact: medium
     description: 'The application parses complex user-uploaded files such as XML, PDF, or ZIP archives, which can carry XXE, path traversal, or decompression-bomb payloads.'
     impact: 'If this risk remains unmitigated, a crafted file can cause server-side request forgery, unauthorized file reads, or denial of service.'
@@ -799,7 +799,7 @@ custom_risk_definitions:
 
   Insecure Deserialization:
     id: insecure-deserialization
-    baseline_likelihood: very-likely
+    baseline_likelihood: likely
     baseline_impact: very-high
     description: 'The asset deserializes objects from user-supplied or externally sourced data using a mechanism capable of instantiating arbitrary objects, such as Java native serialization or Python pickle.'
     impact: 'If this risk remains unmitigated, a crafted serialized payload can execute a gadget chain achieving remote code execution with the application''s own privileges.'
@@ -1111,7 +1111,7 @@ custom_risk_definitions:
   Unsafe Consumption of APIs:
     id: unsafe-api-consumption
     baseline_likelihood: likely
-    baseline_impact: medium
+    baseline_impact: high
     description: 'This asset sends requests to an external, third-party API and trusts the response content and schema without validation, treating "came from a legitimate external API" as equivalent to "safe to consume." Distinct from Server-Side Request Forgery, which is about this asset''s own request being hijacked to reach an unintended target; this is about the response from an intended, legitimate target being trusted without verification.'
     impact: 'If this risk remains unmitigated, a compromised, misconfigured, or simply buggy upstream API can inject unexpected data shapes, oversized payloads, or malicious content directly into this asset''s own processing logic, since no boundary exists between "external API response" and "trusted internal data."'
     asvs: V13 - API and Web Service
@@ -1148,7 +1148,7 @@ custom_risk_definitions:
 
   Dangling DNS Record and Subdomain Takeover:
     id: dangling-dns-subdomain-takeover
-    baseline_likelihood: very-likely
+    baseline_likelihood: possible
     baseline_impact: medium
     description: 'This internet-facing asset''s DNS record points at a cloud resource that is not reconciled against that resource''s actual live state.'
     impact: 'If this risk remains unmitigated, a deprovisioned resource''s name becomes reclaimable, letting an attacker stand up content or a certificate under the organization''s own trusted subdomain.'
@@ -1327,7 +1327,7 @@ custom_risk_definitions:
   # --- 5.2 MAESTRO GAP COVERAGE (L3, L5, L6, L7) ---
   'MAESTRO L3: Agent Framework and Dependency Supply Chain Compromise':
     id: maestro-l3-agent-framework-supply-chain
-    baseline_likelihood: unlikely
+    baseline_likelihood: possible
     baseline_impact: very-high
     description: 'The AI agent framework layer -- the libraries used to build and run agents and their transitive dependencies -- is itself a supply chain attack surface distinct from model artifacts or tool definitions.'
     impact: 'If this risk remains unmitigated, a compromised framework package propagates automatically to every agent deployment that installs it, executing with the full privilege of the agent runtime.'
@@ -1547,7 +1547,7 @@ custom_risk_definitions:
 
   Released Dataset Re-Identification Risk:
     id: dataset-reidentification-risk
-    baseline_likelihood: unlikely
+    baseline_likelihood: possible
     baseline_impact: medium
     description: 'A dataset slated for release has been de-identified but never tested against a motivated-intruder re-identification attempt using auxiliary data an adversary could reasonably access.'
     impact: 'If this risk remains unmitigated, a dataset believed to be anonymized can be re-identified after release, constituting a privacy disclosure.'
@@ -1610,7 +1610,7 @@ custom_risk_definitions:
 
   Deprecated TLS Versions and Weak Cipher Suites:
     id: deprecated-tls-weak-ciphers
-    baseline_likelihood: very-likely
+    baseline_likelihood: possible
     baseline_impact: medium
     description: 'This TLS termination asset supports deprecated protocol versions or weak cipher suites exploitable via known attacks such as POODLE or SWEET32.'
     impact: 'If this risk remains unmitigated, a network-positioned adversary can decrypt protected traffic or perform a protocol downgrade attack.'
@@ -1797,8 +1797,8 @@ custom_risk_definitions:
   # --- 9.1 INFRASTRUCTURE: BACKUP AND DR ---
   Backup Integrity and Recovery Assurance Gap:
     id: backup-integrity-recovery-gap
-    baseline_likelihood: unlikely
-    baseline_impact: medium
+    baseline_likelihood: possible
+    baseline_impact: high
     description: 'The asset is flagged as requiring backup for DR/COOP, but backup integrity, encryption, access control, or recovery testing has not been verified.'
     impact: 'If this risk remains unmitigated, a ransomware attack or infrastructure failure can result in permanent data loss because the backup''s actual recoverability was never confirmed.'
     asvs: V9 - Communications / V8 - Data Protection
@@ -1816,7 +1816,7 @@ custom_risk_definitions:
 
   Backup Administrative Privilege Separation Gap:
     id: backup-admin-privilege-separation-gap
-    baseline_likelihood: unlikely
+    baseline_likelihood: likely
     baseline_impact: very-high
     description: 'Backup platform administrators share identity with production administrators, or destructive backup operations are not protected by dual authorization.'
     impact: 'If this risk remains unmitigated, a single compromised production admin account can delete the backups meant to recover from that same compromise.'
@@ -1834,7 +1834,7 @@ custom_risk_definitions:
 
   Backup Immutability Not Enforced:
     id: backup-immutability-not-enforced
-    baseline_likelihood: unlikely
+    baseline_likelihood: likely
     baseline_impact: very-high
     description: 'The backup store uses a retention lock a sufficiently privileged account can shorten or remove, rather than a compliance-mode lock no account can alter before the retention period expires.'
     impact: 'If this risk remains unmitigated, a privileged account -- including one obtained by an attacker -- can delete backups within the stated retention window.'
