@@ -963,21 +963,17 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             inject("Undocumented Credential Blast Radius for Incident-Driven Rotation", "Credential Blast Radius Risk")
 
         # IR plan testing, DFARS breach-notification ownership, and forensic
-        # chain-of-custody are program-level facts about the whole system
-        # rather than a per-asset property (unlike the credential-inventory
-        # check above, which genuinely varies by asset) -- gated on
-        # model_is_business_critical alone, deliberately without the
-        # broader internet-reachable/exception/cds ORs the containment-
-        # disposition check above uses, since none of those conditions make
-        # "is our IR plan tested" true independent of the model's own
-        # criticality.
-        if model_is_business_critical:
-            if 'ir:plan-tested' not in tags:
-                inject("Untested Incident Response Plan", "Untested IR Plan Risk")
-            if 'ir:breach-notification-procedure-documented' not in tags:
-                inject("DFARS 252.204-7012 72-Hour Cyber Incident Reporting Gap", "Breach Notification Gap Risk")
-            if 'ir:evidence-handling-documented' not in tags:
-                inject("Forensic Evidence Chain-of-Custody Gap", "Chain-of-Custody Gap Risk")
+        # chain-of-custody are program-level facts about the whole system --
+        # unlike the credential-inventory and containment-disposition checks
+        # above, which genuinely vary by asset, "is our IR plan tested" is
+        # one yes/no fact for the whole organization, not N separate facts
+        # for N assets. These used to be injected per-asset here (same as
+        # every other check in this loop), which meant a single undocumented
+        # fact showed up as a separate finding on every single in-scope
+        # asset -- 17 copies of "is our IR plan tested" on a real app, not
+        # 17 distinct problems. Moved to a single model-level check after
+        # the loop (search "INCIDENT-RESPONSE READINESS (MODEL-LEVEL)")
+        # instead of here.
 
         # --- 7. SOFTWARE SUPPLY CHAIN AND CI/CD PIPELINE INTEGRITY ---
         # NOTE: this entire cluster (Dependency Confusion via Unclaimed Internal Package
@@ -993,6 +989,44 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             inject("No Macro or Micro-Segmentation of Self-Managed Network", "Self-Managed Segmentation Gap Risk")
             inject("Rogue Access Point and Evil-Twin Credential Harvesting on Self-Managed Wireless", "Rogue AP Risk")
             inject("Missing Route Origin Validation on Self-Managed External Routing", "Missing RPKI Validation Risk")
+
+    # --- INCIDENT-RESPONSE READINESS (MODEL-LEVEL) ---
+    # IR plan testing, DFARS breach-notification ownership, and forensic
+    # chain-of-custody are each a single organization-wide fact, not a
+    # per-asset one -- checked once here against whether ANY in-scope
+    # asset carries the relevant ir:* tag (same tag convention as every
+    # per-asset check above, just asserted once instead of requiring every
+    # single asset to individually carry it). No specific asset exists to
+    # anchor a model-level fact to, so there's no RAA/CIA context to adjust
+    # around -- this uses each category's own baseline_likelihood/
+    # baseline_impact directly rather than compute_likelihood()/
+    # compute_impact(), and omits most_relevant_technical_asset entirely
+    # (schema-valid -- confirmed against support/schema.json in the
+    # jessestarkey/threagile fork, which marks every most_relevant_* field
+    # on a risks_identified entry as nullable, not required).
+    def inject_model_level(cid, title):
+        definition = risk_defs[cid]
+        likelihood = definition["baseline_likelihood"]
+        impact = definition["baseline_impact"]
+        severity = compute_severity(likelihood, impact)
+        if cid not in model['individual_risk_categories']:
+            model['individual_risk_categories'][cid] = copy.deepcopy(definition)
+        risks_dict = model['individual_risk_categories'][cid].setdefault('risks_identified', {})
+        risks_dict[title] = {
+            "severity": severity,
+            "exploitation_likelihood": likelihood,
+            "exploitation_impact": impact,
+            "data_breach_probability": "possible",
+        }
+
+    if model_is_business_critical:
+        in_scope_assets = [a for a in tech_assets.values() if not a.get('out_of_scope')]
+        if not any('ir:plan-tested' in a.get('tags', []) for a in in_scope_assets):
+            inject_model_level("Untested Incident Response Plan", "Untested IR Plan Risk")
+        if not any('ir:breach-notification-procedure-documented' in a.get('tags', []) for a in in_scope_assets):
+            inject_model_level("DFARS 252.204-7012 72-Hour Cyber Incident Reporting Gap", "Breach Notification Gap Risk")
+        if not any('ir:evidence-handling-documented' in a.get('tags', []) for a in in_scope_assets):
+            inject_model_level("Forensic Evidence Chain-of-Custody Gap", "Chain-of-Custody Gap Risk")
 
     # 5. Convert to this engine's custom_risk_categories schema: a list of
     # category objects with an explicit 'title' field, not a dict keyed by

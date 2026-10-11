@@ -160,6 +160,106 @@ THREAGILE_BUILTIN_DOMAIN_MAP = {
     # "something-strange": ...,
 }
 
+# The jessestarkey/threagile fork's own native script-rule categories
+# (pkg/risks/scripts/*.yaml in that sibling repo) -- a third category
+# source alongside our own custom_risk_categories (domain derived live from
+# 09-custom-risks-lib.yml's banners) and Threagile's upstream built-ins
+# (THREAGILE_BUILTIN_DOMAIN_MAP above, a firing-observed snapshot since
+# there's no source to read for a compiled binary). Unlike that map, this
+# one COULD be derived live the same way load_custom_risk_domains() reads
+# our own library's banners, except the source files live in a different
+# repo this script has no path to at report-render time -- so, same
+# mechanism as the built-in map (a hardcoded snapshot), but built by
+# reading every script file's own id/title/description directly rather
+# than from locally-observed firings only, so it covers all ~73 native
+# script categories that exist in the fork as of this writing, not just
+# the ones that happened to fire in a run so far. A category id this map
+# doesn't recognize (a script added to the fork after this snapshot was
+# taken) falls through to FALLBACK_DOMAIN same as everything else --
+# re-derive this map by hand if the fork's pkg/risks/scripts/ directory
+# changes meaningfully.
+THREAGILE_FORK_SCRIPT_DOMAIN_MAP = {
+    # Identity
+    "certificate-validation-soft-fail": "Identity",
+    "insecure-session-management": "Identity",
+    # Device and Infrastructure
+    "dangerous-container-capabilities": "Device and Infrastructure",
+    "endpoint-security-manager-fleet-compromise": "Device and Infrastructure",
+    "mutable-container-filesystem": "Device and Infrastructure",
+    "missing-endpoint-security-agents": "Device and Infrastructure",
+    "space-vehicle-bus-segmentation-gap": "Device and Infrastructure",
+    "unhardened-os-missing-patch-management": "Device and Infrastructure",
+    "untrusted-container-image": "Device and Infrastructure",
+    "vulnerability-scanner-credential-exposure": "Device and Infrastructure",
+    # Network and Environment
+    "air-ground-station-c2-link-hijack": "Network and Environment",
+    "air-vehicle-gps-spoofing": "Network and Environment",
+    "cds-data-diode-unidirectionality-gap": "Network and Environment",
+    "cds-guard-ruleset-bypass": "Network and Environment",
+    "ics-controller-unauthenticated-protocol": "Network and Environment",
+    "missing-network-micro-segmentation": "Network and Environment",
+    "network-encryptor-common-mode-failure": "Network and Environment",
+    "space-ground-station-rogue-uplink": "Network and Environment",
+    # Application (incl. supply chain/CI-CD, matching THREAGILE_BUILTIN_DOMAIN_MAP's own grouping)
+    "broken-function-level-authorization": "Application",
+    "broken-object-level-authorization": "Application",
+    "broken-object-property-level-authorization": "Application",
+    "cicd-pipeline-tampering-outside-repo": "Application",
+    "dependency-confusion-internal-namespace": "Application",
+    "malicious-install-script-execution": "Application",
+    "mishandling-exceptional-conditions": "Application",
+    "os-command-injection": "Application",
+    "vulnerable-outdated-dependency": "Application",
+    # Artificial Intelligence
+    "ai-content-provenance-tampering": "Artificial Intelligence",
+    "ai-feature-store-lineage-gap": "Artificial Intelligence",
+    "ai-gateway-credential-sprawl": "Artificial Intelligence",
+    "ai-guardrails-bypass": "Artificial Intelligence",
+    "atlas-adversarial-evasion-attack": "Artificial Intelligence",
+    "atlas-agent-orchestration-hijack": "Artificial Intelligence",
+    "atlas-chaff-data-spamming": "Artificial Intelligence",
+    "atlas-dataset-ingest-integrity": "Artificial Intelligence",
+    "atlas-dataset-store-attack": "Artificial Intelligence",
+    "atlas-inference-api-abuse": "Artificial Intelligence",
+    "atlas-model-registry-supply-chain": "Artificial Intelligence",
+    "atlas-model-supply-chain": "Artificial Intelligence",
+    "atlas-rag-poisoning-exfil": "Artificial Intelligence",
+    "atlas-synthetic-data-memorization": "Artificial Intelligence",
+    "atlas-training-data-poisoning": "Artificial Intelligence",
+    "atlas-unbounded-ai-consumption": "Artificial Intelligence",
+    "atlas-vector-store-inversion": "Artificial Intelligence",
+    "hyperparameter-tampering-no-baseline-diff": "Artificial Intelligence",
+    "llm-improper-output-handling": "Artificial Intelligence",
+    "maestro-l5-eval-pipeline-poisoning": "Artificial Intelligence",
+    "maestro-l5-observability-compromise": "Artificial Intelligence",
+    "maestro-l6-security-ai-compromise": "Artificial Intelligence",
+    "maestro-l7-agent-ecosystem-identity": "Artificial Intelligence",
+    "missing-canary-prompt-testing": "Artificial Intelligence",
+    "missing-model-rollback-killswitch": "Artificial Intelligence",
+    "on-device-model-extraction-gap": "Artificial Intelligence",
+    "system-prompt-leakage": "Artificial Intelligence",
+    "training-script-ip-exfiltration": "Artificial Intelligence",
+    "ungoverned-system-prompt-change": "Artificial Intelligence",
+    "untrusted-model-registry-source": "Artificial Intelligence",
+    # Data (incl. secrets/crypto/data lifecycle, matching THREAGILE_BUILTIN_DOMAIN_MAP's own grouping)
+    "cui-telemetry-spillage": "Data",
+    "hardcoded-credentials-secrets-sprawl": "Data",
+    "key-management-separation-of-duties-violation": "Data",
+    "key-rotation-escrow-neglect": "Data",
+    "key-storage-ownership-hardening-gap": "Data",
+    "media-sanitization-procedure-gap": "Data",
+    "missing-data-retention-schedule": "Data",
+    "multi-tenant-data-isolation": "Data",
+    "unencrypted-virtual-disk": "Data",
+    "unscanned-data-store": "Data",
+    # Detection
+    "baseline-security-event-logging-gap": "Detection",
+    "cluster-control-plane-audit-gap": "Detection",
+    "data-store-audit-detection-gap": "Detection",
+    "insufficient-audit-logging": "Detection",
+    "security-control-tamper-resistance-gap": "Detection",
+}
+
 # 02-abuse-and-reqs-lib.yml is a reference catalog (see that file's own
 # header), never read by any script including this one -- so, like
 # THREAGILE_BUILTIN_DOMAIN_MAP above, this is a hardcoded snapshot rather
@@ -635,6 +735,7 @@ def load_custom_risk_domains() -> dict:
 def resolve_domain(category_id: str, custom_domains: dict) -> str:
     return custom_domains.get(category_id) \
         or THREAGILE_BUILTIN_DOMAIN_MAP.get(category_id) \
+        or THREAGILE_FORK_SCRIPT_DOMAIN_MAP.get(category_id) \
         or FALLBACK_DOMAIN
 
 
