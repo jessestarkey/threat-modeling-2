@@ -963,17 +963,24 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             inject("Undocumented Credential Blast Radius for Incident-Driven Rotation", "Credential Blast Radius Risk")
 
         # IR plan testing, DFARS breach-notification ownership, and forensic
-        # chain-of-custody are program-level facts about the whole system --
-        # unlike the credential-inventory and containment-disposition checks
-        # above, which genuinely vary by asset, "is our IR plan tested" is
-        # one yes/no fact for the whole organization, not N separate facts
-        # for N assets. These used to be injected per-asset here (same as
-        # every other check in this loop), which meant a single undocumented
-        # fact showed up as a separate finding on every single in-scope
-        # asset -- 17 copies of "is our IR plan tested" on a real app, not
-        # 17 distinct problems. Moved to a single model-level check after
-        # the loop (search "INCIDENT-RESPONSE READINESS (MODEL-LEVEL)")
-        # instead of here.
+        # chain-of-custody are conceptually program-level facts about the
+        # whole system, not per-asset ones -- a brief experiment collapsed
+        # them into one model-level finding each (see git history) to stop
+        # a single undocumented fact from showing up as 17 separate
+        # findings on a real app. Reverted: risk acceptance/disposition is
+        # tracked per finding via risk_tracking, and that sign-off has to
+        # happen per asset regardless of whether the underlying fact is
+        # org-wide -- a single finding covering 17 assets can't be
+        # half-accepted. Per-asset injection, same as every other check in
+        # this loop, is the right shape for that workflow even though it
+        # means the same organizational gap is visible once per asset.
+        if model_is_business_critical:
+            if 'ir:plan-tested' not in tags:
+                inject("Untested Incident Response Plan", "Untested IR Plan Risk")
+            if 'ir:breach-notification-procedure-documented' not in tags:
+                inject("DFARS 252.204-7012 72-Hour Cyber Incident Reporting Gap", "Breach Notification Gap Risk")
+            if 'ir:evidence-handling-documented' not in tags:
+                inject("Forensic Evidence Chain-of-Custody Gap", "Chain-of-Custody Gap Risk")
 
         # --- 7. SOFTWARE SUPPLY CHAIN AND CI/CD PIPELINE INTEGRITY ---
         # NOTE: this entire cluster (Dependency Confusion via Unclaimed Internal Package
@@ -989,55 +996,6 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             inject("No Macro or Micro-Segmentation of Self-Managed Network", "Self-Managed Segmentation Gap Risk")
             inject("Rogue Access Point and Evil-Twin Credential Harvesting on Self-Managed Wireless", "Rogue AP Risk")
             inject("Missing Route Origin Validation on Self-Managed External Routing", "Missing RPKI Validation Risk")
-
-    # --- INCIDENT-RESPONSE READINESS (MODEL-LEVEL) ---
-    # IR plan testing, DFARS breach-notification ownership, and forensic
-    # chain-of-custody are each a single organization-wide fact, not a
-    # per-asset one -- checked once here against whether ANY in-scope
-    # asset carries the relevant ir:* tag (same tag convention as every
-    # per-asset check above, just asserted once instead of requiring every
-    # single asset to individually carry it). No specific asset exists to
-    # anchor a model-level fact to, so there's no RAA/CIA context to adjust
-    # around -- this uses each category's own baseline_likelihood/
-    # baseline_impact directly rather than compute_likelihood()/
-    # compute_impact(), and omits most_relevant_technical_asset entirely
-    # (schema-valid -- confirmed against support/schema.json in the
-    # jessestarkey/threagile fork, which marks every most_relevant_* field
-    # on a risks_identified entry as nullable, not required). The specific
-    # assets still lacking the tag ARE carried through, though, via
-    # data_breach_technical_assets -- one finding, not N, but the actual
-    # scope of which assets are uncovered stays visible in the report
-    # (generate_report.py's merge_findings() falls back to this list,
-    # resolved to asset titles, when no singular most_relevant_* anchor is
-    # set) rather than just disappearing because there's no single asset
-    # to name in the usual Asset column.
-    def inject_model_level(cid, title, affected_asset_ids):
-        definition = risk_defs[cid]
-        likelihood = definition["baseline_likelihood"]
-        impact = definition["baseline_impact"]
-        severity = compute_severity(likelihood, impact)
-        if cid not in model['individual_risk_categories']:
-            model['individual_risk_categories'][cid] = copy.deepcopy(definition)
-        risks_dict = model['individual_risk_categories'][cid].setdefault('risks_identified', {})
-        risks_dict[title] = {
-            "severity": severity,
-            "exploitation_likelihood": likelihood,
-            "exploitation_impact": impact,
-            "data_breach_probability": "possible",
-            "data_breach_technical_assets": affected_asset_ids,
-        }
-
-    if model_is_business_critical:
-        in_scope_assets = [a for a in tech_assets.values() if not a.get('out_of_scope')]
-        untested_ir_plan_assets = [a.get('id') for a in in_scope_assets if 'ir:plan-tested' not in a.get('tags', [])]
-        if untested_ir_plan_assets:
-            inject_model_level("Untested Incident Response Plan", "Untested IR Plan Risk", untested_ir_plan_assets)
-        missing_breach_notification_assets = [a.get('id') for a in in_scope_assets if 'ir:breach-notification-procedure-documented' not in a.get('tags', [])]
-        if missing_breach_notification_assets:
-            inject_model_level("DFARS 252.204-7012 72-Hour Cyber Incident Reporting Gap", "Breach Notification Gap Risk", missing_breach_notification_assets)
-        missing_evidence_handling_assets = [a.get('id') for a in in_scope_assets if 'ir:evidence-handling-documented' not in a.get('tags', [])]
-        if missing_evidence_handling_assets:
-            inject_model_level("Forensic Evidence Chain-of-Custody Gap", "Chain-of-Custody Gap Risk", missing_evidence_handling_assets)
 
     # 5. Convert to this engine's custom_risk_categories schema: a list of
     # category objects with an explicit 'title' field, not a dict keyed by
