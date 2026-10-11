@@ -22,7 +22,7 @@ code is right and this document is stale — see [Keeping this in sync](#keeping
 - [This repo's custom risk-injection engine](#this-repos-custom-risk-injection-engine)
   - [1. Baseline Likelihood and Impact](#1-baseline-likelihood-and-impact)
   - [2. The Likelihood adjustment: RAA and internet reachability](#2-the-likelihood-adjustment-raa-and-internet-reachability)
-  - [3. The Impact adjustment: CIA rank and business criticality](#3-the-impact-adjustment-cia-rank-and-business-criticality)
+  - [3. The Impact adjustment: CIA rank](#3-the-impact-adjustment-cia-rank)
   - [4. Severity: combining Likelihood and Impact](#4-severity-combining-likelihood-and-impact)
 - [Why two different engines score differently](#why-two-different-engines-score-differently)
 - [Could the custom engine just adopt Threagile's own formula?](#could-the-custom-engine-just-adopt-threagiles-own-formula)
@@ -338,22 +338,30 @@ differently](#why-two-different-engines-score-differently)), the forked engine's
 check the same two signals directly: `technicalAsset.Internet || contains(technicalAsset.Tags,
 "net:internet-reachable")`, reusing a `contains()` helper already in `pkg/risks/builtin/helpers.go`.
 
-### 3. The Impact adjustment: CIA rank and business criticality
+### 3. The Impact adjustment: CIA rank
 
 Baseline Impact gets a **-1 / 0 / +1** delta from the asset's own CIA rank on whichever single
-dimension the finding's STRIDE category actually threatens, plus a gated **+1** if the model's
-overall Business Criticality is Critical or Mission-Critical:
+dimension the finding's STRIDE category actually threatens:
 
 ```
 dimension          = STRIDE_TO_CIA_DIMENSION[stride]   (falls back to max(C,I,A) if unmapped)
 cia_delta           = -1 if rank in {public/archive, internal/operational}
                     =  0 if rank in {restricted/important}
                     = +1 if rank in {confidential/critical, strictly-confidential/mission-critical}
-criticality_delta   = +1 if business_criticality in {critical, mission-critical} AND cia_delta < 1
-                    =  0 otherwise
 
-Impact = clamp(baseline_impact + cia_delta + criticality_delta)
+Impact = clamp(baseline_impact + cia_delta)
 ```
+
+**This used to also get a gated +1 if the model's overall Business Criticality was Critical or
+Mission-Critical** (whenever the asset's own cia_delta hadn't already earned it) — a system-wide
+signal meant to catch a low-value-looking component that still matters more inside an important
+system. Removed: every asset in this framework already carries an individually-justified CIA
+rating (`justification_cia_rating` is a real, per-asset writeup, not a formality), so the bump's
+practical effect was almost entirely to inflate assets whose *own* rating was genuinely lower than
+the system around them — the same peripheral-asset-noise problem it was meant to prevent, just
+pointed at a different set of assets. An asset that's genuinely more important than its own CIA
+rating suggests should get that rating corrected directly, not compensated for indirectly by a
+model-wide flag.
 
 **Why a single dimension, not max(C, I, A).** A denial-of-service finding is nudged by the asset's
 Availability rating alone, not a flat maximum across all three — an asset with high Confidentiality

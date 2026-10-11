@@ -22,11 +22,18 @@ LIKELIHOOD_ORDER = ["unlikely", "possible", "likely", "very-likely"]
 IMPACT_ORDER = ["low", "medium", "high", "very-high"]
 
 # Business criticality values (see 00-threagile-field-reference.yml) that
-# bump Impact (see compute_impact()) as a system-level consequence signal,
-# distinct from any single asset's own CIA rating, and separately gate a
-# handful of incident-response-readiness triggers further below (unrelated
-# to severity) that already existed before this variable took on its
-# Impact role.
+# gate a handful of incident-response-readiness triggers further below
+# (unrelated to severity). This used to also bump compute_impact() as a
+# system-level consequence signal, distinct from any single asset's own
+# CIA rating -- removed (see git history) because every asset in this
+# framework already carries an individually-justified CIA rating
+# (justification_cia_rating is a real, per-asset writeup here, not a
+# formality), so the bump's only real effect was inflating assets whose
+# OWN rating was genuinely lower than the system around them -- exactly
+# the peripheral-asset-noise problem it should have been solving for, not
+# causing. The right fix for an under-rated asset is rating it correctly
+# at the asset level, which this framework already expects authors to do,
+# not an indirect model-wide correction layered on top.
 CRITICAL_BUSINESS_VALUES = {"critical", "mission-critical"}
 
 # Ordinal rank (0-4, low to high) for Threagile's Confidentiality enum
@@ -395,27 +402,19 @@ def compute_likelihood(definition: dict, asset_raa: float, internet_reachable: b
     return LIKELIHOOD_ORDER[_clamp(baseline + raa_delta + exposed_delta)]
 
 
-def compute_impact(definition: dict, asset_data: dict, mission_critical_system: bool) -> str:
+def compute_impact(definition: dict, asset_data: dict) -> str:
     """Impact = the category's own baseline_impact, adjusted by -1/0/+1 from
     the asset's CIA rank on whichever single dimension this finding's
-    STRIDE category actually threatens (see STRIDE_TO_CIA_DIMENSION), plus
-    +1 if the model's overall Business Criticality is Critical/
-    Mission-Critical -- but only when this asset's own CIA rank hasn't
-    already earned that +1 on its own. A system rated Critical/Mission-
-    Critical is, almost by definition, built mostly from components that
-    themselves carry top-tier CIA ratings, so applying both bumps
-    unconditionally mostly double-counts the same underlying fact for the
-    same finding. Gating the system-level bump to only fill the gap for an
-    otherwise-unremarkable asset preserves its real justification -- a
-    low-value component still matters more inside an important system --
-    without stacking on assets that already earned the bump themselves."""
+    STRIDE category actually threatens (see STRIDE_TO_CIA_DIMENSION). Purely
+    a function of this asset's own rating -- no model-wide Business
+    Criticality bump (removed, see CRITICAL_BUSINESS_VALUES's own comment
+    for why)."""
     baseline = IMPACT_ORDER.index(definition["baseline_impact"])
     c, i, a = _asset_cia_ranks(asset_data)
     dimension = STRIDE_TO_CIA_DIMENSION.get(definition.get("stride", ""))
     rank = {"confidentiality": c, "integrity": i, "availability": a}.get(dimension, max(c, i, a))
     cia_delta = CIA_RANK_TO_DELTA[rank]
-    criticality_delta = 1 if (mission_critical_system and cia_delta < 1) else 0
-    return IMPACT_ORDER[_clamp(baseline + cia_delta + criticality_delta)]
+    return IMPACT_ORDER[_clamp(baseline + cia_delta)]
 
 
 def compute_severity(likelihood: str, impact: str) -> str:
@@ -483,7 +482,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         def inject(cid, title):
             definition = risk_defs[cid]
             likelihood = compute_likelihood(definition, asset_raa, asset_is_internet_reachable)
-            impact = compute_impact(definition, asset_data, model_is_business_critical)
+            impact = compute_impact(definition, asset_data)
             severity = compute_severity(likelihood, impact)
             if cid not in model['individual_risk_categories']:
                 model['individual_risk_categories'][cid] = copy.deepcopy(definition)
