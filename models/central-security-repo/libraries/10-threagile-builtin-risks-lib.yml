@@ -313,8 +313,10 @@ builtin_risks:
       rules for disabled framework CSRF protection (e.g. csrf_exempt,
       csrf().disable()).
     references: >
-      CWE-352 (Cross-Site Request Forgery); CAPEC-62 (Cross Site Request
-      Forgery); OWASP Top 10:2025 A01 (Broken Access Control)
+      CWE-352 (Cross-Site Request Forgery); CWE-1275 (Sensitive Cookie with
+      Improper SameSite Attribute); CAPEC-62 (Cross Site Request Forgery);
+      OWASP Top 10:2025 A01 (Broken Access Control); NIST SP 800-53 SC-23
+      (Session Authenticity)
 
   cross-site-scripting:
     title: "Cross-Site Scripting (XSS)"
@@ -461,7 +463,9 @@ builtin_risks:
       bind account.
     references: >
       CWE-90 (Improper Neutralization of Special Elements used in an LDAP
-      Query); CAPEC-136 (LDAP Injection); OWASP Top 10:2025 A05 (Injection)
+      Query); CAPEC-136 (LDAP Injection); MITRE ATT&CK T1190 (Exploit
+      Public-Facing Application); MITRE ATT&CK T1087 (Account Discovery);
+      OWASP Top 10:2025 A05 (Injection); NIST SP 800-53 SI-10
 
   missing-authentication:
     title: "Missing Authentication"
@@ -1622,7 +1626,14 @@ builtin_risks:
       trust boundary. Review database logins by source address and account
       over a 30-day window (SQL audit, CloudWatch/Log Analytics) and flag
       connections not originating from the application tier. Confirm public
-      network access is disabled.
+      network access is disabled (Azure SQL/Cosmos DB publicNetworkAccess,
+      RDS PubliclyAccessible). From a host in each non-application trust
+      boundary, attempt a TCP connection to the store's native port (nmap,
+      Test-NetConnection) and expect it to be blocked. List database
+      accounts used by out-of-tier callers and their granted roles (shared
+      or db_owner/rds_superuser-class accounts are the escalation case).
+      Alert on logins from source addresses outside the application tier's
+      subnet.
     references: >
       CWE-668 (Exposure of Resource to Wrong Sphere); CWE-284 (Improper
       Access Control); MITRE ATT&CK T1213 (Data from Information
