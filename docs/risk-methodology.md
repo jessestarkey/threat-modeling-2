@@ -32,8 +32,12 @@ code is right and this document is stale — see [Keeping this in sync](#keeping
 
 ## The two scoring paths, at a glance
 
-Every finding in a report comes from one of two independent rule sources, and each computes
-Severity its own way. (A third mechanism, native script rules, shares the Threagile-binary
+Every finding in a report comes from one of two independent rule sources. Severity itself is
+standardized — both sources combine Likelihood and Impact into Severity through the same
+Fibonacci-weighted formula and threshold bands (see [§4](#4-severity-combining-likelihood-and-impact)).
+What differs between them is everything that feeds *into* that shared formula: how each source
+decides a finding's Likelihood and Impact in the first place. (A third mechanism, native script
+rules, shares the Threagile-binary
 execution context with built-in categories but matches the custom engine's own baseline-authorship
 and delta mechanism almost exactly — see [Native script rules](#native-script-rules-a-third-mechanism-same-forked-binary)
 below; it's folded into the "built-in categories" column's *mechanism* description here since it
