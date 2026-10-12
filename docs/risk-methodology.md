@@ -197,16 +197,16 @@ there's no broadly-shared Impact helper the way there is for Likelihood — the 
 genuinely differs per rule (which single dimension, whether a gate overrides a generic CIA check),
 where Likelihood's RAA/reachability delta is identical everywhere it applies.
 
-**A `computeImpact()` helper does exist in `helpers.go`, but it's dead code — worth knowing about,
-not actively wrong.** It mirrors this repo's own custom engine's Impact formula from *before* the
-business-criticality bump was removed from it (see [§3](#3-the-impact-adjustment-cia-rank)),
-including that exact bump. Three rules (`cross_site_request_forgery_rule.go`,
+**A `computeImpact()` helper does exist in `helpers.go`, but it's dead code.** No built-in rule
+calls it. Three rules (`cross_site_request_forgery_rule.go`,
 `dos_risky_access_across_trust_boundary_rule.go`, `missing_authentication_rule.go`) mention it by
 name in a comment explaining why *that specific rule* computes Impact its own way instead (a
-link's own rating rather than the asset's, in CSRF's case) — none of them actually call it, and no
-other rule does either. If a future rule is ever wired into it, the business-criticality bump
-inside it needs removing first to match the decision already made for the other two layers; it
-wasn't removed from `helpers.go` itself only because nothing currently exercises that code path.
+link's own rating rather than the asset's, in CSRF's case). It used to still carry the gated
+business-criticality bump that had already been removed from the Python engine and every native
+script rule (see [§3](#3-the-impact-adjustment-cia-rank)) — a genuine, if inert, inconsistency,
+since nothing called it so the bump was never actually live. That's since been cleaned up too, so
+all three layers now agree even in code nothing currently executes — no landmine left for if a
+future rule is ever wired into it.
 
 **The 4 RAA-special-cased rules got an actual redesign, not just a wiring change.** Before this
 project, none of them used RAA as a Likelihood delta the way the custom engine always has:
@@ -322,7 +322,7 @@ Every script's Impact calculation used to include the same gated system-wide bum
 engine's `compute_impact()` had — removed from both for the same reason (see
 [§3](#3-the-impact-adjustment-cia-rank)): it mostly inflated assets whose own CIA rating was
 genuinely lower than the system around them, not the under-rated components it was meant to
-protect. Unlike the built-in Go layer's now-dead `computeImpact()` helper (see [Threagile's built-in
+protect. Unlike the built-in Go layer's dead `computeImpact()` helper (see [Threagile's built-in
 risk categories](#threagiles-built-in-risk-categories) above), this bump was live and firing in
 every one of these 73 files before removal — there was no "nothing calls it" safety net here.
 
@@ -602,8 +602,8 @@ follow, since nothing couples them beyond both currently choosing the same const
 isn't a merge.** 35 of ~42 built-in rules now call a shared Go helper (`computeLikelihood()` in the
 fork) that mirrors `inject_risks.py`'s own `compute_likelihood()` almost exactly — same RAA delta,
 same reachability check. (A `computeImpact()` helper of the same shape also exists in the same
-file, mirroring `compute_impact()` from before the business-criticality bump was removed from it —
-but it's dead code nothing currently calls; see the note under [Threagile's built-in risk
+file, mirroring `compute_impact()`'s current, bump-free form — but it's dead code nothing
+currently calls; see the note under [Threagile's built-in risk
 categories](#threagiles-built-in-risk-categories).) This is real, intentional convergence of
 *mechanism* on the Likelihood side, not just formula shape — but each rule still supplies its own
 baseline (its original hardcoded constant, author-judged by upstream Threagile maintainers, not
