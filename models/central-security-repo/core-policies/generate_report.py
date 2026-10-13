@@ -629,8 +629,9 @@ def load_raa_by_id(output_dir: str) -> dict:
 def load_risks_xlsx(output_dir: str) -> dict:
     """Returns {synthetic_id: {'action': ..., 'mitigation': ..., 'cwe': ...,
     'risk_category_title': ..., 'justification': ..., 'checked_by': ...,
-    'closed_date': ..., 'ticket': ...}} keyed by the xlsx 'ID' column, which
-    is the same [category]@[asset] string as risks.json's synthetic_id."""
+    'closed_date': ..., 'ticket': ..., 'communication_link': ...}} keyed by
+    the xlsx 'ID' column, which is the same [category]@[asset] string as
+    risks.json's synthetic_id."""
     # read_only=True would stream off the workbook's declared XML <dimension>,
     # which Threagile's xlsx writer leaves stale (reports A1:A1 on a real
     # A1:T152 sheet) -- load normally so openpyxl scans actual cells instead.
@@ -659,6 +660,12 @@ def load_risks_xlsx(output_dir: str) -> dict:
             "checked_by": d.get("Checked by") or "",
             "closed_date": d.get("Date") or "",
             "ticket": d.get("Ticket") or "",
+            # The xlsx's own "Communication Link" column already holds the
+            # link's human title (e.g. "Log Forwarding"), not the raw
+            # source>slug id risks.json's most_relevant_communication_link
+            # carries -- read from here instead of resolving that id
+            # ourselves, so the PDF shows the identical text the xlsx does.
+            "communication_link": d.get("Communication Link") or "",
         }
     return by_id
 

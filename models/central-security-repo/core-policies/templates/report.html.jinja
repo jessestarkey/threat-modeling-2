@@ -296,11 +296,12 @@
   {% for cat in group.categories %}
   <h3 class="category-heading"><a href="#cat-{{ cat.slug }}">{{ cat.title }}</a></h3>
   <table class="compact-risk-table">
-    <tr><th>Severity</th><th>Asset</th><th>Status</th></tr>
+    <tr><th>Severity</th><th>Asset</th><th>Communication Link</th><th>Status</th></tr>
     {% for f in cat.findings %}
     <tr>
       <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
       <td>{{ f.most_relevant_technical_asset or '—' }}</td>
+      <td>{{ f.communication_link or '—' }}</td>
       <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
     </tr>
     {% endfor %}
@@ -404,11 +405,12 @@
         </tr>
       </table>
       <table class="compact-risk-table">
-        <tr><th>Severity</th><th>Asset</th><th>Likelihood</th><th>Impact Rating</th><th>Status</th></tr>
+        <tr><th>Severity</th><th>Asset</th><th>Communication Link</th><th>Likelihood</th><th>Impact Rating</th><th>Status</th></tr>
         {% for f in cat.findings %}
         <tr id="finding-{{ f.synthetic_id }}">
           <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
           <td>{{ f.most_relevant_technical_asset or '—' }}</td>
+          <td>{{ f.communication_link or '—' }}</td>
           <td>{{ f.exploitation_likelihood | capitalize }}</td>
           <td>{{ f.exploitation_impact | capitalize }}</td>
           <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
@@ -453,10 +455,11 @@
         </tr>
       </table>
       <table class="compact-risk-table">
-        <tr><th>Severity</th><th>Asset</th><th>Likelihood</th><th>Impact Rating</th><th>Status</th></tr>
+        <tr><th>Severity</th><th>Asset</th><th>Communication Link</th><th>Likelihood</th><th>Impact Rating</th><th>Status</th></tr>
         <tr>
           <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
           <td>{{ f.most_relevant_technical_asset or '—' }}</td>
+          <td>{{ f.communication_link or '—' }}</td>
           <td>{{ f.exploitation_likelihood | capitalize }}</td>
           <td>{{ f.exploitation_impact | capitalize }}</td>
           <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
