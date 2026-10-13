@@ -86,7 +86,7 @@ computation of *the same formula*, replicated faithfully from Threagile's own
 `pkg/model/raa.go`/`pkg/types/confidentiality.go`/`criticality.go`/`quantity.go` source (read
 directly against the engine this repo actually runs — a custom build from
 `jessestarkey/threagile`, not the `threagile/threagile:0.9.1` image the baseline threat-modeling
-repo still pins — not assumed) rather than approximated. It works in seven steps:
+repo still pins — not assumed) rather than approximated. It works in eight steps:
 
 1. Start from the asset's own Confidentiality/Integrity/Availability ranks (0–4), each looked up
    in a weight table drawn from the Fibonacci sequence rather than a linear 0–4 scale — Threagile's
@@ -119,26 +119,41 @@ repo still pins — not assumed) rather than approximated. It works in seven ste
    of whether the risk is disclosure or corruption.
 
 2. Add a weighted contribution for every data asset the technical asset processes or stores,
-   scaled by that data asset's own Confidentiality/Integrity rank (via `CONF_PROCESSED_OR_STORED`/
-   `CRIT_PROCESSED_OR_STORED` above) *and* its `quantity` field (`very-few`→1, `few`→2, `many`→3,
-   `very-many`→5).
+   scaled by that data asset's own Confidentiality/Integrity/Availability rank (via
+   `CONF_PROCESSED_OR_STORED`/`CRIT_PROCESSED_OR_STORED` above — Availability shares the same
+   `CRIT_PROCESSED_OR_STORED` table Integrity uses, the same way it does for the asset's own rating
+   in step 1). Confidentiality and Integrity are *also* scaled by the data asset's `quantity` field
+   (`very-few`→1, `few`→2, `many`→3, `very-many`→5); Availability is added at its raw weight,
+   un-scaled by quantity — this asymmetry is Threagile's own real formula (`raa.go`'s own comment:
+   "Multiplied by the quantity values of the data asset for C and I (not A)"), faithfully
+   replicated here, not an omission.
 3. Add a smaller weighted contribution for every data asset sent or received over the asset's own
-   communication links, the same way but via `CONF_TRANSFERRED`/`CRIT_TRANSFERRED`.
-4. Scale the whole sum by a technology-type multiplier: a reverse proxy or load balancer is
-   structurally a conduit and is scaled *down* (÷5.5) regardless of its own CIA rating; an identity
-   provider, vault, or container platform is scaled *up* (2×–5×) since it's disproportionately
-   attractive independent of what it's rated. A generic `datastore`-type asset with no more
-   specific multiplier still gets a flat 2× floor.
+   communication links, the same way but via `CONF_TRANSFERRED`/`CRIT_TRANSFERRED` (same
+   Confidentiality/Integrity quantity-scaling, same un-scaled Availability term).
+4. Scale the whole sum by a technology-type multiplier: a reverse proxy, load balancer, or
+   monitoring asset is structurally a conduit and is scaled *down* (÷5.5 for the first two, ÷5 for
+   monitoring) regardless of its own CIA rating; an identity provider, vault, or container platform
+   is scaled *up* (2×–5×) since it's disproportionately attractive independent of what it's rated.
+   A generic `datastore`-type asset with no more specific multiplier still gets a flat 2× floor.
 5. Apply a 1.5× multiplier if the asset is `multi_tenant`.
-6. **Pivot**: an asset inherits up to a third of the positive attractiveness gap to the single most
-   attractive asset it can directly reach over its own communication links — value propagates
-   backward from a high-value target onto whatever can reach it, so a plain-looking front-door
-   asset that happens to have a path to a vault or identity provider scores higher than its own raw
-   attractiveness alone would suggest.
-7. Normalize every asset's score to 0–100% relative to the min/max across every asset *in this
-   specific model* (floored at 1%, since 0% would imply an asset can't be attacked at all).
+6. **Normalize once**, provisionally: every asset's raw score (steps 1–5) to 0–100% relative to the
+   min/max across every asset *in this specific model* (floored at 1%, since 0% would imply an
+   asset can't be attacked at all). This first pass exists only to give step 7 something
+   comparable to measure a gap in — it isn't the final RAA value.
+7. **Pivot**: using those normalized percentages, an asset inherits up to a third of the positive
+   attractiveness gap to the single most attractive asset it can directly reach over its own
+   communication links — value propagates backward from a high-value target onto whatever can
+   reach it, so a plain-looking front-door asset that happens to have a path to a vault or identity
+   provider scores higher than its own raw attractiveness alone would suggest. The resulting
+   adjustment is added back onto each asset's *raw* (step 1–5) score, not its normalized one.
+8. **Normalize again**: the adjusted raw scores (step 5 + step 7's adjustment) go through the same
+   0–100%-relative-to-this-model normalization a second time — this second pass is the actual final
+   RAA value, not step 6's. Two normalization passes, not one, is Threagile's own real design
+   (`raa.go`'s `calculatePivotingNeighbourEffectAdjustment()` computes its delta off normalized
+   values before `applyRAA()` normalizes the adjusted raw score again at the end) — faithfully
+   replicated here down to the double pass, not simplified to a single final step.
 
-That last step matters: RAA is **relative to the model it's computed against**, not an absolute
+That final normalization matters: RAA is **relative to the model it's computed against**, not an absolute
 scale — "at or above 40%" means a different real attack-worthiness in a 3-asset model than in a
 50-asset one. This instability is inherited directly from Threagile's own real RAA design; this
 repo faithfully replicates it rather than correcting it, since correcting it would mean deviating
@@ -557,7 +572,7 @@ the same asset, for reasons that survive both changes:
 - **Some in-scope rules deliberately keep a wider, multi-dimension Impact check** where their own
   category text genuinely spans more than one CIA dimension (documented inline per rule, the same
   accepted-tradeoff pattern `STRIDE_TO_CIA_DIMENSION`'s own spoofing discussion uses below) — so
-  "narrowed to one dimension" isn't a blanket rule even within the 31 standardized rules.
+  "narrowed to one dimension" isn't a blanket rule even within the 35 standardized rules.
 - **Detection logic — whether a risk fires at all for a given asset — remains entirely
   rule-specific and untouched** by this project; only the scoring of a risk that already fired was
   brought into alignment.
