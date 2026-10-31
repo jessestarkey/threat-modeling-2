@@ -119,12 +119,10 @@ jobs:
         # names, making the dot-wrapper PATH-shadowing trick unnecessary
         # (see git history for how that worked before this migration).
         # Docker's remote git context builds straight from the URL --
-        # Dockerfile.local (not the repo's default Dockerfile, which
-        # clones upstream threagile/threagile instead of building this
-        # checkout) builds from the fork's own current source, so a
-        # future Go-level edit here just needs this step rerun, not a
-        # separately maintained image pin elsewhere.
-        run: docker build -t threagile-custom:latest -f Dockerfile.local https://github.com/jessestarkey/threagile.git
+        # the fork's default Dockerfile builds from its own current
+        # source, so a future Go-level edit here just needs this step
+        # rerun, not a separately maintained image pin elsewhere.
+        run: docker build -t threagile-custom:latest https://github.com/jessestarkey/threagile.git
 
       - name: Run Threagile
         # Invoked directly (instead of threagile/run-threagile-action,
@@ -147,7 +145,7 @@ jobs:
         #
         # The image runs as a non-root named user ("threagile", not a
         # fixed numeric uid the way threagile:0.9.1 did) -- confirmed via
-        # Dockerfile.local's own `adduser`/`USER threagile` lines. Same
+        # the fork Dockerfile's own `adduser`/`USER threagile` lines. Same
         # permission problem as before on a real Linux runner: that user
         # can't write into threagile/output (mkdir'd as the runner's own
         # uid, default 755). chmod 777 the output dir so it can regardless

@@ -64,7 +64,7 @@ jobs:
       - name: Build Custom Threagile Image
         # See threagile-modular.yml's step of the same name for the full
         # explanation -- mirrors it exactly.
-        run: docker build -t threagile-custom:latest -f Dockerfile.local https://github.com/jessestarkey/threagile.git
+        run: docker build -t threagile-custom:latest https://github.com/jessestarkey/threagile.git
 
       - name: Run Threagile
         # Invoked directly (instead of threagile/run-threagile-action,
