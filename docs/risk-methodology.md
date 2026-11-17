@@ -371,7 +371,7 @@ which asset it landed on. The computation has four steps.
 
 ### 1. Baseline Likelihood and Impact
 
-Every one of the 87 category definitions in `libraries/09-custom-risks-lib.yml` carries its own
+Every one of the 86 category definitions in `libraries/09-custom-risks-lib.yml` carries its own
 `baseline_likelihood` and `baseline_impact` — an author judgment of how exploitable and how
 consequential that *class* of vulnerability inherently is, independent of which asset it lands on.
 Grounded in CWE's own "Likelihood of Exploit" rating or the relevant OWASP Top 10/API Security Top

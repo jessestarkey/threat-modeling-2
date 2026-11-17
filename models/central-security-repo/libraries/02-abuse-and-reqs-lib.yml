@@ -104,7 +104,7 @@
 #               feature:third-party-plugins
 #   ARTIFICIAL INTELLIGENCE    AISVS C1-C10, C11.1-C11.3
 #     Triggers: ai:user-prompt-input, ai:indirect-prompt-input, ai:llm-endpoint, ai:rag-pipeline,
-#               ai:agent-orchestrator, ai:plugin-tool-use, ai:ot-adjacent-output, ai:third-party-model-api,
+#               ai:agent-orchestrator, ai:ot-adjacent-output, ai:third-party-model-api,
 #               ai:model-serving, ai:model-registry, ai:training-pipeline, ai:dataset-store,
 #               ai:agent-framework, ai:eval-pipeline, ai:on-device-inference, ai:air-gapped-model-delivery,
 #               ai:rag-ingest-pipeline, ai:agent-memory, ai:model-exfil-risk, ai:multi-agent-boundary
@@ -1062,7 +1062,7 @@ categories:
   # ============================================================================
   # ARTIFICIAL INTELLIGENCE
   # Triggers: ai:user-prompt-input, ai:indirect-prompt-input, ai:llm-endpoint, ai:rag-pipeline, ai:agent-orchestrator,
-  #           ai:plugin-tool-use, ai:ot-adjacent-output, ai:third-party-model-api, ai:model-serving, ai:model-registry,
+  #           ai:ot-adjacent-output, ai:third-party-model-api, ai:model-serving, ai:model-registry,
   #           ai:training-pipeline, ai:dataset-store, ai:agent-framework, ai:eval-pipeline, ai:on-device-inference,
   #           ai:air-gapped-model-delivery, ai:rag-ingest-pipeline, ai:agent-memory, ai:model-exfil-risk,
   #           ai:multi-agent-boundary
@@ -1075,7 +1075,6 @@ categories:
       - ai:llm-endpoint
       - ai:rag-pipeline
       - ai:agent-orchestrator
-      - ai:plugin-tool-use
       - ai:ot-adjacent-output
       - ai:third-party-model-api
       - ai:model-serving

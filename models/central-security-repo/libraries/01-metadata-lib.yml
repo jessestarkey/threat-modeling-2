@@ -176,7 +176,6 @@ categories:
       - ai:llm-endpoint
       - ai:rag-pipeline
       - ai:agent-orchestrator
-      - ai:plugin-tool-use
       - ai:ot-adjacent-output
       - ai:third-party-model-api
       - ai:model-serving

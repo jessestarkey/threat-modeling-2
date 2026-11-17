@@ -1235,30 +1235,11 @@ custom_risk_definitions:
   # rag-ingest-pipeline technology instead of the ai:rag-ingest-pipeline tag. Removed here
   # rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
-  # 'ATLAS: AI Agent Orchestration Hijack and Persistence' has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/atlas-agent-orchestration-hijack.yaml), triggered off the new native
-  # agent-orchestrator technology instead of the ai:agent-orchestrator tag. Removed here rather
-  # than left duplicated. See docs/risk-methodology.md for the full rationale.
-
-  'ATLAS: AI Agent Tool and Plugin Compromise':
-    id: atlas-agent-tool-plugin-compromise
-    baseline_likelihood: likely
-    baseline_impact: very-high
-    description: 'The LLM or agent has access to external tools or function-calling APIs whose definitions, credentials, or registry listings can be poisoned or replaced by an adversary.'
-    impact: 'If this risk remains unmitigated, tool compromise can allow credential theft, data exfiltration, or attacker-controlled commands, all within the agent''s legitimate trust context.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
-    action: Maintain a cryptographically signed allowlist of approved tools and require explicit human confirmation for consequential tool invocations.
-    mitigation: Pin all tool definitions to cryptographically verified versions. Prohibit dynamic tool registration at runtime. Enforce credential isolation — tools should use scoped, short-lived tokens, never long-lived shared secrets. Rate-limit and alert on anomalous tool call volume per user or session. Log all tool invocations with full argument context for SOC review.
-    references: MITRE ATLAS AML.T0053 (AI Agent Tool Invocation), AML.T0083 (Credentials from AI Agent Config), AML.T0085.001 (Data from AI Agent Tools), AML.T0086 (Exfiltration via Agent Tool Invocation), AML.T0098 (Tool Credential Harvesting), AML.T0099 (Tool Data Poisoning), AML.T0100 (AI Agent Clickbait), AML.T0104 (Publish Poisoned Tool), AML.T0110 (AI Agent Tool Poisoning), AML.T0011.002 (Poisoned AI Agent Tool); OWASP LLM06:2025
-    risk_assessment: Critical for write-capable tool access. High for read-only tool access where sensitive data is reachable.
-    false_positives: The LLM has zero tool access and is used exclusively for stateless text generation.
-    function: architecture
-    stride: elevation-of-privilege
-    cwe: 829
-    detection_logic: Alert on tool invocations to external endpoints not in the pre-approved allowlist. Monitor for credential access patterns from tool execution contexts. Audit tool definition registries for unauthorized modifications.
-    risks_identified: {}
+  # 'ATLAS: AI Agent Orchestration Hijack and Persistence' (native) and 'ATLAS: AI Agent Tool and
+  # Plugin Compromise' (this library, ai:plugin-tool-use tag) were both replaced on 2026-11-17 by
+  # the fork's native ai-excessive-agency-tool-misuse rule (OWASP LLM03/ASI02/AST03/DSGAI06). It
+  # fires on an ai-agent-orchestrator or ai-tool-server with an outgoing link that isn't readonly,
+  # so tool reach is modeled as links and the tag is retired. See docs/ai-risk-rework-plan.md #6.
 
   'ATLAS: AI Agent Memory and Session State Poisoning':
     id: atlas-agent-memory-poisoning

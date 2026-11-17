@@ -588,11 +588,11 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # only use, so the tag is now fully removed from 03-tags-lib.yml too. See
         # docs/risk-methodology.md for the full rationale.
 
-        # NOTE: "ATLAS: AI Agent Orchestration Hijack and Persistence" has been ported into the
-        # jessestarkey/threagile fork as a native script rule
-        # (pkg/risks/scripts/atlas-agent-orchestration-hijack.yaml), triggered off the new
-        # native agent-orchestrator technology instead of the ai:agent-orchestrator tag.
-        # Removed here rather than left duplicated. The ai:agent-orchestrator TAG is also now
+        # NOTE: "ATLAS: AI Agent Orchestration Hijack and Persistence" was ported into the
+        # jessestarkey/threagile fork as a native script rule, and on 2026-11-17 replaced there
+        # (together with this file's ai:plugin-tool-use "AI Agent Tool and Plugin Compromise"
+        # branch) by the native ai-excessive-agency-tool-misuse rule, which reads writable
+        # outgoing links instead of a tag. The ai:agent-orchestrator TAG is also now
         # fully removed from 03-tags-lib.yml -- the indirect-prompt-injection half just below
         # reads the asset's own native `technology:` field instead, same reasoning as the
         # rag-pipeline case above. (The AI OT-actuation check below reads only
@@ -602,10 +602,6 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             # Orchestrators that process external content also inherit indirect injection
             if 'ai:indirect-prompt-input' not in tags:
                 inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "Agent Indirect Injection Risk")
-
-        # Tool/plugin surface (tool poisoning, credential theft, exfil via tool calls)
-        if 'ai:plugin-tool-use' in tags:
-            inject("ATLAS: AI Agent Tool and Plugin Compromise", "Agent Tool Compromise Risk")
 
         # Agent persistent memory (memory/thread poisoning, chat history manipulation)
         if 'ai:agent-memory' in tags:

@@ -278,7 +278,20 @@ No decisions are open. Settled in this round:
      suppression tag suppresses. It also has a per-rule behaviour table. CI runs it in
      `.github/workflows/custom-risk-engine-tests.yml`.
    
-   Next is step 3, #6 Excessive Agency.
+   Step 3 is done too. #6 is the fork's `ai-excessive-agency-tool-misuse` rule:
+   - It fires on an `ai-agent-orchestrator` or `ai-tool-server` with at least one outgoing link
+     that isn't `readonly`.
+   - Likelihood starts at the shared baseline of the two rules it replaced, plus the RAA delta.
+   - Impact is Very High if the agent or any target of a writable link is rated
+     restricted/important or higher, otherwise High.
+   - It replaced `atlas-agent-orchestration-hijack` (native) and `atlas-agent-tool-plugin-compromise`
+     (custom), and `ai:plugin-tool-use` is retired.
+   
+   **Narrower than what it replaced:** the old custom rule also fired on read-only tool access.
+   Read-only tools that reach sensitive data are left to #15 (Sensitive Information
+   Disclosure) and #2 (Indirect Prompt Injection).
+   
+   Next is step 4, the remaining native rules in groups (agentic first).
 4. **Internet exposure in native scripts:** no `+1` Likelihood delta. Exposure decides whether a
    rule fires instead, and adding the delta would count it twice. This is documented in
    `risk-methodology.md`. It closes point 5 of the 2026-11-17 review.

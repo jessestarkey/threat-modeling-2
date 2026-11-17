@@ -25,7 +25,7 @@
 #   cat-vm                machine: virtual
 #   cat-ai-inference      ai:user-prompt-input, ai:indirect-prompt-input,
 #                         ai:llm-endpoint, ai:rag-pipeline,
-#                         ai:agent-orchestrator, ai:plugin-tool-use
+#                         ai:agent-orchestrator
 #   cat-ai-supply-chain   ai:model-serving, ai:model-registry,
 #                         ai:training-pipeline, ai:dataset-store,
 #                         ai:agent-framework, ai:eval-pipeline

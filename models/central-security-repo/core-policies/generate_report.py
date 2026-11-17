@@ -216,7 +216,7 @@ THREAGILE_FORK_SCRIPT_DOMAIN_MAP = {
     "ai-gateway-credential-sprawl": "Artificial Intelligence",
     "ai-guardrails-bypass": "Artificial Intelligence",
     "atlas-adversarial-evasion-attack": "Artificial Intelligence",
-    "atlas-agent-orchestration-hijack": "Artificial Intelligence",
+    "ai-excessive-agency-tool-misuse": "Artificial Intelligence",
     "atlas-chaff-data-spamming": "Artificial Intelligence",
     "atlas-dataset-ingest-integrity": "Artificial Intelligence",
     "atlas-dataset-store-attack": "Artificial Intelligence",
