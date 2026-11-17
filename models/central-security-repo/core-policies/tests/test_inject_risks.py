@@ -20,6 +20,7 @@ import re
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import yaml
@@ -81,7 +82,7 @@ def probe_asset(tags, **fields):
     return asset
 
 
-def run_engine(*assets, business_criticality="important"):
+def run_engine(*assets, business_criticality="important", trust_boundaries=None):
     """Run inject_risks on a model of the given assets.
 
     Returns {category title: {risk name: risk entry}}, i.e. every finding keyed by its category
@@ -93,6 +94,8 @@ def run_engine(*assets, business_criticality="important"):
         "data_assets": {},
         "technical_assets": {f"Asset {asset['id']}": asset for asset in assets},
     }
+    if trust_boundaries:
+        model["trust_boundaries"] = trust_boundaries
     with tempfile.TemporaryDirectory() as directory:
         source = Path(directory) / "model.yml"
         output = Path(directory) / "out.yml"
@@ -202,7 +205,9 @@ RULE_BEHAVIOUR = [
      "Undocumented Credential Blast Radius for Incident-Driven Rotation", False),
     ("RAG technology alone triggers indirect prompt injection",
      [], {"technology": "ai-rag-pipeline"},
-     "ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", True),
+     "Indirect Prompt Injection and Goal Hijack", True),
+    ("vetted skills suppress the unvetted-skills risk",
+     ["ai:skills-enabled", "ai:skills-vetted"], {}, "Unvetted Agent Skills and Instructions", False),
     ("self-managed hardware needs a physical machine",
      ["mgmt:self-managed-hardware"], {"machine": "virtual"},
      "Self-Managed Boot Integrity Bypass", False),
@@ -219,6 +224,72 @@ class RuleBehaviour(unittest.TestCase):
                 self.assertIn(title, DEFINITIONS, "RULE_BEHAVIOUR names an unknown category")
                 fired = title in run_engine(probe_asset(tags, **fields))
                 self.assertEqual(fired, should_fire)
+
+
+def likelihood_of(result, title):
+    risks = list(result[title].values())
+    assert len(risks) == 1, risks
+    return risks[0]["exploitation_likelihood"]
+
+
+def link(target, readonly=False):
+    return {"target": target, "readonly": readonly}
+
+
+@mock.patch.object(inject_risks, "compute_raa_by_id", lambda model: {})
+class LikelihoodSteps(unittest.TestCase):
+    """Steps that branches take from model facts. RAA is pinned (every asset gets the default 1.0,
+    one level below baseline) so only the step under test varies."""
+
+    def test_guardrail_on_the_request_path_lowers_prompt_injection(self):
+        title = "Direct Prompt Injection and Jailbreak"
+        unguarded = run_engine(probe_asset(["ai:user-prompt-input"]))
+        guard_calls = run_engine(
+            probe_asset(["ai:user-prompt-input"]),
+            probe_asset([], id="guard", technology="ai-guardrails", communication_links={"Screen": link("probe")}))
+        probe_calls = run_engine(
+            probe_asset(["ai:user-prompt-input"], communication_links={"Check": link("guard")}),
+            probe_asset([], id="guard", technology="ai-guardrails"))
+        self.assertEqual(likelihood_of(unguarded, title), "likely")
+        self.assertEqual(likelihood_of(guard_calls, title), "possible")
+        self.assertEqual(likelihood_of(probe_calls, title), "possible")
+
+    def test_guardrail_also_lowers_indirect_injection_from_technology(self):
+        title = "Indirect Prompt Injection and Goal Hijack"
+        unguarded = run_engine(probe_asset([], technology="ai-rag-pipeline"))
+        guarded = run_engine(
+            probe_asset([], technology="ai-rag-pipeline", communication_links={"Check": link("guard")}),
+            probe_asset([], id="guard", technology="ai-guardrails"))
+        self.assertEqual(likelihood_of(unguarded, title), "likely")
+        self.assertEqual(likelihood_of(guarded, title), "possible")
+
+    def test_memory_written_from_outside_its_boundary_raises_likelihood(self):
+        title = "Agent Memory and Context Poisoning"
+        boundaries = {"Core": {"id": "core", "technical_assets_inside": ["probe", "inside"]},
+                      "Partner": {"id": "partner", "technical_assets_inside": ["outside"]}}
+        writer_inside = run_engine(
+            probe_asset(["ai:agent-memory"]),
+            probe_asset([], id="inside", communication_links={"Write": link("probe")}),
+            trust_boundaries=boundaries)
+        writer_outside = run_engine(
+            probe_asset(["ai:agent-memory"]),
+            probe_asset([], id="outside", communication_links={"Write": link("probe")}),
+            trust_boundaries=boundaries)
+        reader_outside = run_engine(
+            probe_asset(["ai:agent-memory"]),
+            probe_asset([], id="outside", communication_links={"Read": link("probe", readonly=True)}),
+            trust_boundaries=boundaries)
+        self.assertEqual(likelihood_of(writer_inside, title), "possible")
+        self.assertEqual(likelihood_of(writer_outside, title), "likely")
+        self.assertEqual(likelihood_of(reader_outside, title), "possible")
+
+    def test_code_execution_without_isolation_raises_likelihood(self):
+        title = "Unexpected Code Execution and Weak Sandbox"
+        for machine, expected in (("physical", "likely"), ("virtual", "likely"),
+                                  ("container", "possible"), ("serverless", "possible")):
+            with self.subTest(machine=machine):
+                result = run_engine(probe_asset(["ai:code-execution"], machine=machine))
+                self.assertEqual(likelihood_of(result, title), expected)
 
 
 if __name__ == "__main__":

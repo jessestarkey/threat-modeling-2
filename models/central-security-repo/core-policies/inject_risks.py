@@ -364,7 +364,7 @@ def compute_raa_by_id(model: dict) -> dict:
     return _raa_normalize(adjusted_raw)
 
 
-def compute_likelihood(definition: dict, asset_raa: float, internet_reachable: bool) -> str:
+def compute_likelihood(definition: dict, asset_raa: float, internet_reachable: bool, adjust: int = 0) -> str:
     """Likelihood = the category's own baseline_likelihood (see
     09-custom-risks-lib.yml -- an author judgment of how exploitable this
     vulnerability class inherently is, informed by CWE/OWASP data where a
@@ -390,7 +390,11 @@ def compute_likelihood(definition: dict, asset_raa: float, internet_reachable: b
     CIA as its first term, plus the data it actually
     processes/stores/transfers, its technology role, and the pivoting
     effect, so it's a strictly richer version of the same signal, not an
-    additional one stacked on top."""
+    additional one stacked on top.
+
+    `adjust` is an optional per-category step (-1/0/+1) from a model fact a
+    specific branch reads, such as a guardrail on a prompt-injection
+    asset's request path; it is added before clamping."""
     baseline = LIKELIHOOD_ORDER.index(definition["baseline_likelihood"])
     if asset_raa >= RAA_LIKELIHOOD_THRESHOLD:
         raa_delta = 1
@@ -399,7 +403,7 @@ def compute_likelihood(definition: dict, asset_raa: float, internet_reachable: b
     else:
         raa_delta = 0
     exposed_delta = 1 if internet_reachable else 0
-    return LIKELIHOOD_ORDER[_clamp(baseline + raa_delta + exposed_delta)]
+    return LIKELIHOOD_ORDER[_clamp(baseline + raa_delta + exposed_delta + adjust)]
 
 
 def compute_impact(definition: dict, asset_data: dict) -> str:
@@ -456,6 +460,19 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
     raa_by_id = compute_raa_by_id(model)
 
     tech_assets = model.get('technical_assets', {})
+
+    # Graph indexes for the few branches that read links or trust boundaries: each asset's
+    # technology, its directly containing trust boundary, and incoming links by target id.
+    technology_by_id = {a.get('id'): a.get('technology') for a in tech_assets.values()}
+    boundary_by_id = {}
+    for boundary in (model.get('trust_boundaries') or {}).values():
+        for inside in boundary.get('technical_assets_inside') or []:
+            boundary_by_id[inside] = boundary.get('id')
+    incoming_by_target = {}
+    for source in tech_assets.values():
+        for link in (source.get('communication_links') or {}).values():
+            incoming_by_target.setdefault(link.get('target'), []).append((source.get('id'), link))
+
     for asset_name, asset_data in tech_assets.items():
         # Out-of-scope assets (external entities the app team doesn't
         # operate -- an end user's own device, a partner's own backend) are
@@ -477,11 +494,25 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         asset_id = asset_data.get('id')
         asset_is_internet_reachable = 'net:internet-reachable' in tags
         asset_raa = raa_by_id.get(asset_id, 1.0)
+        incoming = incoming_by_target.get(asset_id, [])
+        outgoing_targets = [link.get('target') for link in (asset_data.get('communication_links') or {}).values()]
+        # A guardrail on the request path -- an ai-guardrails asset calls this asset, or this
+        # asset calls one to screen its traffic -- lowers prompt-injection likelihood one level.
+        # This replaced the fork's ai-guardrails-bypass rule (2026-11-17).
+        guarded = (any(technology_by_id.get(source) == 'ai-guardrails' for source, _ in incoming)
+                   or any(technology_by_id.get(target) == 'ai-guardrails' for target in outgoing_targets))
+        injection_delta = -1 if guarded else 0
+        # Written from outside the trust boundary: internet-facing, or a non-readonly incoming
+        # link from an asset in a different directly containing boundary (or none).
+        own_boundary = boundary_by_id.get(asset_id)
+        written_from_outside = bool(asset_data.get('internet')) or any(
+            not link.get('readonly', False) and boundary_by_id.get(source) != own_boundary
+            for source, link in incoming)
 
         # Generic function to safely inject a risk from our dictionary
-        def inject(cid, title):
+        def inject(cid, title, likelihood_delta=0):
             definition = risk_defs[cid]
-            likelihood = compute_likelihood(definition, asset_raa, asset_is_internet_reachable)
+            likelihood = compute_likelihood(definition, asset_raa, asset_is_internet_reachable, likelihood_delta)
             impact = compute_impact(definition, asset_data)
             severity = compute_severity(likelihood, impact)
             if cid not in model['individual_risk_categories']:
@@ -562,11 +593,11 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
 
         # Prompt input surface (direct injection, jailbreak, system prompt extraction)
         if 'ai:user-prompt-input' in tags:
-            inject("ATLAS: LLM Prompt Injection (Direct) and Jailbreak", "Direct Prompt Injection Risk")
+            inject("Direct Prompt Injection and Jailbreak", "Direct Prompt Injection Risk", injection_delta)
 
         # Indirect injection surface (emails, docs, web content fed to LLM)
         if 'ai:indirect-prompt-input' in tags:
-            inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "Indirect Prompt Injection Risk")
+            inject("Indirect Prompt Injection and Goal Hijack", "Indirect Prompt Injection Risk", injection_delta)
 
         # 2026-11-17: the fork has since replaced the ATLAS rules named in the port notes below
         # (atlas-rag-poisoning-exfil, atlas-dataset-ingest-integrity,
@@ -585,7 +616,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # See docs/risk-methodology.md for the full rationale.
         if asset_technology in RAG_PIPELINE_TECHNOLOGIES:
             # RAG retrieval is inherently an indirect prompt injection surface
-            inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "RAG Indirect Injection Risk")
+            inject("Indirect Prompt Injection and Goal Hijack", "RAG Indirect Injection Risk", injection_delta)
 
         # NOTE: "ATLAS: Dataset and RAG Ingest Integrity Erosion" has been ported into the
         # jessestarkey/threagile fork as a native script rule
@@ -607,11 +638,30 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if asset_technology in AGENT_ORCHESTRATOR_TECHNOLOGIES:
             # Orchestrators that process external content also inherit indirect injection
             if 'ai:indirect-prompt-input' not in tags:
-                inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "Agent Indirect Injection Risk")
+                inject("Indirect Prompt Injection and Goal Hijack", "Agent Indirect Injection Risk", injection_delta)
 
-        # Agent persistent memory (memory/thread poisoning, chat history manipulation)
+        # Agent persistent memory (memory/thread poisoning, chat history manipulation); one level
+        # more likely when the memory is written from outside its trust boundary.
         if 'ai:agent-memory' in tags:
-            inject("ATLAS: AI Agent Memory and Session State Poisoning", "Agent Memory Poisoning Risk")
+            inject("Agent Memory and Context Poisoning", "Agent Memory Poisoning Risk", 1 if written_from_outside else 0)
+
+        # Code the agent or tool runs itself (ASI05/AST06); one level more likely on a machine
+        # with no container or serverless isolation.
+        if 'ai:code-execution' in tags:
+            unisolated = asset_data.get('machine', 'physical') not in ('container', 'serverless')
+            inject("Unexpected Code Execution and Weak Sandbox", "Code Execution Risk", 1 if unisolated else 0)
+
+        # Agent skills loaded into the agent (AST01/04/05/08/10), unless vetted.
+        if 'ai:skills-enabled' in tags and 'ai:skills-vetted' not in tags:
+            inject("Unvetted Agent Skills and Instructions", "Agent Skills Risk")
+
+        # Human labelers / reviewers seeing the data (DSGAI19).
+        if 'ai:human-labeling' in tags:
+            inject("Labeler and Human-in-the-Loop Overexposure", "Labeler Overexposure Risk")
+
+        # AI assistants on user endpoints and browsers (DSGAI16).
+        if 'ai:endpoint-assistant' in tags:
+            inject("Endpoint and Browser AI Overreach", "Endpoint AI Overreach Risk")
 
         # 2026-11-17: the fork has since replaced atlas-inference-api-abuse with ai-inference-data-reconstruction and ai-sensitive-information-disclosure.
         # NOTE: "ATLAS: LLM Inference API Abuse, Cost Harvesting, and Model Extraction" and
@@ -703,7 +753,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             # indirect-prompt-input tag once its own content-relay role is tagged
             # explicitly).
             if 'ai:indirect-prompt-input' not in tags:
-                inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "Cross-Agent Injection Risk")
+                inject("Indirect Prompt Injection and Goal Hijack", "Cross-Agent Injection Risk", injection_delta)
 
         # --- 2b(ii). AI OPERATIONAL AND DEPLOYMENT HARDENING GAPS ---
         # Beyond standard ATLAS/MAESTRO coverage -- see 03-tags-lib.yml's
@@ -757,7 +807,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             inject("Ungoverned Third-Party Foundation Model API Dependency", "Third-Party Model API Risk")
 
         if 'ai:decision-support-output' in tags and 'ai:output-confidence-disclosed' not in tags:
-            inject("AI-Generated Decision Support Without Verification Signal", "AI Overreliance Risk")
+            inject("Overreliance and Human-Agent Trust Exploitation", "AI Overreliance Risk")
 
         # --- 2c. CROSS-DOMAIN SOLUTION INTERFACE ---
 

@@ -171,7 +171,7 @@ THREAGILE_BUILTIN_DOMAIN_MAP = {
 # repo this script has no path to at report-render time -- so, same
 # mechanism as the built-in map (a hardcoded snapshot), but built by
 # reading every script file's own id/title/description directly rather
-# than from locally-observed firings only, so it covers all ~67 native
+# than from locally-observed firings only, so it covers all ~66 native
 # script categories that exist in the fork as of this writing, not just
 # the ones that happened to fire in a run so far. A category id this map
 # doesn't recognize (a script added to the fork after this snapshot was
@@ -221,7 +221,6 @@ THREAGILE_FORK_SCRIPT_DOMAIN_MAP = {
     "ai-agent-identity-privilege-abuse": "Artificial Intelligence",
     "ai-cascading-agent-failures": "Artificial Intelligence",
     "ai-change-control-gap": "Artificial Intelligence",
-    "ai-guardrails-bypass": "Artificial Intelligence",
     "ai-excessive-agency-tool-misuse": "Artificial Intelligence",
     "ai-insecure-inter-agent-communication": "Artificial Intelligence",
     "ai-rogue-agent-containment-gap": "Artificial Intelligence",

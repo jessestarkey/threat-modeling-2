@@ -212,6 +212,10 @@ categories:
 
           "Does the agent keep persistent memory or session state across turns or sessions?": "-> ai:agent-memory"
 
+          "Does the agent or one of its tools run code that the model writes, that a tool returns, or that is built from model output?": "-> ai:code-execution"
+
+          "Does the agent load skills, such as packaged instructions or manifests that tell it how to use its tools?": "-> ai:skills-enabled (add ai:skills-vetted if they load only from an approved, pinned, scanned catalogue)"
+
           "Do multiple agents interact here across identity domains, an A2A gateway, an MCP server, or an agent registry?": "-> ai:multi-agent-boundary"
 
       "Does the application run a Retrieval-Augmented Generation pipeline or a vector database plus retrieval plus LLM grounding?":

@@ -269,6 +269,11 @@ tags_available:
   # readonly: true for read-only tools -- and read by the fork's ai-excessive-agency-tool-misuse
   # rule. See docs/ai-risk-rework-plan.md #6.
   - ai:agent-memory        # Asset maintains persistent memory or session state for an AI agent across turns or sessions
+  - ai:code-execution      # Agent or tool server runs code the model writes, tools return, or commands built from model output — trigger for the ai-unexpected-code-execution risk
+  - ai:skills-enabled      # Agent loads skills (packaged instructions/manifests/scripts that orchestrate its tools) — trigger for the ai-unvetted-agent-skills risk
+  - ai:skills-vetted       # Skills load only from an approved, pinned, scanned catalogue with review before enablement — suppresses the ai-unvetted-agent-skills risk
+  - ai:human-labeling      # Labelers, annotators, red-teamers or human reviewers see this asset's data, prompts or outputs — trigger for the ai-labeler-overexposure risk
+  - ai:endpoint-assistant  # AI assistant on user endpoints or in the browser with local file/page/screen access — trigger for the ai-endpoint-assistant-overreach risk
   # ai:agent-framework has been removed (2026-11-17): framework dependencies are covered
   # natively by the fork's ai-supply-chain-compromise rule on every ai-agent-orchestrator.
   # See docs/ai-risk-rework-plan.md #23.

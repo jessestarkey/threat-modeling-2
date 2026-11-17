@@ -105,8 +105,8 @@ New `id`s use an `ai-` prefix plus a descriptive slug. No AI risk ID appears in 
 
 | # | Category | OWASP IDs | Place | Matches | Fires when (proposed) | Replaces |
 |---|---|---|---|---|---|---|
-| 1 | Direct Prompt Injection | LLM01 | C | assets tagged `ai:user-prompt-input` | tag present. Lower likelihood if an `ai-guardrails` asset is on the inbound path | `atlas-direct-prompt-injection-jailbreak` (C) · `ai-guardrails-bypass` (N), which becomes this mitigation signal |
-| 2 | Indirect Prompt Injection & Goal Hijack | LLM01 · ASI01 · AST05 · DSGAI09 (cross-modal payloads) | C | `ai:indirect-prompt-input`, plus the auto-trigger already in `inject_risks.py` for RAG, agent and multi-agent technologies | as today, with the same guardrail mitigation signal | `atlas-indirect-prompt-injection` (C) |
+| 1 | Direct Prompt Injection (built: `ai-direct-prompt-injection`) | LLM01 | C | assets tagged `ai:user-prompt-input` | tag present. Lower likelihood if an `ai-guardrails` asset is on the inbound path | `atlas-direct-prompt-injection-jailbreak` (C) · `ai-guardrails-bypass` (N), which becomes this mitigation signal |
+| 2 | Indirect Prompt Injection & Goal Hijack (built: `ai-indirect-prompt-injection`) | LLM01 · ASI01 · AST05 · DSGAI09 (cross-modal payloads) | C | `ai:indirect-prompt-input`, plus the auto-trigger already in `inject_risks.py` for RAG, agent and multi-agent technologies | as today, with the same guardrail mitigation signal | `atlas-indirect-prompt-injection` (C) |
 | 3 | Hidden Context Exposure (built: `ai-hidden-context-exposure`) | LLM08 | N | `ai-llm-endpoint`, `ai-agent-orchestrator`, `ai-rag-pipeline` | receives requests from outside its trust boundary (internet-facing, or an incoming link from another boundary) | `system-prompt-leakage` |
 | 4 | Improper Output Handling (built: `ai-improper-output-handling`) | LLM10 · DSGAI05 | N | `ai-llm-endpoint`, `ai-model-serving`, `ai-agent-orchestrator`, `ai-rag-pipeline` | output reaches a consumer: any outgoing link, or an incoming link from a frontend-related asset that renders the response. Impact from the integrity of what consumes it | `llm-improper-output-handling` |
 | 5 | Unsafe Natural-Language Data Gateway (built: `ai-unsafe-nl-data-gateway`) | DSGAI12 | N | any `ai` asset | an outgoing link to a `type: datastore` asset, read-only or not (over-broad reads are the main harm; writes are also covered by #6) | **new** |
@@ -120,13 +120,13 @@ has a single source.
 | # | Category | OWASP IDs | Place | Matches | Fires when (proposed) | Replaces |
 |---|---|---|---|---|---|---|
 | 6 | Excessive Agency & Tool Misuse | LLM03 · ASI02 · AST03 · DSGAI06 | N | `ai-agent-orchestrator`, `ai-tool-server` | at least one outgoing link is not `readonly`. Impact = highest CIA among link targets | `atlas-agent-orchestration-hijack` (N) · `atlas-agent-tool-plugin-compromise` (C). The `ai:plugin-tool-use` tag can retire, because tool reach is now modelled as links |
-| 7 | Unexpected Code Execution & Weak Sandbox | ASI05 · AST06 | C | orchestrator / tool server tagged **`ai:code-execution`** (new) | tag present. Higher likelihood when `machine` isn't `container`/`serverless` (no runtime isolation) | **new** |
+| 7 | Unexpected Code Execution & Weak Sandbox (built: `ai-unexpected-code-execution`) | ASI05 · AST06 | C | orchestrator / tool server tagged **`ai:code-execution`** (new) | tag present. Higher likelihood when `machine` isn't `container`/`serverless` (no runtime isolation) | **new** |
 | 8 | Agent Identity & Privilege Abuse (built: `ai-agent-identity-privilege-abuse`) | ASI03 · DSGAI02 | N | `ai-agent-orchestrator`, `ai-tool-server`, `ai-gateway`, `ai-multi-agent-gateway` | an authenticated outgoing link whose `authorization` isn't `end-user-identity-propagation` (the agent calls as itself). Static secrets are left to `hardcoded-credentials-secrets-sprawl` | `ai-gateway-credential-sprawl` · identity half of `maestro-l7-agent-ecosystem-identity` |
 | 9 | Insecure Inter-Agent Communication (built: `ai-insecure-inter-agent-communication`) | ASI07 | N (per source agent) | orchestrator / multi-agent gateway with a link to another of either | that link crosses a trust boundary (different direct containing boundary), has `authentication: none`, or uses a protocol Threagile doesn't class as encrypted | communication half of `maestro-l7-agent-ecosystem-identity` |
 | 10 | Cascading Agent Failures (built: `ai-cascading-agent-failures`) | ASI08 | N | orchestrator / multi-agent gateway | has an outgoing link to another orchestrator or multi-agent gateway (an agent chain; calls to models and tools don't count) | **new** |
 | 11 | Rogue Agent & Missing Kill Switch (built: `ai-rogue-agent-containment-gap`) | ASI10 | N | orchestrator, `ai-model-serving`, `ai-llm-endpoint` | always. Likelihood one level lower with an outgoing link to an `ai-observability-stack`. Scored as Tampering/integrity (the replaced rule used availability) | kill-switch half of `missing-model-rollback-killswitch` |
 | 12 | AI Change Control Gap (built: `ai-change-control-gap`) | AST07 · ASI10 (partial) · LLM05 (fine-tune subversion) · LLM08 | N | `ai-llm-endpoint`, `ai-model-serving`, `ai-rag-pipeline`, orchestrator | no model fact available, so it fires unconditionally. Adding a suppression tag would move it to C under the placement rule | `ungoverned-system-prompt-change` · `missing-canary-prompt-testing` · rollback half of `missing-model-rollback-killswitch` |
-| 13 | Agent Memory & Context Poisoning | ASI06 | C | assets tagged `ai:agent-memory` (existing tag) | tag present. Higher likelihood if memory is written from outside the trust boundary (this needs a trust-boundary lookup reimplemented in Python) | `atlas-agent-memory-poisoning` (C, re-anchored) |
+| 13 | Agent Memory & Context Poisoning (built: `ai-agent-memory-poisoning`) | ASI06 | C | assets tagged `ai:agent-memory` (existing tag) | tag present. Higher likelihood if memory is written from outside the trust boundary (this needs a trust-boundary lookup reimplemented in Python) | `atlas-agent-memory-poisoning` (C, re-anchored) |
 | 14 | Cross-Context Bleed & Over-Broad Context (built: `ai-cross-context-bleed`) | DSGAI11 · DSGAI15 | N | `ai-llm-endpoint`, `ai-rag-pipeline`, orchestrator | `multi_tenant: true`, or it processes data assets at more than one confidentiality level | **new** |
 
 ### Data confidentiality and model IP
@@ -147,7 +147,7 @@ has a single source.
 | 18 | Training & Fine-Tuning Data/Model Poisoning (built: `ai-training-data-model-poisoning`) | LLM05 · DSGAI04 · DSGAI05 · DSGAI21 | N | `ai-training-pipeline`, `ai-dataset-store`, `ai-feature-store`, `ai-eval-pipeline` | always (insider and compromised-account poisoning need nothing the model records). Likelihood starts at Unlikely and steps up one level when data is written in from outside the trust boundary (internet-facing, or a non-readonly incoming link from another boundary) | `atlas-training-data-poisoning` · `atlas-dataset-store-attack` (confidentiality half is already covered by built-in datastore rules) · `hyperparameter-tampering-no-baseline-diff` · `maestro-l5-eval-pipeline-poisoning` · `ai-feature-store-lineage-gap` |
 | 19 | RAG Corpus Poisoning (built: `ai-rag-corpus-poisoning`) | LLM09 · ASI06 (partial) · DSGAI04 | N | `ai-rag-ingest-pipeline`, `ai-rag-pipeline` | content comes in from outside the trust boundary: internet-facing, an incoming link from another boundary, or a readonly outgoing link (a pull) to one | `atlas-dataset-ingest-integrity` · `atlas-rag-poisoning-exfil` |
 | 23 | AI Supply Chain (built: `ai-supply-chain-compromise`) | LLM04 · ASI04 · AST02 | N | `ai-model-registry`, `ai-model-serving`, `ai-agent-orchestrator` (framework dependencies), `ai-tool-server` (tool packages, per ASI04) | always. Likelihood one level higher when the asset brings content in from outside the trust boundary (e.g. a pull from a public model hub) | `atlas-model-supply-chain` · `atlas-model-registry-supply-chain` · `untrusted-model-registry-source` · `maestro-l3-agent-framework-supply-chain` (C). The `ai:agent-framework` tag is retired |
-| 24 | Unvetted Agent Skills & Instructions | AST01 · AST04 · AST05 · AST08 · AST10 | C | assets tagged **`ai:skills-enabled`** (new) | tag present, unless a new suppression tag `ai:skills-vetted` is set | **new**. Could move native only if an `ai-skill-registry` technology replaces the tag |
+| 24 | Unvetted Agent Skills & Instructions (built: `ai-unvetted-agent-skills`) | AST01 · AST04 · AST05 · AST08 · AST10 | C | assets tagged **`ai:skills-enabled`** (new) | tag present, unless a new suppression tag `ai:skills-vetted` is set | **new**. Could move native only if an `ai-skill-registry` technology replaces the tag |
 
 ### Availability
 
@@ -159,9 +159,9 @@ has a single source.
 
 | # | Category | OWASP IDs | Place | Matches | Fires when | Replaces |
 |---|---|---|---|---|---|---|
-| 26 | Overreliance & Human-Agent Trust Exploitation | LLM07 · ASI09 · DSGAI21 (partial) | C | `ai:decision-support-output` (existing) | as today, suppressed by `ai:output-confidence-disclosed` | `ai-overreliance-misinformation` (C) |
-| 27 | Labeler & Human-in-the-Loop Overexposure | DSGAI19 | C | **`ai:human-labeling`** (new) | tag present. For IL5, the question is the labeler workforce's clearance and need-to-know | **new** |
-| 28 | Endpoint & Browser AI Overreach | DSGAI16 | C | **`ai:endpoint-assistant`** (new) | tag present | **new**. Kept (decided 2026-11-17) so it's ready when a model includes user endpoints or desktop AI assistants; it only fires where the tag is applied |
+| 26 | Overreliance & Human-Agent Trust Exploitation (built: `ai-overreliance-trust-exploitation`) | LLM07 · ASI09 · DSGAI21 (partial) | C | `ai:decision-support-output` (existing) | as today, suppressed by `ai:output-confidence-disclosed` | `ai-overreliance-misinformation` (C) |
+| 27 | Labeler & Human-in-the-Loop Overexposure (built: `ai-labeler-overexposure`) | DSGAI19 | C | **`ai:human-labeling`** (new) | tag present. For IL5, the question is the labeler workforce's clearance and need-to-know | **new** |
+| 28 | Endpoint & Browser AI Overreach (built: `ai-endpoint-assistant-overreach`) | DSGAI16 | C | **`ai:endpoint-assistant`** (new) | tag present | **new**. Kept (decided 2026-11-17) so it's ready when a model includes user endpoints or desktop AI assistants; it only fires where the tag is applied |
 
 ### Kept categories with no OWASP GenAI equivalent
 
@@ -341,8 +341,21 @@ No decisions are open. Settled in this round:
    and every native category in this plan exists. #5 fires on read-only datastore links as well
    as writable ones, because over-broad reads are DSGAI12's main harm.
 
-   `ai-guardrails-bypass` still stands until step 5 turns it into a mitigation signal for #1 and
-   #2. Next is step 5, the custom rules.
+   Step 5, the custom rules, is done, which completes the rework:
+   - **Re-anchored:** #1, #2, #13 and #26 have `ai-` ids and titles and cite the 2026 OWASP IDs,
+     keeping their baselines.
+   - **New:** #7, #24, #27 and #28, with the tags `ai:code-execution`, `ai:skills-enabled`
+     (suppressed by `ai:skills-vetted`), `ai:human-labeling` and `ai:endpoint-assistant`. The two
+     agent tags are also in the intake questionnaire.
+   - **Guardrail signal:** `ai-guardrails-bypass` is retired from the fork (66 script rules). A
+     guardrail on a prompt-injection asset's request path now lowers #1 and #2 one level. The
+     bypass and fail-open guidance moved into their mitigation text, and guardrail assets still
+     get `security-control-tamper-resistance-gap`.
+   - **Python engine:** `inject_risks.py` now builds link and trust-boundary indexes, and
+     `compute_likelihood` takes an optional one-level adjustment. #13 steps up when memory is
+     written from outside its boundary, and #7 steps up on a host with no container or
+     serverless isolation. Each adjustment has a test in `LikelihoodSteps`.
+   - The custom library has 89 categories and the catalogue lists 190 in total.
 4. **Internet exposure in native scripts:** no `+1` Likelihood delta. Exposure decides whether a
    rule fires instead, and adding the delta would count it twice. This is documented in
    `risk-methodology.md`. It closes point 5 of the 2026-11-17 review.
