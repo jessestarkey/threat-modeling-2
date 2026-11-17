@@ -107,9 +107,9 @@ New `id`s use an `ai-` prefix plus a descriptive slug. No AI risk ID appears in 
 |---|---|---|---|---|---|---|
 | 1 | Direct Prompt Injection | LLM01 | C | assets tagged `ai:user-prompt-input` | tag present. Lower likelihood if an `ai-guardrails` asset is on the inbound path | `atlas-direct-prompt-injection-jailbreak` (C) · `ai-guardrails-bypass` (N), which becomes this mitigation signal |
 | 2 | Indirect Prompt Injection & Goal Hijack | LLM01 · ASI01 · AST05 · DSGAI09 (cross-modal payloads) | C | `ai:indirect-prompt-input`, plus the auto-trigger already in `inject_risks.py` for RAG, agent and multi-agent technologies | as today, with the same guardrail mitigation signal | `atlas-indirect-prompt-injection` (C) |
-| 3 | Hidden Context Exposure | LLM08 | N | `ai-llm-endpoint`, `ai-agent-orchestrator`, `ai-rag-pipeline` | asset has an incoming link from outside its own trust boundary | `system-prompt-leakage` |
-| 4 | Improper Output Handling | LLM10 · DSGAI05 | N | `ai-llm-endpoint`, `ai-model-serving`, `ai-agent-orchestrator`, `ai-rag-pipeline` | asset has an outgoing link, or its output reaches a browser, datastore or interpreter. Impact from the target's CIA | `llm-improper-output-handling` |
-| 5 | Unsafe Natural-Language Data Gateway (NL-to-SQL/query) | DSGAI12 | N | any `ai` asset | outgoing link whose target is `type: datastore` and is not `readonly` | **new** |
+| 3 | Hidden Context Exposure (built: `ai-hidden-context-exposure`) | LLM08 | N | `ai-llm-endpoint`, `ai-agent-orchestrator`, `ai-rag-pipeline` | receives requests from outside its trust boundary (internet-facing, or an incoming link from another boundary) | `system-prompt-leakage` |
+| 4 | Improper Output Handling (built: `ai-improper-output-handling`) | LLM10 · DSGAI05 | N | `ai-llm-endpoint`, `ai-model-serving`, `ai-agent-orchestrator`, `ai-rag-pipeline` | output reaches a consumer: any outgoing link, or an incoming link from a frontend-related asset that renders the response. Impact from the integrity of what consumes it | `llm-improper-output-handling` |
+| 5 | Unsafe Natural-Language Data Gateway (built: `ai-unsafe-nl-data-gateway`) | DSGAI12 | N | any `ai` asset | an outgoing link to a `type: datastore` asset, read-only or not (over-broad reads are the main harm; writes are also covered by #6) | **new** |
 
 Rules 1 and 2 are custom (C) because they read tags. The auto-trigger for RAG, agent and
 multi-agent technologies in #2 stays in `inject_risks.py` beside the tag check, so the category
@@ -336,10 +336,13 @@ No decisions are open. Settled in this round:
    - **Not carried over:** the data-handling half of `ai-feature-store-lineage-gap` (derived
      features losing their source's handling marking).
 
-   Native categories still to build: #3 Hidden Context Exposure and #4 Improper Output Handling
-   (still the old `system-prompt-leakage` and `llm-improper-output-handling` rules) and #5 Unsafe
-   Natural-Language Data Gateway (new). `ai-guardrails-bypass` also still stands until step 5
-   turns it into a mitigation signal for #1 and #2. Then step 5, the custom rules.
+   The last native categories are done too: #3, #4 and #5 are built, replacing
+   `system-prompt-leakage` and `llm-improper-output-handling`, so the fork has 67 script rules
+   and every native category in this plan exists. #5 fires on read-only datastore links as well
+   as writable ones, because over-broad reads are DSGAI12's main harm.
+
+   `ai-guardrails-bypass` still stands until step 5 turns it into a mitigation signal for #1 and
+   #2. Next is step 5, the custom rules.
 4. **Internet exposure in native scripts:** no `+1` Likelihood delta. Exposure decides whether a
    rule fires instead, and adding the delta would count it twice. This is documented in
    `risk-methodology.md`. It closes point 5 of the 2026-11-17 review.
