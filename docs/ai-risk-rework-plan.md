@@ -268,6 +268,17 @@ No decisions are open. Settled in this round:
    
    Delete each old rule in the same commit as its replacement, and update the catalogue, the
    report's domain map and `03-tags-lib.yml` in those same commits.
+
+   Status: steps 1 and 2 are done. The test harnesses are:
+   - **Go:** `pkg/risks/scripts/all_rules_test.go` checks that every script rule loads with
+     complete metadata, runs without a script error, and fires on a model containing every
+     technology. It runs on every image build through the Dockerfile's `go test`.
+   - **Python:** `core-policies/tests/test_inject_risks.py` checks that the engine and library
+     agree, every tag the engine reads is documented, every trigger tag fires, and every
+     suppression tag suppresses. It also has a per-rule behaviour table. CI runs it in
+     `.github/workflows/custom-risk-engine-tests.yml`.
+   
+   Next is step 3, #6 Excessive Agency.
 4. **Internet exposure in native scripts:** no `+1` Likelihood delta. Exposure decides whether a
    rule fires instead, and adding the delta would count it twice. This is documented in
    `risk-methodology.md`. It closes point 5 of the 2026-11-17 review.

@@ -1,0 +1,39 @@
+name: Custom Risk Engine Tests
+
+# Fast unit tests for inject_risks.py and the libraries it reads (09-custom-risks-lib.yml,
+# 03-tags-lib.yml). Kept separate from the modular pipeline so a library or engine change gets
+# checked in seconds without a full Threagile/report run.
+on:
+  push:
+    paths:
+      - 'models/central-security-repo/core-policies/**'
+      - 'models/central-security-repo/libraries/**'
+      - '.github/workflows/custom-risk-engine-tests.yml'
+  pull_request:
+    paths:
+      - 'models/central-security-repo/core-policies/**'
+      - 'models/central-security-repo/libraries/**'
+      - '.github/workflows/custom-risk-engine-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        # Same pin as the modular pipeline; the tests use only the standard library otherwise.
+        run: pip install pyyaml==6.0.3
+
+      - name: Run Tests
+        run: python -m unittest discover -s models/central-security-repo/core-policies/tests -v
