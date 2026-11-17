@@ -1333,7 +1333,8 @@ custom_risk_definitions:
   # ai-observability-stack/ai-security-agent/multi-agent-gateway technologies instead of the
   # ai:eval-pipeline/ai:observability-stack/ai:security-agent/ai:multi-agent-boundary tags.
   # Removed here rather than left duplicated. See docs/risk-methodology.md for the full
-  # rationale.
+  # rationale. (The MAESTRO L7 rule was since replaced in the fork, 2026-11-17, by
+  # ai-agent-identity-privilege-abuse and ai-insecure-inter-agent-communication.)
 
   # --- 5.3 AI OPERATIONAL AND DEPLOYMENT HARDENING GAPS ---
   # Beyond standard ATLAS technique coverage and MAESTRO layer generalities
@@ -1362,7 +1363,8 @@ custom_risk_definitions:
   # (pkg/risks/scripts/ungoverned-system-prompt-change.yaml), triggered off the
   # llm-endpoint/rag-pipeline/agent-orchestrator technology attributes instead of the
   # ai:user-prompt-input/ai:llm-endpoint/ai:agent-orchestrator tags. Removed here rather than
-  # left duplicated. See docs/risk-methodology.md for the full rationale.
+  # left duplicated. See docs/risk-methodology.md for the full rationale. (Since replaced in the
+  # fork, 2026-11-17, by ai-change-control-gap.)
 
   # 'On-Device Model Extraction Resistance Gap' has been ported into the jessestarkey/
   # threagile fork as a native script rule (pkg/risks/scripts/on-device-model-extraction-
@@ -1393,7 +1395,9 @@ custom_risk_definitions:
   # into the jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml),
   # triggered off the native model-serving/llm-endpoint/model-registry technology attributes
   # instead of the ai:model-serving/ai:llm-endpoint/ai:model-registry tags. Removed here rather
-  # than left duplicated. See docs/risk-methodology.md for the full rationale.
+  # than left duplicated. See docs/risk-methodology.md for the full rationale. (The first two
+  # were since replaced in the fork, 2026-11-17, by ai-change-control-gap and
+  # ai-rogue-agent-containment-gap.)
 
   # 'Training Script and Feature-Engineering Pipeline IP Exfiltration' and 'Hyperparameter
   # Tampering Without Baseline Diffing' have both been ported into the jessestarkey/threagile

@@ -681,7 +681,9 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # Removed here rather than left duplicated. The ai:multi-agent-boundary TAG is also
         # now fully removed from 03-tags-lib.yml -- the indirect-prompt-injection piggyback
         # just below reads the asset's own native `technology:` field instead, same reasoning
-        # as the rag-pipeline/agent-orchestrator/dataset-store cases above.
+        # as the rag-pipeline/agent-orchestrator/dataset-store cases above. (In the fork, that
+        # rule was itself replaced on 2026-11-17 by ai-agent-identity-privilege-abuse and
+        # ai-insecure-inter-agent-communication.)
         if asset_technology in MULTI_AGENT_GATEWAY_TECHNOLOGIES:
             # Multi-agent gateways also inherit indirect prompt injection since agents
             # interpret messages from other agents as instructions -- but only when
@@ -703,6 +705,8 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
 
         # NOTE: "Ungoverned Production System Prompt Change," "No Canary Prompt Testing Against
         # Production Inference Endpoint," "Missing Model Rollback and Kill-Switch Mechanism,"
+        # (the first three since replaced in the fork, 2026-11-17, by ai-change-control-gap and
+        # ai-rogue-agent-containment-gap)
         # and "Untrusted Model Registry Source" have all been ported into the
         # jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml),
         # triggered off the native llm-endpoint/rag-pipeline/agent-orchestrator/model-serving/

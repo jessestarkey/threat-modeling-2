@@ -121,11 +121,11 @@ has a single source.
 |---|---|---|---|---|---|---|
 | 6 | Excessive Agency & Tool Misuse | LLM03 · ASI02 · AST03 · DSGAI06 | N | `ai-agent-orchestrator`, `ai-tool-server` | at least one outgoing link is not `readonly`. Impact = highest CIA among link targets | `atlas-agent-orchestration-hijack` (N) · `atlas-agent-tool-plugin-compromise` (C). The `ai:plugin-tool-use` tag can retire, because tool reach is now modelled as links |
 | 7 | Unexpected Code Execution & Weak Sandbox | ASI05 · AST06 | C | orchestrator / tool server tagged **`ai:code-execution`** (new) | tag present. Higher likelihood when `machine` isn't `container`/`serverless` (no runtime isolation) | **new** |
-| 8 | Agent Identity & Credential Abuse | ASI03 · DSGAI02 | N | `ai-agent-orchestrator`, `ai-gateway`, `ai-multi-agent-gateway` | an outgoing link has `authorization: technical-user` (no end-user identity propagation) or static `authentication: credentials` | `ai-gateway-credential-sprawl` · identity half of `maestro-l7-agent-ecosystem-identity` |
-| 9 | Insecure Inter-Agent Communication | ASI07 | N (link-level) | links where both ends are agent/multi-agent assets | link crosses a trust boundary, or `authentication` is none, or the protocol is unencrypted | communication half of `maestro-l7-agent-ecosystem-identity` |
-| 10 | Cascading Agent Failures | ASI08 | N | orchestrator / multi-agent gateway | has an outgoing link to another `ai` asset (an agent chain) | **new** |
-| 11 | Rogue Agent & Missing Kill Switch | ASI10 | N | orchestrator, `ai-model-serving`, `ai-llm-endpoint` | always. Higher likelihood when there's no outgoing link to an `ai-observability-stack` | kill-switch half of `missing-model-rollback-killswitch` |
-| 12 | AI Change Control Gap (prompts, models, skills) | AST07 · ASI10 (partial) · LLM05 (fine-tune subversion) | N | `ai-llm-endpoint`, `ai-model-serving`, orchestrator | no model fact available, so it fires unconditionally. Adding a suppression tag would move it to C under the placement rule | `ungoverned-system-prompt-change` · `missing-canary-prompt-testing` · rollback half of `missing-model-rollback-killswitch` |
+| 8 | Agent Identity & Privilege Abuse (built: `ai-agent-identity-privilege-abuse`) | ASI03 · DSGAI02 | N | `ai-agent-orchestrator`, `ai-tool-server`, `ai-gateway`, `ai-multi-agent-gateway` | an authenticated outgoing link whose `authorization` isn't `end-user-identity-propagation` (the agent calls as itself). Static secrets are left to `hardcoded-credentials-secrets-sprawl` | `ai-gateway-credential-sprawl` · identity half of `maestro-l7-agent-ecosystem-identity` |
+| 9 | Insecure Inter-Agent Communication (built: `ai-insecure-inter-agent-communication`) | ASI07 | N (per source agent) | orchestrator / multi-agent gateway with a link to another of either | that link crosses a trust boundary (different direct containing boundary), has `authentication: none`, or uses a protocol Threagile doesn't class as encrypted | communication half of `maestro-l7-agent-ecosystem-identity` |
+| 10 | Cascading Agent Failures (built: `ai-cascading-agent-failures`) | ASI08 | N | orchestrator / multi-agent gateway | has an outgoing link to another orchestrator or multi-agent gateway (an agent chain; calls to models and tools don't count) | **new** |
+| 11 | Rogue Agent & Missing Kill Switch (built: `ai-rogue-agent-containment-gap`) | ASI10 | N | orchestrator, `ai-model-serving`, `ai-llm-endpoint` | always. Likelihood one level lower with an outgoing link to an `ai-observability-stack`. Scored as Tampering/integrity (the replaced rule used availability) | kill-switch half of `missing-model-rollback-killswitch` |
+| 12 | AI Change Control Gap (built: `ai-change-control-gap`) | AST07 · ASI10 (partial) · LLM05 (fine-tune subversion) · LLM08 | N | `ai-llm-endpoint`, `ai-model-serving`, `ai-rag-pipeline`, orchestrator | no model fact available, so it fires unconditionally. Adding a suppression tag would move it to C under the placement rule | `ungoverned-system-prompt-change` · `missing-canary-prompt-testing` · rollback half of `missing-model-rollback-killswitch` |
 | 13 | Agent Memory & Context Poisoning | ASI06 | C | assets tagged `ai:agent-memory` (existing tag) | tag present. Higher likelihood if memory is written from outside the trust boundary (this needs a trust-boundary lookup reimplemented in Python) | `atlas-agent-memory-poisoning` (C, re-anchored) |
 | 14 | Cross-Context Bleed & Over-Broad Context | DSGAI11 · DSGAI15 | N | `ai-llm-endpoint`, `ai-rag-pipeline`, orchestrator | `multi_tenant: true`, or it processes data assets at more than one confidentiality level | **new** |
 
@@ -291,7 +291,20 @@ No decisions are open. Settled in this round:
    Read-only tools that reach sensitive data are left to #15 (Sensitive Information
    Disclosure) and #2 (Indirect Prompt Injection).
    
-   Next is step 4, the remaining native rules in groups (agentic first).
+   Step 4, agentic group, is done: #8–#12 are built (ids in the table rows above), replacing
+   `ai-gateway-credential-sprawl`, `maestro-l7-agent-ecosystem-identity`,
+   `missing-model-rollback-killswitch`, `ungoverned-system-prompt-change` and
+   `missing-canary-prompt-testing`.
+   - The first trust-boundary lookup (#9) works end to end on Threagile's own boundary map.
+   - Building it surfaced three script-engine bugs, now fixed with regression tests: an
+     unresolved reference stored as a nil value, a crash comparing two empty values, and an
+     empty value failing string conversion. Together they made any link-reading rule crash on a
+     target rated at a zero value (`public` confidentiality, `archive` integrity/availability),
+     including the already-committed #6.
+   - **Noise check:** on a small agent model, one orchestrator received six AI findings (#6, #8,
+     #9, #10, #11, #12). Four depend on model facts; #11 and #12 are unconditional.
+   
+   Next is step 4's data group: #14, #15, #16, #17, #20, #21, #22.
 4. **Internet exposure in native scripts:** no `+1` Likelihood delta. Exposure decides whether a
    rule fires instead, and adding the delta would count it twice. This is documented in
    `risk-methodology.md`. It closes point 5 of the 2026-11-17 review.
