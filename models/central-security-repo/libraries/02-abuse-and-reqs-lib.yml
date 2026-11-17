@@ -86,7 +86,7 @@
 #
 # DOMAIN QUICK-REFERENCE:
 #   IDENTITY                   ASVS V6, V7, V8, V9, V10, NIST SP 800-53 (AC-2(6), AC-2(7))
-#     Triggers: feature:oauth-oidc-provider, feature:saml-sp, feature:password-reset, feature:multi-tenancy,
+#     Triggers: feature:oauth-oidc-provider, feature:saml-sp, feature:password-reset, multi_tenant:true,
 #               feature:admin-panel, mgmt:self-managed-identity, mgmt:self-managed-pam
 #   DEVICE AND INFRASTRUCTURE  NIST SP 800-53 (CM, SI, SC, AC, PE families)
 #     Triggers: machine:container, machine:virtual, mgmt:self-managed-hardware
@@ -103,16 +103,16 @@
 #               feature:admin-panel, feature:email-sending, feature:background-jobs,
 #               feature:third-party-plugins
 #   ARTIFICIAL INTELLIGENCE    AISVS C1-C10, C11.1-C11.3
-#     Triggers: ai:user-prompt-input, ai:indirect-prompt-input, ai:llm-endpoint, ai:rag-pipeline,
-#               ai:agent-orchestrator, ai:ot-adjacent-output, ai:third-party-model-api,
-#               ai:model-serving, ai:model-registry, ai:training-pipeline, ai:dataset-store,
-#               ai:eval-pipeline, ai:on-device-inference, ai:air-gapped-model-delivery,
-#               ai:rag-ingest-pipeline, ai:agent-memory, ai:model-exfil-risk, ai:multi-agent-boundary
+#     Triggers: ai:user-prompt-input, ai:indirect-prompt-input, technology:ai-llm-endpoint, technology:ai-rag-pipeline,
+#               technology:ai-agent-orchestrator, ai:ot-adjacent-output, ai:third-party-model-api,
+#               technology:ai-model-serving, technology:ai-model-registry, technology:ai-training-pipeline, technology:ai-dataset-store,
+#               technology:ai-eval-pipeline, ai:air-gapped-model-delivery,
+#               technology:ai-rag-ingest-pipeline, ai:agent-memory, technology:ai-multi-agent-gateway
 #   DATA                       ASVS V11, V14
-#     Triggers: storage:persistent, storage:vault, data:external-feed-ingest, data:release-candidate,
+#     Triggers: type:datastore, technology:vault, data:external-feed-ingest, data:release-candidate,
 #               feature:import-export, cds:high-side-submitter, cds:high-side-broker, data:pii
 #   DETECTION                  ASVS V16, AISVS C11.4, C12
-#     Triggers: feature:public-api-endpoint, machine:container, ai:observability-stack
+#     Triggers: feature:public-api-endpoint, machine:container, technology:ai-observability-stack
 #   RESPONSE                   NIST SP 800-53 (IR family)
 #     Triggers: zone:dmz, sec:secrets-broker
 #   RECOVERY                   NIST SP 800-53 (CP family, plus SA-9, AC-5, SC-12)
@@ -123,7 +123,7 @@ categories:
 
   # ============================================================================
   # IDENTITY
-  # Triggers: feature:oauth-oidc-provider, feature:saml-sp, feature:password-reset, feature:multi-tenancy,
+  # Triggers: feature:oauth-oidc-provider, feature:saml-sp, feature:password-reset, multi_tenant:true,
   #           feature:admin-panel, mgmt:self-managed-identity, mgmt:self-managed-pam
   # Source: ASVS V6, V7, V8, V9, V10, NIST SP 800-53 Rev 5 (AC-2(6), AC-2(7))
   # ============================================================================
@@ -132,7 +132,7 @@ categories:
       - feature:oauth-oidc-provider
       - feature:saml-sp
       - feature:password-reset
-      - feature:multi-tenancy
+      - multi_tenant:true
       - feature:admin-panel
       - mgmt:self-managed-identity
       - mgmt:self-managed-pam
@@ -1061,33 +1061,38 @@ categories:
 
   # ============================================================================
   # ARTIFICIAL INTELLIGENCE
-  # Triggers: ai:user-prompt-input, ai:indirect-prompt-input, ai:llm-endpoint, ai:rag-pipeline, ai:agent-orchestrator,
-  #           ai:ot-adjacent-output, ai:third-party-model-api, ai:model-serving, ai:model-registry,
-  #           ai:training-pipeline, ai:dataset-store, ai:eval-pipeline, ai:on-device-inference,
-  #           ai:air-gapped-model-delivery, ai:rag-ingest-pipeline, ai:agent-memory, ai:model-exfil-risk,
-  #           ai:multi-agent-boundary
+  # Triggers: ai:user-prompt-input, ai:indirect-prompt-input, technology:ai-llm-endpoint, technology:ai-rag-pipeline, technology:ai-agent-orchestrator,
+  #           ai:ot-adjacent-output, ai:third-party-model-api, technology:ai-model-serving, technology:ai-model-registry,
+  #           technology:ai-training-pipeline, technology:ai-dataset-store, technology:ai-eval-pipeline,
+  #           ai:air-gapped-model-delivery, technology:ai-rag-ingest-pipeline, ai:agent-memory,
+  #           technology:ai-multi-agent-gateway
   # Source: AISVS C1-C10, C11.1-C11.3
   # ============================================================================
   - name: "Artificial Intelligence"
     triggers:
       - ai:user-prompt-input
       - ai:indirect-prompt-input
-      - ai:llm-endpoint
-      - ai:rag-pipeline
-      - ai:agent-orchestrator
+      - technology:ai-llm-endpoint
+      - technology:ai-rag-pipeline
+      - technology:ai-agent-orchestrator
       - ai:ot-adjacent-output
       - ai:third-party-model-api
-      - ai:model-serving
-      - ai:model-registry
-      - ai:training-pipeline
-      - ai:dataset-store
-      - ai:eval-pipeline
-      - ai:on-device-inference
+      - technology:ai-model-serving
+      - technology:ai-model-registry
+      - technology:ai-training-pipeline
+      - technology:ai-dataset-store
+      - technology:ai-eval-pipeline
       - ai:air-gapped-model-delivery
-      - ai:rag-ingest-pipeline
+      - technology:ai-rag-ingest-pipeline
       - ai:agent-memory
-      - ai:model-exfil-risk
-      - ai:multi-agent-boundary
+      - technology:ai-multi-agent-gateway
+      - technology:ai-tool-server
+      - technology:ai-gateway
+      - technology:ai-vector-store
+      - ai:code-execution
+      - ai:skills-enabled
+      - ai:human-labeling
+      - ai:endpoint-assistant
 
     abuse_cases:
 
@@ -1457,14 +1462,14 @@ categories:
 
   # ============================================================================
   # DATA
-  # Triggers: storage:persistent, storage:vault, data:external-feed-ingest, data:release-candidate,
+  # Triggers: type:datastore, technology:vault, data:external-feed-ingest, data:release-candidate,
   #           feature:import-export, cds:high-side-submitter, cds:high-side-broker, data:pii
   # Source: ASVS V11, V14
   # ============================================================================
   - name: "Data"
     triggers:
-      - storage:persistent
-      - storage:vault
+      - type:datastore
+      - technology:vault
       - data:external-feed-ingest
       - data:release-candidate
       - feature:import-export
@@ -1578,14 +1583,14 @@ categories:
 
   # ============================================================================
   # DETECTION
-  # Triggers: feature:public-api-endpoint, machine:container, ai:observability-stack
+  # Triggers: feature:public-api-endpoint, machine:container, technology:ai-observability-stack
   # Source: ASVS V16, AISVS C11.4, C12
   # ============================================================================
   - name: "Detection"
     triggers:
       - feature:public-api-endpoint
       - machine:container
-      - ai:observability-stack
+      - technology:ai-observability-stack
 
     abuse_cases:
 

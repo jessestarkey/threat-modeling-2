@@ -356,6 +356,39 @@ No decisions are open. Settled in this round:
      written from outside its boundary, and #7 steps up on a host with no container or
      serverless isolation. Each adjustment has a test in `LikelihoodSteps`.
    - The custom library has 89 categories and the catalogue lists 190 in total.
+
+   **Independent review and fix round (2026-11-17).** An independent Opus review reproduced
+   several firing-logic defects on a 30-asset probe model; all were fixed with tests:
+   - #6 and #8 ignore links to model and operational infrastructure (LLM endpoint, model serving,
+     AI gateway, guardrail, observability, monitoring); an ai-gateway's links to its model
+     backends still count for #8.
+   - #4 treats callers as the consumers of model output (excluding monitoring), plus outgoing
+     links to non-infrastructure assets; impact comes from the consumers' integrity.
+   - "Outside" now means an external entity, an internet-facing or out-of-scope asset, or a
+     frontend in a different network boundary, with execution-environment boundaries looked
+     through as in Threagile's own rules. Used by #3, #15, #16, #18, #19, #25 and Python #13.
+     #23 steps up only for pulls from an external source; #18 no longer uses `internet: true`
+     on its own; #25 no longer has a gateway step-down (an endpoint reached only through a
+     gateway does not fire).
+   - #19 ignores read-only incoming links; #5 matches only agents, tool servers, LLM endpoints
+     and RAG pipelines and skips vector stores; #14 reads only data entering the context and
+     needs restricted-or-higher data mixed with lower.
+   - Python: no duplicate indirect-injection finding on a tagged RAG pipeline; the #13 outside
+     step does not stack with the net:internet-reachable tag; `technologies:` lists are read.
+   - Libraries 01, 02 and 11 no longer name retired tags (native field references instead), and
+     the harness now checks them.
+   - One more script-engine bug was fixed: `greater` without its optional `as` crashed.
+
+   Accepted and documented: #8 and hardcoded-credentials-secrets-sprawl both fire on a
+   credentials link (privilege vs secret storage).
+
+   Known limits, not changed: DSGAI17 is only partly covered by #25 (vector-store and RAG
+   resilience has no finding); #10 is scored on availability although its description also
+   covers integrity propagation; AI assets get telemetry findings only through #22, which needs
+   a modeled telemetry link, so they get less telemetry coverage than plain apps; the guardrail
+   signal lowers #1/#2 even if another caller bypasses the guardrail; and #11, #12, #23 (and
+   Python #2 on RAG, agent and multi-agent assets) fire unconditionally, more than the
+   net-change table counts.
 4. **Internet exposure in native scripts:** no `+1` Likelihood delta. Exposure decides whether a
    rule fires instead, and adding the delta would count it twice. This is documented in
    `risk-methodology.md`. It closes point 5 of the 2026-11-17 review.

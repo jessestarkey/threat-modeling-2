@@ -117,6 +117,23 @@ RAG_PIPELINE_TECHNOLOGIES = {"ai-rag-pipeline"}
 AGENT_ORCHESTRATOR_TECHNOLOGIES = {"ai-agent-orchestrator"}
 MULTI_AGENT_GATEWAY_TECHNOLOGIES = {"ai-multi-agent-gateway"}
 DATASET_STORE_TECHNOLOGIES = {"ai-dataset-store"}
+# Technologies the fork marks frontend_related (pkg/types/technologies.yaml): web front ends,
+# proxies, gateways and client devices. Used to decide whether a caller brings outside requests in.
+FRONTEND_TECHNOLOGIES = {
+    "air-vehicle", "browser", "client-system", "cms", "desktop", "devops-client", "gateway",
+    "iot-device", "load-balancer", "mobile-app", "reverse-proxy", "waf", "web-application",
+}
+
+
+def asset_technologies(asset_data: dict) -> set:
+    """Every technology an asset declares: the single `technology` field and the fork's
+    `technologies` list."""
+    technologies = set()
+    if asset_data.get("technology"):
+        technologies.add(str(asset_data["technology"]).strip())
+    for technology in asset_data.get("technologies") or []:
+        technologies.add(str(technology).strip())
+    return technologies
 
 # Likelihood x Impact -> Severity, via a weight-product-and-threshold
 # formula rather than a hand-authored rank-sum lookup table (an earlier
@@ -463,11 +480,35 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
 
     # Graph indexes for the few branches that read links or trust boundaries: each asset's
     # technology, its directly containing trust boundary, and incoming links by target id.
-    technology_by_id = {a.get('id'): a.get('technology') for a in tech_assets.values()}
+    technologies_by_id = {a.get('id'): asset_technologies(a) for a in tech_assets.values()}
+    assets_by_id = {a.get('id'): a for a in tech_assets.values()}
+    boundaries = {b.get('id'): b for b in (model.get('trust_boundaries') or {}).values()}
     boundary_by_id = {}
-    for boundary in (model.get('trust_boundaries') or {}).values():
+    parent_by_boundary = {}
+    for boundary in boundaries.values():
         for inside in boundary.get('technical_assets_inside') or []:
             boundary_by_id[inside] = boundary.get('id')
+        for nested in boundary.get('trust_boundaries_nested') or []:
+            parent_by_boundary[nested] = boundary.get('id')
+
+    def network_boundary(asset_id):
+        # Network-only semantics, as in the fork's rules and Threagile's built-ins: look through
+        # execution-environment boundaries to the nearest enclosing network boundary.
+        boundary = boundary_by_id.get(asset_id)
+        for _ in range(4):
+            if boundary is None or (boundaries.get(boundary) or {}).get('type') != 'execution-environment':
+                return boundary
+            boundary = parent_by_boundary.get(boundary)
+        return boundary
+
+    def is_outside_caller(caller_id, own_network_boundary):
+        # External (an external entity, out of scope, or internet-facing), or a frontend in a
+        # different network boundary -- the same test the fork's native rules use.
+        caller = assets_by_id.get(caller_id) or {}
+        if caller.get('internet') or caller.get('out_of_scope') or caller.get('type', 'external-entity') == 'external-entity':
+            return True
+        return bool(technologies_by_id.get(caller_id, set()) & FRONTEND_TECHNOLOGIES) and \
+            network_boundary(caller_id) != own_network_boundary
     incoming_by_target = {}
     for source in tech_assets.values():
         for link in (source.get('communication_links') or {}).values():
@@ -490,7 +531,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # responsibility.
         if asset_data.get('out_of_scope'): continue
         tags = asset_data.get('tags', [])
-        asset_technology = asset_data.get('technology')
+        asset_techs = technologies_by_id.get(asset_data.get('id'), set())
         asset_id = asset_data.get('id')
         asset_is_internet_reachable = 'net:internet-reachable' in tags
         asset_raa = raa_by_id.get(asset_id, 1.0)
@@ -499,14 +540,14 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # A guardrail on the request path -- an ai-guardrails asset calls this asset, or this
         # asset calls one to screen its traffic -- lowers prompt-injection likelihood one level.
         # This replaced the fork's ai-guardrails-bypass rule (2026-11-17).
-        guarded = (any(technology_by_id.get(source) == 'ai-guardrails' for source, _ in incoming)
-                   or any(technology_by_id.get(target) == 'ai-guardrails' for target in outgoing_targets))
+        guarded = (any('ai-guardrails' in technologies_by_id.get(source, set()) for source, _ in incoming)
+                   or any('ai-guardrails' in technologies_by_id.get(target, set()) for target in outgoing_targets))
         injection_delta = -1 if guarded else 0
-        # Written from outside the trust boundary: internet-facing, or a non-readonly incoming
-        # link from an asset in a different directly containing boundary (or none).
-        own_boundary = boundary_by_id.get(asset_id)
-        written_from_outside = bool(asset_data.get('internet')) or any(
-            not link.get('readonly', False) and boundary_by_id.get(source) != own_boundary
+        # Written from outside: an outside caller (see is_outside_caller) writes into this asset
+        # through an incoming link that is not readonly.
+        own_network_boundary = network_boundary(asset_id)
+        written_from_outside = any(
+            not link.get('readonly', False) and is_outside_caller(source, own_network_boundary)
             for source, link in incoming)
 
         # Generic function to safely inject a risk from our dictionary
@@ -614,9 +655,11 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # own native `technology:` field instead, since a tag naming the same concept as a
         # selectable technology was a second, unenforced source of truth for the same fact.
         # See docs/risk-methodology.md for the full rationale.
-        if asset_technology in RAG_PIPELINE_TECHNOLOGIES:
-            # RAG retrieval is inherently an indirect prompt injection surface
-            inject("Indirect Prompt Injection and Goal Hijack", "RAG Indirect Injection Risk", injection_delta)
+        if asset_techs & RAG_PIPELINE_TECHNOLOGIES:
+            # RAG retrieval is inherently an indirect prompt injection surface -- unless the asset
+            # is already tagged ai:indirect-prompt-input, which injected the same category above.
+            if 'ai:indirect-prompt-input' not in tags:
+                inject("Indirect Prompt Injection and Goal Hijack", "RAG Indirect Injection Risk", injection_delta)
 
         # NOTE: "ATLAS: Dataset and RAG Ingest Integrity Erosion" has been ported into the
         # jessestarkey/threagile fork as a native script rule
@@ -635,7 +678,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # rag-pipeline case above. (The AI OT-actuation check below reads only
         # ai:ot-adjacent-output, standalone -- it never depended on this tag.) See
         # docs/risk-methodology.md for the full rationale.
-        if asset_technology in AGENT_ORCHESTRATOR_TECHNOLOGIES:
+        if asset_techs & AGENT_ORCHESTRATOR_TECHNOLOGIES:
             # Orchestrators that process external content also inherit indirect injection
             if 'ai:indirect-prompt-input' not in tags:
                 inject("Indirect Prompt Injection and Goal Hijack", "Agent Indirect Injection Risk", injection_delta)
@@ -643,7 +686,10 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # Agent persistent memory (memory/thread poisoning, chat history manipulation); one level
         # more likely when the memory is written from outside its trust boundary.
         if 'ai:agent-memory' in tags:
-            inject("Agent Memory and Context Poisoning", "Agent Memory Poisoning Risk", 1 if written_from_outside else 0)
+            # The net:internet-reachable tag already adds +1 in compute_likelihood, so the
+            # outside-writer step applies only when that tag is absent.
+            memory_step = 1 if written_from_outside and not asset_is_internet_reachable else 0
+            inject("Agent Memory and Context Poisoning", "Agent Memory Poisoning Risk", memory_step)
 
         # Code the agent or tool runs itself (ASI05/AST06); one level more likely on a machine
         # with no container or serverless isolation.
@@ -743,7 +789,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # as the rag-pipeline/agent-orchestrator/dataset-store cases above. (In the fork, that
         # rule was itself replaced on 2026-11-17 by ai-agent-identity-privilege-abuse and
         # ai-insecure-inter-agent-communication.)
-        if asset_technology in MULTI_AGENT_GATEWAY_TECHNOLOGIES:
+        if asset_techs & MULTI_AGENT_GATEWAY_TECHNOLOGIES:
             # Multi-agent gateways also inherit indirect prompt injection since agents
             # interpret messages from other agents as instructions -- but only when
             # the asset isn't already directly tagged ai:indirect-prompt-input, the
@@ -922,7 +968,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # ops:waf-enabled stays as an explicit fallback for the case this native check can't
         # see -- a separate upstream WAF asset (e.g. an external CDN-level WAF) not modeled as
         # this asset's own technology.
-        if 'zone:dmz' in tags and asset_technology != 'waf' and 'ops:waf-enabled' not in tags:
+        if 'zone:dmz' in tags and 'waf' not in asset_techs and 'ops:waf-enabled' not in tags:
             inject("Missing Web Application Firewall on Internet-Facing Asset", "Missing WAF Risk")
 
         # Internet-facing assets without reconciled DNS records
@@ -982,7 +1028,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'data:pii' in tags and 'data:pia-documented' not in tags:
             inject("Missing Privacy Impact Assessment", "Missing PIA Risk")
 
-        if ('data:external-feed-ingest' in tags or asset_technology in DATASET_STORE_TECHNOLOGIES) and 'data:provenance-tracked' not in tags:
+        if ('data:external-feed-ingest' in tags or asset_techs & DATASET_STORE_TECHNOLOGIES) and 'data:provenance-tracked' not in tags:
             inject("Missing Data Provenance and Lineage Chain-of-Custody", "Data Provenance Gap Risk")
 
         if 'feature:import-export' in tags and 'ops:dlp-egress-inspected' not in tags:

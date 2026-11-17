@@ -79,8 +79,8 @@
 #   Artificial Intelligence) exist purely to route the conversation and
 #   don't themselves map to a tag -- don't record one for them. Every
 #   other gate does double as an ordinary tag-yielding question in its
-#   own right (e.g. ai:training-pipeline, ai:agent-orchestrator,
-#   ai:rag-pipeline, ops:requires-backup) on top of unlocking its
+#   own right (e.g. technology:ai-training-pipeline, technology:ai-agent-orchestrator,
+#   technology:ai-rag-pipeline, ops:requires-backup) on top of unlocking its
 #   follow-ups.
 # ==============================================================================
 
@@ -98,7 +98,7 @@ categories:
 
       "Does the application have its own password-reset or credential-recovery flow that is separate from the enterprise IdP?": "-> feature:password-reset"
 
-      "Does one deployment of the application serve more than one organization or customer group?": "-> feature:multi-tenancy"
+      "Does one deployment of the application serve more than one organization or customer group?": "-> multi_tenant:true"
 
       "In the application, is there an admin panel or back-office interface for managing users, configuration, or audit logs?": "-> feature:admin-panel"
 
@@ -184,27 +184,27 @@ categories:
 
       "Does content from outside sources ever end up in an LLM's context, emails, web pages, documents, or search results?": "-> ai:indirect-prompt-input"
 
-      "Does the application expose an LLM or ML inference API, either internal or external?": "-> ai:llm-endpoint"
+      "Does the application expose an LLM or ML inference API, either internal or external?": "-> technology:ai-llm-endpoint"
 
       "Does the application send requests to a vendor-hosted foundation model or a commercial LLM provider?": "-> ai:third-party-model-api"
 
-      "Does the application host and serve a trained model itself, such as Triton, TorchServe, vLLM, or Ollama?": "-> ai:model-serving"
+      "Does the application host and serve a trained model itself, such as Triton, TorchServe, vLLM, or Ollama?": "-> technology:ai-model-serving"
 
-      "Is the application a model registry or artifact store for model weights and configs, such as MLflow or a HuggingFace Hub mirror?": "-> ai:model-registry"
+      "Is the application a model registry or artifact store for model weights and configs, such as MLflow or a HuggingFace Hub mirror?": "-> technology:ai-model-registry"
 
-      "Does the application sit at a boundary where someone could plausibly extract model weights, architecture, or training data?": "-> ai:model-exfil-risk"
+      "Does the application sit at a boundary where someone could plausibly extract model weights, architecture, or training data?": "-> no tag needed: model exfiltration is covered natively on model registries, training pipelines, and models on physical hardware"
 
       "Could any output from the AI system reach an OT actuator or a safety-critical process?": "-> ai:ot-adjacent-output"
 
       "Does the application train, fine-tune, RLHF, or continually update any model itself?":
-        tag: "-> ai:training-pipeline"
+        tag: "-> technology:ai-training-pipeline"
         then:
-          "Is the application the system of record for training, evaluation, or fine-tuning data?": "-> ai:dataset-store"
+          "Is the application the system of record for training, evaluation, or fine-tuning data?": "-> technology:ai-dataset-store"
 
-          "Is there an evaluation, red-teaming, or benchmark pipeline that has to sign off before a model gets promoted?": "-> ai:eval-pipeline"
+          "Is there an evaluation, red-teaming, or benchmark pipeline that has to sign off before a model gets promoted?": "-> technology:ai-eval-pipeline"
 
       "Does the application run an AI agent that plans tasks and dispatches tool calls on its own, such as LangChain, AutoGen, CrewAI, or a custom agent loop?":
-        tag: "-> ai:agent-orchestrator"
+        tag: "-> technology:ai-agent-orchestrator"
         then:
           "Can the agent call tools, plugins, or functions that invoke external APIs or take real actions?": "-> model each tool as a communication link from the agent (or from an ai-tool-server asset hosting it) to the asset it acts on; readonly: true only if the tool cannot change anything"
 
@@ -216,16 +216,16 @@ categories:
 
           "Does the agent load skills, such as packaged instructions or manifests that tell it how to use its tools?": "-> ai:skills-enabled (add ai:skills-vetted if they load only from an approved, pinned, scanned catalogue)"
 
-          "Do multiple agents interact here across identity domains, an A2A gateway, an MCP server, or an agent registry?": "-> ai:multi-agent-boundary"
+          "Do multiple agents interact here across identity domains, an A2A gateway, an MCP server, or an agent registry?": "-> technology:ai-multi-agent-gateway"
 
       "Does the application run a Retrieval-Augmented Generation pipeline or a vector database plus retrieval plus LLM grounding?":
-        tag: "-> ai:rag-pipeline"
+        tag: "-> technology:ai-rag-pipeline"
         then:
-          "Is there a separate ingestion step that chunks, embeds, and writes documents into the vector store?": "-> ai:rag-ingest-pipeline"
+          "Is there a separate ingestion step that chunks, embeds, and writes documents into the vector store?": "-> technology:ai-rag-ingest-pipeline"
 
       "Is any model deployed somewhere other than a standard cloud-hosted environment, on the edge, on a mobile device, on embedded hardware, or into a disconnected enclave?":
         then:
-          "Is that deployment on edge, mobile, or embedded hardware an adversary could physically get their hands on, or into a disconnected or air-gapped enclave instead?": "-> ai:on-device-inference OR ai:air-gapped-model-delivery"
+          "Is that deployment on edge, mobile, or embedded hardware an adversary could physically get their hands on, or into a disconnected or air-gapped enclave instead?": "-> machine:physical on the ai-model-serving or ai-llm-endpoint asset, OR ai:air-gapped-model-delivery"
 
   # ============================================================================
   # DATA
@@ -233,9 +233,9 @@ categories:
   - name: "Data"
     questions:
 
-      "Does this application write data to persistent storage, disk, or a database?": "-> storage:persistent"
+      "Does this application write data to persistent storage, disk, or a database?": "-> type:datastore"
 
-      "Does this application store secrets or keys in a dedicated secrets manager or vault?": "-> storage:vault"
+      "Does this application store secrets or keys in a dedicated secrets manager or vault?": "-> technology:vault"
 
       "Does the application pull in data from an external feed on an ongoing basis, such as a partner feed or an upstream integration?": "-> data:external-feed-ingest"
 
@@ -249,7 +249,7 @@ categories:
   - name: "Detection"
     questions:
 
-      "Does this application have its own AI-specific monitoring or logging layer, such as LLM tracing, inference telemetry, or behavioral drift detection?": "-> ai:observability-stack"
+      "Does this application have its own AI-specific monitoring or logging layer, such as LLM tracing, inference telemetry, or behavioral drift detection?": "-> technology:ai-observability-stack"
 
   # ============================================================================
   # RESPONSE

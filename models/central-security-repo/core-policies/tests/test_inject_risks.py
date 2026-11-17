@@ -145,6 +145,18 @@ class EngineMatchesLibrary(unittest.TestCase):
         dead = set(DEFINITIONS) - INJECTED_KEYS - set(DEFINITIONS_NOT_INJECTED)
         self.assertEqual(sorted(dead), [], "library entries no engine branch injects")
 
+    def test_every_tag_the_reference_libraries_name_is_documented_or_native(self):
+        # 01-metadata-lib.yml / 02-abuse-and-reqs-lib.yml trigger lists and the intake questionnaire
+        # name tags for authors to apply; a retired tag there silently stops matching anything.
+        native_prefixes = ("technology:", "type:", "machine:", "multi_tenant:")
+        for name in ("01-metadata-lib.yml", "02-abuse-and-reqs-lib.yml", "11-intake-questionnaire-lib.yml"):
+            lines = (LIBRARIES / name).read_text(encoding="utf-8").split("\n")
+            body = "\n".join(line for line in lines if not line.lstrip().startswith("#"))
+            named = set(re.findall(r"(?<![\w/.-])([a-z0-9]+:[a-z0-9][a-z0-9.-]*)", body))
+            named = {t for t in named if not t.startswith(("http", "https")) and not t.startswith(native_prefixes)}
+            with self.subTest(library=name):
+                self.assertEqual(sorted(named - DOCUMENTED_TAGS), [], "retired or undocumented tags")
+
     def test_every_tag_the_engine_reads_is_documented(self):
         self.assertEqual(sorted(ENGINE_TAGS - DOCUMENTED_TAGS), [])
         for prefix in ENGINE_TAG_PREFIXES:
@@ -290,6 +302,54 @@ class LikelihoodSteps(unittest.TestCase):
             with self.subTest(machine=machine):
                 result = run_engine(probe_asset(["ai:code-execution"], machine=machine))
                 self.assertEqual(likelihood_of(result, title), expected)
+
+
+
+@mock.patch.object(inject_risks, "compute_raa_by_id", lambda model: {})
+class ReviewRegressions(unittest.TestCase):
+    """Cases the independent review reproduced as wrong output."""
+
+    def test_tagged_rag_pipeline_gets_one_indirect_injection_finding(self):
+        result = run_engine(probe_asset(["ai:indirect-prompt-input"], technology="ai-rag-pipeline"))
+        self.assertEqual(len(result["Indirect Prompt Injection and Goal Hijack"]), 1)
+
+    def test_memory_outside_step_does_not_stack_with_the_internet_tag(self):
+        title = "Agent Memory and Context Poisoning"
+        boundaries = {"Core": {"id": "core", "technical_assets_inside": ["probe"]},
+                      "DMZ": {"id": "dmz", "technical_assets_inside": ["outside"]}}
+        tagged = run_engine(
+            probe_asset(["ai:agent-memory", "net:internet-reachable"]),
+            probe_asset([], id="outside", communication_links={"Write": link("probe")}),
+            trust_boundaries=boundaries)
+        # Baseline likely, RAA pinned low (-1), internet tag +1, outside writer suppressed: likely.
+        self.assertEqual(likelihood_of(tagged, title), "likely")
+
+    def test_internal_backend_in_another_boundary_is_not_an_outside_writer(self):
+        title = "Agent Memory and Context Poisoning"
+        boundaries = {"Core": {"id": "core", "technical_assets_inside": ["probe"]},
+                      "Partner": {"id": "partner", "technical_assets_inside": ["backend"]}}
+        result = run_engine(
+            probe_asset(["ai:agent-memory"]),
+            probe_asset([], id="backend", technology="web-service-rest", communication_links={"Write": link("probe")}),
+            trust_boundaries=boundaries)
+        self.assertEqual(likelihood_of(result, title), "possible")
+
+    def test_execution_environment_boundaries_are_looked_through(self):
+        title = "Agent Memory and Context Poisoning"
+        boundaries = {"VPC": {"id": "vpc", "type": "network-cloud-provider", "trust_boundaries_nested": ["pod-a", "pod-b"]},
+                      "PodA": {"id": "pod-a", "type": "execution-environment", "technical_assets_inside": ["probe"]},
+                      "PodB": {"id": "pod-b", "type": "execution-environment", "technical_assets_inside": ["ui"]}}
+        result = run_engine(
+            probe_asset(["ai:agent-memory"]),
+            probe_asset([], id="ui", communication_links={"Write": link("probe")}),
+            trust_boundaries=boundaries)
+        self.assertEqual(likelihood_of(result, title), "possible", "same network boundary: not outside")
+
+    def test_technologies_list_is_read(self):
+        asset = probe_asset([])
+        del asset["technology"]
+        asset["technologies"] = ["ai-rag-pipeline"]
+        self.assertIn("Indirect Prompt Injection and Goal Hijack", run_engine(asset))
 
 
 if __name__ == "__main__":

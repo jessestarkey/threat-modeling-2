@@ -62,7 +62,7 @@ categories:
       - feature:oauth-oidc-provider
       - feature:saml-sp
       - feature:password-reset
-      - feature:multi-tenancy
+      - multi_tenant:true
       - feature:admin-panel
       - mgmt:self-managed-identity
       - mgmt:self-managed-pam
@@ -173,22 +173,27 @@ categories:
     triggers:
       - ai:user-prompt-input
       - ai:indirect-prompt-input
-      - ai:llm-endpoint
-      - ai:rag-pipeline
-      - ai:agent-orchestrator
+      - technology:ai-llm-endpoint
+      - technology:ai-rag-pipeline
+      - technology:ai-agent-orchestrator
       - ai:ot-adjacent-output
       - ai:third-party-model-api
-      - ai:model-serving
-      - ai:model-registry
-      - ai:training-pipeline
-      - ai:dataset-store
-      - ai:eval-pipeline
-      - ai:on-device-inference
+      - technology:ai-model-serving
+      - technology:ai-model-registry
+      - technology:ai-training-pipeline
+      - technology:ai-dataset-store
+      - technology:ai-eval-pipeline
       - ai:air-gapped-model-delivery
-      - ai:rag-ingest-pipeline
+      - technology:ai-rag-ingest-pipeline
       - ai:agent-memory
-      - ai:model-exfil-risk
-      - ai:multi-agent-boundary
+      - technology:ai-multi-agent-gateway
+      - technology:ai-tool-server
+      - technology:ai-gateway
+      - technology:ai-vector-store
+      - ai:code-execution
+      - ai:skills-enabled
+      - ai:human-labeling
+      - ai:endpoint-assistant
 
     questions:
 
@@ -224,8 +229,8 @@ categories:
 
   - name: "Data"
     triggers:
-      - storage:persistent
-      - storage:vault
+      - type:datastore
+      - technology:vault
       - data:external-feed-ingest
       - data:release-candidate
       - feature:import-export
@@ -245,7 +250,7 @@ categories:
     triggers:
       - feature:public-api-endpoint
       - machine:container
-      - ai:observability-stack
+      - technology:ai-observability-stack
 
     questions:
 
