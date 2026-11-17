@@ -607,6 +607,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ai:agent-memory' in tags:
             inject("ATLAS: AI Agent Memory and Session State Poisoning", "Agent Memory Poisoning Risk")
 
+        # 2026-11-17: the fork has since replaced atlas-inference-api-abuse with ai-inference-data-reconstruction and ai-sensitive-information-disclosure.
         # NOTE: "ATLAS: LLM Inference API Abuse, Cost Harvesting, and Model Extraction" and
         # "ATLAS: Unbounded AI Resource Consumption and Denial of Service" -- both triggered by
         # ai:llm-endpoint -- have been ported into the jessestarkey/threagile fork as native
@@ -717,6 +718,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # each still has one other, unrelated use (the indirect-prompt-injection piggyback)
         # elsewhere in this file. See docs/risk-methodology.md for the full rationale.
 
+        # 2026-11-17: the fork has since replaced on-device-model-extraction-gap with ai-model-exfiltration.
         # NOTE: "On-Device Model Extraction Resistance Gap" has been ported into the
         # jessestarkey/threagile fork as a native script rule
         # (pkg/risks/scripts/on-device-model-extraction-gap.yaml), triggered off the native
@@ -734,6 +736,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ai:air-gapped-model-delivery' in tags and 'ai:model-package-signed' not in tags:
             inject("Offline or Air-Gapped Model Package Integrity Gap", "Air-Gapped Model Integrity Risk")
 
+        # 2026-11-17: the fork has since replaced training-script-ip-exfiltration with ai-model-exfiltration.
         # NOTE: "Training Script and Feature-Engineering Pipeline IP Exfiltration" and
         # "Hyperparameter Tampering Without Baseline Diffing" have both been ported into the
         # jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml),

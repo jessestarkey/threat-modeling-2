@@ -279,6 +279,7 @@ tags_available:
   # docs/risk-methodology.md.
 
   # --- Supply Chain Surface ---
+  # 2026-11-17: the fork has since replaced atlas-inference-api-abuse with ai-inference-data-reconstruction and ai-sensitive-information-disclosure.
   # ai:model-registry has been removed: fully handled by the native model-registry technology
   # attribute in the jessestarkey/threagile fork. ai:model-exfil-risk has also been removed:
   # its category was removed outright, not ported -- it was redundant with the already-native
@@ -304,6 +305,7 @@ tags_available:
   # matching positive-confirmation suppression tags, for the AI
   # operational/deployment risks beyond standard ATLAS/MAESTRO coverage.
   - ai:ot-adjacent-output        # Asset's output has a path to an OT actuator or safety-critical process — trigger for the ai-ot-actuation-boundary-gap risk
+  # 2026-11-17: the fork has since replaced on-device-model-extraction-gap with ai-model-exfiltration.
   # ai:on-device-inference and ai:secure-enclave-protected have both been removed: fully
   # handled by the native on-device-model-extraction-gap script rule in the
   # jessestarkey/threagile fork, triggered off the native `machine` field plus the

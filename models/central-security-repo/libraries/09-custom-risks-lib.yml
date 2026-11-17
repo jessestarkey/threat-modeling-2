@@ -1260,6 +1260,7 @@ custom_risk_definitions:
     detection_logic: Audit memory store write logs. Alert on memory entries created or modified outside of authenticated agent runtime sessions. Monitor for memory entries containing syntactic patterns characteristic of prompt injection (e.g., instruction-like imperative sentences, role-switch phrases).
     risks_identified: {}
 
+  # 2026-11-17: the fork has since replaced atlas-inference-api-abuse with ai-inference-data-reconstruction and ai-sensitive-information-disclosure.
   # 'ATLAS: LLM Inference API Abuse, Cost Harvesting, and Model Extraction' and 'ATLAS:
   # Unbounded AI Resource Consumption and Denial of Service' (both triggered by
   # ai:llm-endpoint) have been ported into the jessestarkey/threagile fork as native script
@@ -1366,6 +1367,7 @@ custom_risk_definitions:
   # left duplicated. See docs/risk-methodology.md for the full rationale. (Since replaced in the
   # fork, 2026-11-17, by ai-change-control-gap.)
 
+  # 2026-11-17: the fork has since replaced on-device-model-extraction-gap with ai-model-exfiltration.
   # 'On-Device Model Extraction Resistance Gap' has been ported into the jessestarkey/
   # threagile fork as a native script rule (pkg/risks/scripts/on-device-model-extraction-
   # gap.yaml), triggered off the native `machine` field plus the ai-model-serving/
@@ -1399,6 +1401,7 @@ custom_risk_definitions:
   # were since replaced in the fork, 2026-11-17, by ai-change-control-gap and
   # ai-rogue-agent-containment-gap.)
 
+  # 2026-11-17: the fork has since replaced training-script-ip-exfiltration with ai-model-exfiltration.
   # 'Training Script and Feature-Engineering Pipeline IP Exfiltration' and 'Hyperparameter
   # Tampering Without Baseline Diffing' have both been ported into the jessestarkey/threagile
   # fork as native script rules (pkg/risks/scripts/*.yaml), triggered off the native

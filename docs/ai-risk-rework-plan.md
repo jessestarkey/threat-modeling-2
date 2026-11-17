@@ -127,18 +127,18 @@ has a single source.
 | 11 | Rogue Agent & Missing Kill Switch (built: `ai-rogue-agent-containment-gap`) | ASI10 | N | orchestrator, `ai-model-serving`, `ai-llm-endpoint` | always. Likelihood one level lower with an outgoing link to an `ai-observability-stack`. Scored as Tampering/integrity (the replaced rule used availability) | kill-switch half of `missing-model-rollback-killswitch` |
 | 12 | AI Change Control Gap (built: `ai-change-control-gap`) | AST07 · ASI10 (partial) · LLM05 (fine-tune subversion) · LLM08 | N | `ai-llm-endpoint`, `ai-model-serving`, `ai-rag-pipeline`, orchestrator | no model fact available, so it fires unconditionally. Adding a suppression tag would move it to C under the placement rule | `ungoverned-system-prompt-change` · `missing-canary-prompt-testing` · rollback half of `missing-model-rollback-killswitch` |
 | 13 | Agent Memory & Context Poisoning | ASI06 | C | assets tagged `ai:agent-memory` (existing tag) | tag present. Higher likelihood if memory is written from outside the trust boundary (this needs a trust-boundary lookup reimplemented in Python) | `atlas-agent-memory-poisoning` (C, re-anchored) |
-| 14 | Cross-Context Bleed & Over-Broad Context | DSGAI11 · DSGAI15 | N | `ai-llm-endpoint`, `ai-rag-pipeline`, orchestrator | `multi_tenant: true`, or it processes data assets at more than one confidentiality level | **new** |
+| 14 | Cross-Context Bleed & Over-Broad Context (built: `ai-cross-context-bleed`) | DSGAI11 · DSGAI15 | N | `ai-llm-endpoint`, `ai-rag-pipeline`, orchestrator | `multi_tenant: true`, or it processes data assets at more than one confidentiality level | **new** |
 
 ### Data confidentiality and model IP
 
 | # | Category | OWASP IDs | Place | Matches | Fires when (proposed) | Replaces |
 |---|---|---|---|---|---|---|
-| 15 | Sensitive Information Disclosure via Model Output | LLM02 · DSGAI01 · DSGAI09 | N | `ai-llm-endpoint`, `ai-rag-pipeline`, orchestrator | processes a data asset at `confidential` or above, and has an incoming link from outside its trust boundary | **new** (generic leak half of `atlas-inference-api-abuse`) |
-| 16 | Inference & Training-Data Reconstruction | DSGAI18 | N | `ai-llm-endpoint`, `ai-model-serving` | incoming link from outside the trust boundary, or `internet: true` | `atlas-inference-api-abuse` |
-| 17 | Model Exfiltration & IP Replication | DSGAI20 | N | `ai-model-registry`, `ai-training-pipeline`; `ai-model-serving`/`ai-llm-endpoint` on physical hardware | registry and pipeline: always. Serving: only when `machine` is physical | `training-script-ip-exfiltration` · `on-device-model-extraction-gap` |
-| 20 | Vector Store Exposure & Embedding Inversion | LLM09 · DSGAI13 | N | `ai-vector-store` | `encryption: none`, or `multi_tenant`, or stores data at `confidential` or above | `atlas-vector-store-inversion` |
-| 21 | Synthetic Data & Anonymization Pitfalls | DSGAI10 | N | `ai-synthetic-data-pipeline` | processes a data asset at `confidential` or above | `atlas-synthetic-data-memorization` |
-| 22 | AI Telemetry & Prompt-Log Leakage | DSGAI14 | N | `ai-observability-stack`; any `ai` asset linking to a `monitoring` technology | the link carries a data asset at `confidential` or above | `maestro-l5-observability-compromise`. Also overlaps generic `cui-telemetry-spillage`: exclude `ai` assets there |
+| 15 | Sensitive Information Disclosure via Model Output (built: `ai-sensitive-information-disclosure`) | LLM02 · DSGAI01 · DSGAI09 | N | `ai-llm-endpoint`, `ai-rag-pipeline`, orchestrator | processes a data asset at `confidential` or above, and has an incoming link from outside its trust boundary | **new** (generic leak half of `atlas-inference-api-abuse`) |
+| 16 | Inference & Training-Data Reconstruction (built: `ai-inference-data-reconstruction`) | DSGAI18 | N | `ai-llm-endpoint`, `ai-model-serving` | incoming link from outside the trust boundary, or `internet: true` | `atlas-inference-api-abuse` |
+| 17 | Model Exfiltration & IP Replication (built: `ai-model-exfiltration`) | DSGAI20 | N | `ai-model-registry`, `ai-training-pipeline`; `ai-model-serving`/`ai-llm-endpoint` on physical hardware | registry and pipeline: always. Serving: only when `machine` is physical | `training-script-ip-exfiltration` · `on-device-model-extraction-gap` |
+| 20 | Vector Store Exposure & Embedding Inversion (built: `ai-vector-store-exposure`) | LLM09 · DSGAI13 | N | `ai-vector-store` | `encryption: none`, or `multi_tenant`, or stores data at `confidential` or above | `atlas-vector-store-inversion` |
+| 21 | Synthetic Data & Anonymization Pitfalls (built: `ai-synthetic-data-leakage`) | DSGAI10 | N | `ai-synthetic-data-pipeline` | processes a data asset at `confidential` or above | `atlas-synthetic-data-memorization` |
+| 22 | AI Telemetry & Prompt-Log Leakage (built: `ai-telemetry-prompt-log-leakage`) | DSGAI14 | N | `ai-observability-stack`; any `ai` asset linking to a `monitoring` technology | the link carries a data asset at `confidential` or above | `maestro-l5-observability-compromise`. Also overlaps generic `cui-telemetry-spillage`: exclude `ai` assets there |
 
 ### Integrity: poisoning and supply chain
 
@@ -304,7 +304,25 @@ No decisions are open. Settled in this round:
    - **Noise check:** on a small agent model, one orchestrator received six AI findings (#6, #8,
      #9, #10, #11, #12). Four depend on model facts; #11 and #12 are unconditional.
    
-   Next is step 4's data group: #14, #15, #16, #17, #20, #21, #22.
+   Step 4, data group, is done: #14, #15, #16, #17, #20, #21 and #22 are built (ids in the table
+   rows above). They replace `atlas-inference-api-abuse`, `training-script-ip-exfiltration`,
+   `on-device-model-extraction-gap`, `atlas-vector-store-inversion`,
+   `atlas-synthetic-data-memorization` and `maestro-l5-observability-compromise`, so the fork
+   now has 74 script rules.
+   - #15 and #16 introduce the "request from outside the trust boundary" test (internet-facing,
+     or an incoming link from a different direct containing boundary), confirmed end to end on
+     the incoming-link and boundary maps Threagile builds while parsing.
+   - `cui-telemetry-spillage` no longer fires on AI assets; #22 covers them, and only when a
+     telemetry link actually carries confidential data.
+   - Blinding the observability stack, the other half of the replaced MAESTRO L5 rule, stays
+     with `security-control-tamper-resistance-gap`, which fires on `ai-observability-stack`
+     through its `security_control_related` attribute.
+   - Cost harvesting, which `atlas-inference-api-abuse` also covered, stays with
+     `atlas-unbounded-ai-consumption` until #25 replaces it.
+   - #14 and #15 are new, with Possible and Likely baselines respectively; their catalogue
+     justifications say what evidence those rest on.
+   
+   Next is step 4's integrity group: #18, #19, #23, plus #25 and the kept rules #32–34.
 4. **Internet exposure in native scripts:** no `+1` Likelihood delta. Exposure decides whether a
    rule fires instead, and adding the delta would count it twice. This is documented in
    `risk-methodology.md`. It closes point 5 of the 2026-11-17 review.

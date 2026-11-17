@@ -171,7 +171,7 @@ THREAGILE_BUILTIN_DOMAIN_MAP = {
 # repo this script has no path to at report-render time -- so, same
 # mechanism as the built-in map (a hardcoded snapshot), but built by
 # reading every script file's own id/title/description directly rather
-# than from locally-observed firings only, so it covers all ~73 native
+# than from locally-observed firings only, so it covers all ~74 native
 # script categories that exist in the fork as of this writing, not just
 # the ones that happened to fire in a run so far. A category id this map
 # doesn't recognize (a script added to the fork after this snapshot was
@@ -222,24 +222,25 @@ THREAGILE_FORK_SCRIPT_DOMAIN_MAP = {
     "atlas-chaff-data-spamming": "Artificial Intelligence",
     "atlas-dataset-ingest-integrity": "Artificial Intelligence",
     "atlas-dataset-store-attack": "Artificial Intelligence",
-    "atlas-inference-api-abuse": "Artificial Intelligence",
     "atlas-model-registry-supply-chain": "Artificial Intelligence",
     "atlas-model-supply-chain": "Artificial Intelligence",
     "atlas-rag-poisoning-exfil": "Artificial Intelligence",
-    "atlas-synthetic-data-memorization": "Artificial Intelligence",
     "atlas-training-data-poisoning": "Artificial Intelligence",
     "atlas-unbounded-ai-consumption": "Artificial Intelligence",
-    "atlas-vector-store-inversion": "Artificial Intelligence",
     "hyperparameter-tampering-no-baseline-diff": "Artificial Intelligence",
     "llm-improper-output-handling": "Artificial Intelligence",
     "maestro-l5-eval-pipeline-poisoning": "Artificial Intelligence",
-    "maestro-l5-observability-compromise": "Artificial Intelligence",
     "maestro-l6-security-ai-compromise": "Artificial Intelligence",
     "ai-insecure-inter-agent-communication": "Artificial Intelligence",
     "ai-rogue-agent-containment-gap": "Artificial Intelligence",
-    "on-device-model-extraction-gap": "Artificial Intelligence",
     "system-prompt-leakage": "Artificial Intelligence",
-    "training-script-ip-exfiltration": "Artificial Intelligence",
+    "ai-cross-context-bleed": "Artificial Intelligence",
+    "ai-inference-data-reconstruction": "Artificial Intelligence",
+    "ai-model-exfiltration": "Artificial Intelligence",
+    "ai-sensitive-information-disclosure": "Artificial Intelligence",
+    "ai-synthetic-data-leakage": "Artificial Intelligence",
+    "ai-telemetry-prompt-log-leakage": "Artificial Intelligence",
+    "ai-vector-store-exposure": "Artificial Intelligence",
     "untrusted-model-registry-source": "Artificial Intelligence",
     # Data (incl. secrets/crypto/data lifecycle, matching THREAGILE_BUILTIN_DOMAIN_MAP's own grouping)
     "cui-telemetry-spillage": "Data",
