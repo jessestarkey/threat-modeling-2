@@ -266,6 +266,14 @@ class LikelihoodSteps(unittest.TestCase):
         self.assertEqual(likelihood_of(guard_calls, title), "possible")
         self.assertEqual(likelihood_of(probe_calls, title), "possible")
 
+    def test_inline_guardrail_does_not_count_when_another_caller_bypasses_it(self):
+        title = "Direct Prompt Injection and Jailbreak"
+        bypassed = run_engine(
+            probe_asset(["ai:user-prompt-input"]),
+            probe_asset([], id="guard", technology="ai-guardrails", communication_links={"Screen": link("probe")}),
+            probe_asset([], id="ui", communication_links={"Direct": link("probe")}))
+        self.assertEqual(likelihood_of(bypassed, title), "likely")
+
     def test_guardrail_also_lowers_indirect_injection_from_technology(self):
         title = "Indirect Prompt Injection and Goal Hijack"
         unguarded = run_engine(probe_asset([], technology="ai-rag-pipeline"))

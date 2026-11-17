@@ -191,7 +191,7 @@ All 51 crosswalk entries are covered:
 |---|---|
 | LLM | 01→#1/#2 · 02→#15 · 03→#6 · 04→#23 · 05→#18 · 06→#25 · 07→#26 · 08→#3 · 09→#19/#20 · 10→#4 |
 | ASI | 01→#2 · 02→#6 · 03→#8 · 04→#23 · 05→#7 · 06→#13 (+#19) · 07→#9 · 08→#10 · 09→#26 · 10→#11 |
-| DSGAI | 01→#15 · 02→#8 · 03→#31/Out · 04→#18 · 05→#18 · 06→#6 · 07→Out · 08→Out · 09→#15 (+#2) · 10→#21 · 11→#14 · 12→#5 · 13→#20 · 14→#22 · 15→#14 · 16→#28 · 17→#25 · 18→#16 · 19→#27 · 20→#17 · 21→#18 (+#26) |
+| DSGAI | 01→#15 · 02→#8 · 03→#31/Out · 04→#18 · 05→#18 · 06→#6 · 07→Out · 08→Out · 09→#15 (+#2) · 10→#21 · 11→#14 · 12→#5 · 13→#20 · 14→#22 · 15→#14 · 16→#28 · 17→#25 + `ai-retrieval-resilience-gap` · 18→#16 · 19→#27 · 20→#17 · 21→#18 (+#26) |
 | AST | 01/04/05/08/10→#24 · 02→#23 · 03→#6 · 06→#7 · 07→#12 · 09→Out |
 
 ## Net change
@@ -200,7 +200,7 @@ All 51 crosswalk entries are covered:
 |---|---|---|
 | Native AI script rules (read no tags) | 30 | 23: #3–6, #8–12, #14–23, #25, #32–34. Of those, 4 are new (#5, #10, #14, #15), 3 are kept with no OWASP equivalent (#32–34), and 2 custom categories move in (#6, #23) because their tags are replaced by native facts. `ai-guardrails-bypass` becomes a mitigation signal |
 | Custom AI categories (Python) | 9 | 11: #1, #2, #7, #13, #24, #26–31. Of those, 4 are re-anchored (#1, #2, #13, #26), 3 kept unchanged (#29–31), 4 new (#7, #24, #27, #28) |
-| Firing unconditionally | 30 of 30 native | 7 of 23 native (#11, #12, the registry/pipeline branches of #17 and #23, and #32–34 as kept). The other 16 require a link, data or boundary fact. Every custom rule requires its tag |
+| Firing unconditionally | 30 of 30 native | After the 2026-11-17 limits round: #11 and #12 merged into one unconditional rule, plus #23 and the registry/pipeline branch of #17, and #32–34 as kept. Every other native rule needs a link, data, boundary or availability fact. Every custom rule needs its tag, except #2, which also fires on RAG, agent and multi-agent technologies |
 | OWASP GenAI entries covered | partial, mostly loose matches | 47 of 51 (4 out of scope by design) |
 | Tags | `ai:plugin-tool-use`, `ai:agent-framework` | retire both (#6 and #23 replace them with native facts). Add `ai:code-execution`, `ai:skills-enabled`, `ai:skills-vetted`, `ai:human-labeling` and `ai:endpoint-assistant`, all documented in `03-tags-lib.yml` |
 
@@ -382,13 +382,21 @@ No decisions are open. Settled in this round:
    Accepted and documented: #8 and hardcoded-credentials-secrets-sprawl both fire on a
    credentials link (privilege vs secret storage).
 
-   Known limits, not changed: DSGAI17 is only partly covered by #25 (vector-store and RAG
-   resilience has no finding); #10 is scored on availability although its description also
-   covers integrity propagation; AI assets get telemetry findings only through #22, which needs
-   a modeled telemetry link, so they get less telemetry coverage than plain apps; the guardrail
-   signal lowers #1/#2 even if another caller bypasses the guardrail; and #11, #12, #23 (and
-   Python #2 on RAG, agent and multi-agent assets) fire unconditionally, more than the
-   net-change table counts.
+   **Limits round (2026-11-17).** The known limits from the review were addressed:
+   - **DSGAI17:** new native rule `ai-retrieval-resilience-gap` on vector stores, feature stores
+     and RAG pipelines rated critical or mission-critical for availability (index corruption,
+     staleness, rebuild time, fail-open fallbacks). Possible / high.
+   - **#10:** description narrowed to the availability side of ASI08, matching its scoring;
+     integrity propagation stays with #2 and #9.
+   - **#22:** fires on any AI asset handling confidential-or-higher data (tracing captures prompts
+     by default); a modeled telemetry link carrying the data raises likelihood one level. AI
+     assets now get at least the telemetry coverage plain apps get.
+   - **Guardrail signal:** an inline guardrail (it calls the asset) counts only when every other
+     non-monitoring caller is a guardrail too; a sidecar guardrail (the asset calls it) is
+     trusted.
+   - **#11 + #12 merged** into `ai-operational-control-gap` (change control, rollback, monitoring,
+     kill switch), keeping the shared Likely / Medium baseline and the monitoring step-down; one
+     fewer finding on every agent and model. Native script rules stay at 66.
 4. **Internet exposure in native scripts:** no `+1` Likelihood delta. Exposure decides whether a
    rule fires instead, and adding the delta would count it twice. This is documented in
    `risk-methodology.md`. It closes point 5 of the 2026-11-17 review.

@@ -537,11 +537,17 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         asset_raa = raa_by_id.get(asset_id, 1.0)
         incoming = incoming_by_target.get(asset_id, [])
         outgoing_targets = [link.get('target') for link in (asset_data.get('communication_links') or {}).values()]
-        # A guardrail on the request path -- an ai-guardrails asset calls this asset, or this
-        # asset calls one to screen its traffic -- lowers prompt-injection likelihood one level.
-        # This replaced the fork's ai-guardrails-bypass rule (2026-11-17).
-        guarded = (any('ai-guardrails' in technologies_by_id.get(source, set()) for source, _ in incoming)
-                   or any('ai-guardrails' in technologies_by_id.get(target, set()) for target in outgoing_targets))
+        # A guardrail on the request path lowers prompt-injection likelihood one level (this
+        # replaced the fork's ai-guardrails-bypass rule, 2026-11-17). Two shapes:
+        #   - sidecar: this asset calls an ai-guardrails asset to screen its traffic. The model
+        #     cannot show a bypass here, so the link is trusted.
+        #   - inline: ai-guardrails assets call this asset. Only counts when every caller other
+        #     than monitoring is a guardrail -- any other caller reaches the asset unscreened.
+        callers = [source for source, _ in incoming
+                   if not technologies_by_id.get(source, set()) & {'monitoring', 'ai-observability-stack'}]
+        inline_guarded = bool(callers) and all('ai-guardrails' in technologies_by_id.get(source, set()) for source in callers)
+        sidecar_guarded = any('ai-guardrails' in technologies_by_id.get(target, set()) for target in outgoing_targets)
+        guarded = inline_guarded or sidecar_guarded
         injection_delta = -1 if guarded else 0
         # Written from outside: an outside caller (see is_outside_caller) writes into this asset
         # through an incoming link that is not readonly.
