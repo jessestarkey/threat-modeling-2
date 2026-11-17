@@ -43,7 +43,7 @@ tags_available:
 
   # --- Data Asset Classification ---
   - data:payload       # Business/mission content being processed or stored
-  - data:credential    # Authentication material: tokens, passwords, API keys, certificates
+  - data:credential    # Authentication material: tokens, passwords, API keys, certificates — trigger (with sec:secrets-broker) for the credential blast radius risk. Not read by hardcoded-credentials-secrets-sprawl, which fires natively on outgoing links with authentication credentials/client-certificate (see 00-threagile-field-reference.yml)
   - data:pii           # Asset processes or stores personally identifiable information on individuals — trigger for the missing-privacy-impact-assessment risk
   - storage:ephemeral  # Data residing only in memory or transit (in-motion risk)
   # storage:persistent and storage:vault have been removed: the risks they gated are now ported

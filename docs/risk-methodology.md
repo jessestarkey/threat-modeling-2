@@ -327,6 +327,15 @@ reused deliberately rather than independently retuned a third time. As of this w
 of the 73 files applies both deltas; `accidental-secret-leak.yaml` was the one exception (a flat,
 RAA-blind `unlikely` baseline) until it was brought into line with the rest.
 
+**One deliberate difference: no internet-exposure delta.** The custom engine adds `+1` Likelihood
+when an asset is internet-reachable (`exposed_delta` in [§2](#2-the-likelihood-adjustment-raa-and-internet-reachability)).
+The native scripts leave it out on purpose, decided 2026-11-17. Native rules are moving toward using
+exposure to decide *whether* they fire at all, rather than as a Likelihood nudge. For example, many
+of the reworked AI rules fire only when an asset is reachable from outside its own trust boundary
+(see `docs/ai-risk-rework-plan.md`), and adding `+1` for exposure on top of that would count the
+same fact twice. So a native finding and a custom finding on the same asset can differ by one
+Likelihood level when that asset is internet-reachable. That is expected, not drift.
+
 **There's no shared helper to call, by design of the DSL.** The script language has no
 cross-file sharing (`pkg/risks/script/risk-rule.go`'s `loadRiskRule()` parses each file
 independently), so the RAA/CIA delta logic is written out in full inside every single file's own

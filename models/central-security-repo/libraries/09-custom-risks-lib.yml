@@ -157,9 +157,9 @@ custom_risk_definitions:
   # Insecure Session Management and Hardcoded Credentials and Secrets Sprawl have been ported
   # into the jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml):
   # Insecure Session Management via the frontend_related technology attribute, Secrets Sprawl
-  # via the vault attribute for self-exclusion plus a residual read of the data:credential tag
-  # (DataAsset has no native "this is credential-shaped data" concept). Removed here rather than
-  # left duplicated. See docs/risk-methodology.md for the full rationale.
+  # on any non-vault asset with an outgoing link whose authentication is credentials or
+  # client-certificate (a static secret the asset must hold; it read the data:credential tag until
+  # 2026-11-17). Removed here rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   Missing Token Binding on Session and Refresh Tokens:
     id: missing-token-binding

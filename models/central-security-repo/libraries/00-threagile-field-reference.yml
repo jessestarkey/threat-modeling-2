@@ -525,13 +525,20 @@ communication_link_fields:
 
   authentication:
     type: enum
-    notes: Authentication mechanism used on this communication link.
+    notes: >
+      Authentication mechanism used on this communication link. Choose the value by where the
+      secret comes from: if the source asset has to hold a static secret (password, API key,
+      shared secret, connection string), use credentials -- never token -- even when it is sent
+      as a bearer header. token is only for secrets issued at runtime (managed identity, OAuth,
+      workload identity federation). The fork's hardcoded-credentials-secrets-sprawl rule fires
+      on the source asset of any credentials or client-certificate link and ignores token, so a
+      static API key modeled as token is invisible to it.
     values:
       none:                     No authentication.
-      credentials:              Username and password credentials.
+      credentials:              A static secret the source asset holds - username/password, API key, shared secret or connection string.
       session-id:               Session cookie or session token.
-      token:                    Bearer token (e.g., JWT, OAuth access token).
-      client-certificate:       Mutual TLS client certificate.
+      token:                    A token issued at runtime (e.g., managed identity, OAuth access token, JWT) - not a static API key.
+      client-certificate:       Mutual TLS client certificate (the source asset holds the private key).
       two-factor:               Multi-factor authentication enforced.
       externalized:             Authentication is delegated to an external system not modeled on this link (e.g., enforced upstream by a gateway/mesh).
 

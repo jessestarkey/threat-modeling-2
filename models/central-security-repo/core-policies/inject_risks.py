@@ -813,10 +813,11 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # AU-2 Logging Gap, Mishandling of Exceptional Conditions, BOLA/BFLA/Mass Assignment,
         # Multi-Tenant Data Isolation Failure, Insecure Session Management, Hardcoded
         # Credentials and Secrets Sprawl) has been ported into the jessestarkey/threagile fork
-        # as native script rules (pkg/risks/scripts/*.yaml) -- 8 of 9 fully native (frontend/
+        # as native script rules (pkg/risks/scripts/*.yaml), all fully native: frontend/
         # backend-related and request-serving-API technology attributes, the native MultiTenant
-        # field), one (secrets sprawl) still reading the data:credential tag directly since
-        # DataAsset has no native "this is credential-shaped data" concept. Removed here rather
+        # field, and for secrets sprawl the authentication value on the asset's outgoing links
+        # (credentials or client-certificate; it read the data:credential tag until
+        # 2026-11-17). Removed here rather
         # than left duplicated, since the Go-native versions fire unconditionally (disposed via
         # risk_tracking) and would otherwise double up with this Python injection on every app
         # run through the custom image. See docs/risk-methodology.md for the full rationale.
