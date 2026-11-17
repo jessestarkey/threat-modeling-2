@@ -145,7 +145,7 @@ technical_overview:
 #                         ai:agent-orchestrator
 #   cat-ai-supply-chain   ai:model-serving, ai:model-registry,
 #                         ai:training-pipeline, ai:dataset-store,
-#                         ai:agent-framework, ai:eval-pipeline
+#                         ai:eval-pipeline
 #
 # ANSWER FORMAT (The "Yes, And..." Method):
 #   Do NOT answer with a bare "Yes" or "No". Explain HOW the control is

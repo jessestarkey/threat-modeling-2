@@ -1223,6 +1223,11 @@ custom_risk_definitions:
     detection_logic: Trace which external documents entered any LLM context window. Flag tool calls that were not explicitly initiated by the human user turn. Alert on model outputs containing base64 strings, external URLs not in an approved allowlist, or markdown image tags.
     risks_identified: {}
 
+  # 2026-11-17: the fork has since replaced the ATLAS rules named in the port notes below
+  # (atlas-rag-poisoning-exfil, atlas-dataset-ingest-integrity, atlas-unbounded-ai-consumption,
+  # atlas-model-supply-chain, atlas-training-data-poisoning, atlas-dataset-store-attack,
+  # atlas-model-registry-supply-chain) with ai-rag-corpus-poisoning,
+  # ai-training-data-model-poisoning, ai-supply-chain-compromise and ai-unbounded-consumption.
   # 'ATLAS: RAG Pipeline Poisoning and Data Exfiltration' has been ported into the
   # jessestarkey/threagile fork as a native script rule
   # (pkg/risks/scripts/atlas-rag-poisoning-exfil.yaml), triggered off the new native
@@ -1307,24 +1312,11 @@ custom_risk_definitions:
   # =====================================================================
   #
   # --- 5.2 MAESTRO GAP COVERAGE (L3, L5, L6, L7) ---
-  'MAESTRO L3: Agent Framework and Dependency Supply Chain Compromise':
-    id: maestro-l3-agent-framework-supply-chain
-    baseline_likelihood: possible
-    baseline_impact: very-high
-    description: 'The AI agent framework layer -- the libraries used to build and run agents and their transitive dependencies -- is itself a supply chain attack surface distinct from model artifacts or tool definitions.'
-    impact: 'If this risk remains unmitigated, a compromised framework package propagates automatically to every agent deployment that installs it, executing with the full privilege of the agent runtime.'
-    asvs: V14 - Configuration
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
-    action: Pin all AI framework dependencies to cryptographically verified versions and integrate SCA into the CI/CD pipeline.
-    mitigation: Pin all AI framework and transitive dependencies to exact versions with hash verification (pip hash-checking mode, npm lockfiles with integrity hashes). Integrate SCA tools (e.g., Dependabot, Snyk, OSV-Scanner) into CI/CD targeting the AI framework dependency graph. Mirror approved package versions to a private registry and prohibit direct public PyPI/npm access from build pipelines. Subscribe to security advisories for all AI framework packages in use.
-    references: MAESTRO L3 (Agent Frameworks) — Compromised Framework Components, Supply Chain Attacks, Input Validation Attacks; NIST SP 800-53 SA-12 (Supply Chain Protection)
-    risk_assessment: Critical for any agent built on a publicly-sourced AI framework with an uncontrolled transitive dependency graph.
-    false_positives: All framework dependencies are sourced from a fully air-gapped, internally mirrored registry where every package version has been manually reviewed and signed before admission.
-    function: architecture
-    stride: tampering
-    cwe: 1357
-    detection_logic: Run SCA scans on every CI/CD build and alert on newly introduced CVEs or suspicious new transitive dependencies. Monitor for unexpected network egress from the agent runtime process at startup.
-    risks_identified: {}
+  # 'MAESTRO L3: Agent Framework and Dependency Supply Chain Compromise' (ai:agent-framework
+  # tag) was replaced on 2026-11-17 by the fork's native ai-supply-chain-compromise rule
+  # (OWASP LLM04/ASI04/AST02), which fires on every ai-agent-orchestrator -- framework
+  # dependencies are part of what an orchestrator loads -- so the tag is retired. See
+  # docs/ai-risk-rework-plan.md #23.
 
   # 'MAESTRO L5: Evaluation Pipeline and Benchmark Poisoning', 'MAESTRO L5: AI Observability
   # Stack Compromise and Evidence Destruction', 'MAESTRO L6: AI-Powered Security Tooling

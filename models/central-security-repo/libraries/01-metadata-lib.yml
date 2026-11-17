@@ -182,7 +182,6 @@ categories:
       - ai:model-registry
       - ai:training-pipeline
       - ai:dataset-store
-      - ai:agent-framework
       - ai:eval-pipeline
       - ai:on-device-inference
       - ai:air-gapped-model-delivery

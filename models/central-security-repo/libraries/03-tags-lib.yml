@@ -269,7 +269,9 @@ tags_available:
   # readonly: true for read-only tools -- and read by the fork's ai-excessive-agency-tool-misuse
   # rule. See docs/ai-risk-rework-plan.md #6.
   - ai:agent-memory        # Asset maintains persistent memory or session state for an AI agent across turns or sessions
-  - ai:agent-framework     # Asset is an AI agent framework or its transitive dependency graph (e.g., LangChain, AutoGen, Semantic Kernel and their PyPI/npm deps) — flags the framework code layer as a supply chain surface
+  # ai:agent-framework has been removed (2026-11-17): framework dependencies are covered
+  # natively by the fork's ai-supply-chain-compromise rule on every ai-agent-orchestrator.
+  # See docs/ai-risk-rework-plan.md #23.
 
   # --- Training and Data Pipeline Surface ---
   # ai:training-pipeline and ai:dataset-store have both been removed: fully handled by the
@@ -321,6 +323,9 @@ tags_available:
   # fire unconditionally. See docs/risk-methodology.md.
   - ai:third-party-model-api     # Asset sends requests to a vendor-hosted foundation model API — trigger for the ungoverned-third-party-model-api risk
   - ai:vendor-model-governed     # Data-transmission classification restriction, training-use opt-out, credential vaulting, and recurring vendor security-posture review are all confirmed for this vendor model API — suppresses the ungoverned-third-party-model-api risk
+  # 2026-11-17: atlas-unbounded-ai-consumption has since been replaced in the fork by
+  # ai-unbounded-consumption, which fires only when the endpoint is reachable from outside its
+  # trust boundary.
   # ai:resource-budget-enforced has been removed: it only ever suppressed the
   # atlas-unbounded-ai-consumption risk, which is now ported into the jessestarkey/threagile
   # fork as a native script rule that fires unconditionally. See docs/risk-methodology.md.

@@ -171,7 +171,7 @@ THREAGILE_BUILTIN_DOMAIN_MAP = {
 # repo this script has no path to at report-render time -- so, same
 # mechanism as the built-in map (a hardcoded snapshot), but built by
 # reading every script file's own id/title/description directly rather
-# than from locally-observed firings only, so it covers all ~74 native
+# than from locally-observed firings only, so it covers all ~66 native
 # script categories that exist in the fork as of this writing, not just
 # the ones that happened to fire in a run so far. A category id this map
 # doesn't recognize (a script added to the fork after this snapshot was
@@ -212,25 +212,18 @@ THREAGILE_FORK_SCRIPT_DOMAIN_MAP = {
     "vulnerable-outdated-dependency": "Application",
     # Artificial Intelligence
     "ai-content-provenance-tampering": "Artificial Intelligence",
-    "ai-feature-store-lineage-gap": "Artificial Intelligence",
+    "ai-adversarial-evasion": "Artificial Intelligence",
+    "ai-rag-corpus-poisoning": "Artificial Intelligence",
+    "ai-security-tooling-compromise": "Artificial Intelligence",
+    "ai-supply-chain-compromise": "Artificial Intelligence",
+    "ai-training-data-model-poisoning": "Artificial Intelligence",
+    "ai-unbounded-consumption": "Artificial Intelligence",
     "ai-agent-identity-privilege-abuse": "Artificial Intelligence",
     "ai-cascading-agent-failures": "Artificial Intelligence",
     "ai-change-control-gap": "Artificial Intelligence",
     "ai-guardrails-bypass": "Artificial Intelligence",
-    "atlas-adversarial-evasion-attack": "Artificial Intelligence",
     "ai-excessive-agency-tool-misuse": "Artificial Intelligence",
-    "atlas-chaff-data-spamming": "Artificial Intelligence",
-    "atlas-dataset-ingest-integrity": "Artificial Intelligence",
-    "atlas-dataset-store-attack": "Artificial Intelligence",
-    "atlas-model-registry-supply-chain": "Artificial Intelligence",
-    "atlas-model-supply-chain": "Artificial Intelligence",
-    "atlas-rag-poisoning-exfil": "Artificial Intelligence",
-    "atlas-training-data-poisoning": "Artificial Intelligence",
-    "atlas-unbounded-ai-consumption": "Artificial Intelligence",
-    "hyperparameter-tampering-no-baseline-diff": "Artificial Intelligence",
     "llm-improper-output-handling": "Artificial Intelligence",
-    "maestro-l5-eval-pipeline-poisoning": "Artificial Intelligence",
-    "maestro-l6-security-ai-compromise": "Artificial Intelligence",
     "ai-insecure-inter-agent-communication": "Artificial Intelligence",
     "ai-rogue-agent-containment-gap": "Artificial Intelligence",
     "system-prompt-leakage": "Artificial Intelligence",
@@ -241,7 +234,6 @@ THREAGILE_FORK_SCRIPT_DOMAIN_MAP = {
     "ai-synthetic-data-leakage": "Artificial Intelligence",
     "ai-telemetry-prompt-log-leakage": "Artificial Intelligence",
     "ai-vector-store-exposure": "Artificial Intelligence",
-    "untrusted-model-registry-source": "Artificial Intelligence",
     # Data (incl. secrets/crypto/data lifecycle, matching THREAGILE_BUILTIN_DOMAIN_MAP's own grouping)
     "cui-telemetry-spillage": "Data",
     "hardcoded-credentials-secrets-sprawl": "Data",

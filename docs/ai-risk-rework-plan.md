@@ -144,16 +144,16 @@ has a single source.
 
 | # | Category | OWASP IDs | Place | Matches | Fires when (proposed) | Replaces |
 |---|---|---|---|---|---|---|
-| 18 | Training & Fine-Tuning Data/Model Poisoning | LLM05 · DSGAI04 · DSGAI05 · DSGAI21 | N | `ai-training-pipeline`, `ai-dataset-store`, `ai-feature-store`, `ai-eval-pipeline` | an incoming writable link (not `readonly`) from outside the trust boundary. Otherwise lower likelihood | `atlas-training-data-poisoning` · `atlas-dataset-store-attack` (confidentiality half is already covered by built-in datastore rules) · `hyperparameter-tampering-no-baseline-diff` · `maestro-l5-eval-pipeline-poisoning` · `ai-feature-store-lineage-gap` |
-| 19 | RAG Corpus Poisoning | LLM09 · ASI06 (partial) · DSGAI04 | N | `ai-rag-ingest-pipeline`, `ai-rag-pipeline` | an incoming link from outside the trust boundary feeds the ingest path | `atlas-dataset-ingest-integrity` · `atlas-rag-poisoning-exfil` |
-| 23 | AI Supply Chain (models, frameworks, datasets) | LLM04 · ASI04 · AST02 | N | `ai-model-registry`, `ai-model-serving`, orchestrator (framework dependencies) | always for the registry. Higher likelihood when the registry has an incoming link from outside the trust boundary (a public hub pull) | `atlas-model-supply-chain` · `atlas-model-registry-supply-chain` · `untrusted-model-registry-source` · `maestro-l3-agent-framework-supply-chain` (C). The `ai:agent-framework` tag can retire |
+| 18 | Training & Fine-Tuning Data/Model Poisoning (built: `ai-training-data-model-poisoning`) | LLM05 · DSGAI04 · DSGAI05 · DSGAI21 | N | `ai-training-pipeline`, `ai-dataset-store`, `ai-feature-store`, `ai-eval-pipeline` | always (insider and compromised-account poisoning need nothing the model records). Likelihood starts at Unlikely and steps up one level when data is written in from outside the trust boundary (internet-facing, or a non-readonly incoming link from another boundary) | `atlas-training-data-poisoning` · `atlas-dataset-store-attack` (confidentiality half is already covered by built-in datastore rules) · `hyperparameter-tampering-no-baseline-diff` · `maestro-l5-eval-pipeline-poisoning` · `ai-feature-store-lineage-gap` |
+| 19 | RAG Corpus Poisoning (built: `ai-rag-corpus-poisoning`) | LLM09 · ASI06 (partial) · DSGAI04 | N | `ai-rag-ingest-pipeline`, `ai-rag-pipeline` | content comes in from outside the trust boundary: internet-facing, an incoming link from another boundary, or a readonly outgoing link (a pull) to one | `atlas-dataset-ingest-integrity` · `atlas-rag-poisoning-exfil` |
+| 23 | AI Supply Chain (built: `ai-supply-chain-compromise`) | LLM04 · ASI04 · AST02 | N | `ai-model-registry`, `ai-model-serving`, `ai-agent-orchestrator` (framework dependencies), `ai-tool-server` (tool packages, per ASI04) | always. Likelihood one level higher when the asset brings content in from outside the trust boundary (e.g. a pull from a public model hub) | `atlas-model-supply-chain` · `atlas-model-registry-supply-chain` · `untrusted-model-registry-source` · `maestro-l3-agent-framework-supply-chain` (C). The `ai:agent-framework` tag is retired |
 | 24 | Unvetted Agent Skills & Instructions | AST01 · AST04 · AST05 · AST08 · AST10 | C | assets tagged **`ai:skills-enabled`** (new) | tag present, unless a new suppression tag `ai:skills-vetted` is set | **new**. Could move native only if an `ai-skill-registry` technology replaces the tag |
 
 ### Availability
 
 | # | Category | OWASP IDs | Place | Matches | Fires when (proposed) | Replaces |
 |---|---|---|---|---|---|---|
-| 25 | Unbounded Consumption | LLM06 · DSGAI17 | N | `ai-llm-endpoint`, `ai-gateway` | incoming link from outside the trust boundary. Lower likelihood when the endpoint is only reached through an `ai-gateway` | `atlas-unbounded-ai-consumption` · `atlas-chaff-data-spamming` |
+| 25 | Unbounded Consumption (built: `ai-unbounded-consumption`) | LLM06 · DSGAI17 | N | `ai-llm-endpoint`, `ai-gateway` | receives requests from outside the trust boundary. Likelihood one level lower for an LLM endpoint whose every incoming link comes from an `ai-gateway` | `atlas-unbounded-ai-consumption` · `atlas-chaff-data-spamming` |
 
 ### Human factors and workforce
 
@@ -170,9 +170,9 @@ has a single source.
 | 29 | AI Output to OT/Safety Actuation Without Human Gate | ASI09 · LLM03 (partial) | C (unchanged) | IL5/OT-specific |
 | 30 | Air-Gapped Model Package Integrity | LLM04 (partial) | C (unchanged) | IL5-specific, already has a suppression tag |
 | 31 | Ungoverned Third-Party Model API | DSGAI03 · LLM02 (partial) | C (unchanged) | Vendor-policy and data-classification content |
-| 32 | Security-AI Compromise | ASI10 · LLM01 (partial) | N (`maestro-l6-security-ai-compromise`, renamed) | Fires on your `ai-security-agent` component type |
+| 32 | Security-AI Compromise | ASI10 · LLM01 (partial) | N (renamed from `maestro-l6-security-ai-compromise` to `ai-security-tooling-compromise`) | Fires on your `ai-security-agent` component type |
 | 33 | Content Provenance Tampering | DSGAI21 · LLM07 (partial) | N (`ai-content-provenance-tampering`, unchanged) | Fires on your component type |
-| 34 | Adversarial Evasion (classic ML) | ATLAS AML.T0015 only | N (`atlas-adversarial-evasion-attack`, renamed) | GenAI lists don't cover non-LLM models. **Narrow to `ai-model-serving` only**: today it also matches `ai-llm-endpoint` |
+| 34 | Adversarial Evasion (classic ML) | ATLAS AML.T0015 only | N (renamed from `atlas-adversarial-evasion-attack` to `ai-adversarial-evasion`) | GenAI lists don't cover non-LLM models. Narrowed to `ai-model-serving` only; LLM evasion is prompt injection and jailbreak |
 
 ### Out of scope (not per-asset)
 
@@ -255,7 +255,7 @@ No decisions are open. Settled in this round:
 2. **Baselines:**
    - A category that replaces one rule keeps that rule's baseline.
    - A category that merges several rules starts at their *middle* value, never the highest. For
-     example, #18 starts at Possible.
+     example, #18 starts at Unlikely (its five rules start at Unlikely x3 and Likely x2).
    - A new category's baseline is justified from CWE/OWASP evidence in the threat catalogue's
      justification appendix.
    - The crosswalk's list-level AIVSS severity is not used.
@@ -322,7 +322,24 @@ No decisions are open. Settled in this round:
    - #14 and #15 are new, with Possible and Likely baselines respectively; their catalogue
      justifications say what evidence those rest on.
    
-   Next is step 4's integrity group: #18, #19, #23, plus #25 and the kept rules #32–34.
+   Step 4, integrity group, is done: #18, #19, #23 and #25 are built, and the kept rules #32 and
+   #34 are renamed to `ai-security-tooling-compromise` and `ai-adversarial-evasion` (#34 now
+   fires only on `ai-model-serving`). They replace twelve native rules and the custom
+   `maestro-l3-agent-framework-supply-chain`; `ai:agent-framework` is retired. The fork now has
+   66 script rules.
+   - **Baseline correction:** the decisions section earlier said #18 starts at Possible. Its five
+     rules' middle value is Unlikely, which is what was built.
+   - #18 fires on every training, dataset, feature and evaluation asset, and steps up one level
+     when outside data is written in, so insider poisoning stays covered.
+   - #25 starts at Likely, the lower of its two adjacent baselines, since merged categories never
+     take the highest.
+   - **Not carried over:** the data-handling half of `ai-feature-store-lineage-gap` (derived
+     features losing their source's handling marking).
+
+   Native categories still to build: #3 Hidden Context Exposure and #4 Improper Output Handling
+   (still the old `system-prompt-leakage` and `llm-improper-output-handling` rules) and #5 Unsafe
+   Natural-Language Data Gateway (new). `ai-guardrails-bypass` also still stands until step 5
+   turns it into a mitigation signal for #1 and #2. Then step 5, the custom rules.
 4. **Internet exposure in native scripts:** no `+1` Likelihood delta. Exposure decides whether a
    rule fires instead, and adding the delta would count it twice. This is documented in
    `risk-methodology.md`. It closes point 5 of the 2026-11-17 review.

@@ -568,6 +568,12 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ai:indirect-prompt-input' in tags:
             inject("ATLAS: Indirect Prompt Injection and Trusted Output Manipulation", "Indirect Prompt Injection Risk")
 
+        # 2026-11-17: the fork has since replaced the ATLAS rules named in the port notes below
+        # (atlas-rag-poisoning-exfil, atlas-dataset-ingest-integrity,
+        # atlas-unbounded-ai-consumption, atlas-model-supply-chain, atlas-training-data-poisoning,
+        # atlas-dataset-store-attack, atlas-model-registry-supply-chain) with
+        # ai-rag-corpus-poisoning, ai-training-data-model-poisoning, ai-supply-chain-compromise and
+        # ai-unbounded-consumption.
         # NOTE: "ATLAS: RAG Pipeline Poisoning and Data Exfiltration" has been ported into the
         # jessestarkey/threagile fork as a native script rule
         # (pkg/risks/scripts/atlas-rag-poisoning-exfil.yaml), triggered off the new native
@@ -652,6 +658,8 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # rather than left duplicated. The tag itself stays -- still read further below for the
         # registry-source check, not yet ported.
 
+        # 2026-11-17: atlas-inference-api-abuse, named below, was replaced in the fork by
+        # ai-inference-data-reconstruction and ai-sensitive-information-disclosure.
         # NOTE: "ATLAS: AI Model Intellectual Property Theft and Proxy Model Creation" has been
         # removed, not ported -- re-reading its own description ("sits at a boundary where
         # systematic inference queries can be used to reconstruct a functional proxy of the
@@ -662,9 +670,9 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # now fully removed from 03-tags-lib.yml too. See docs/risk-methodology.md.
 
         # --- 2b. MAESTRO GAP COVERAGE ---
-        # Agent framework dependency supply chain (MAESTRO L3)
-        if 'ai:agent-framework' in tags:
-            inject("MAESTRO L3: Agent Framework and Dependency Supply Chain Compromise", "Framework Supply Chain Risk")
+        # The agent framework supply-chain branch (ai:agent-framework) was removed on 2026-11-17:
+        # the fork's native ai-supply-chain-compromise rule covers framework dependencies on
+        # every ai-agent-orchestrator, so the tag is retired.
 
         # NOTE: "MAESTRO L5: Evaluation Pipeline and Benchmark Poisoning," "MAESTRO L5: AI
         # Observability Stack Compromise and Evidence Destruction," and "MAESTRO L6: AI-Powered

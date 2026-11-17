@@ -311,7 +311,7 @@ Alongside the compiled Go built-in rules above, the fork has a second, independe
 categories that still runs *inside* the Threagile binary rather than as Python preprocessing:
 `pkg/risks/scripts/*.yaml`, a YAML scripting DSL (match conditions, utility functions, loops,
 `calculate_severity()`) loaded via `go:embed` and auto-discovered at startup — no edit to the
-engine's own rule-registration code needed to add one. 74 files exist today, almost entirely
+engine's own rule-registration code needed to add one. 66 files exist today, almost entirely
 IL5-specific categories (AI/ATLAS/MAESTRO threat vectors, CDS, container/VM hardening, mission
 systems) that were deliberately rolled into the fork instead of staying as `inject_risks.py`
 Python categories, on the view that this fork is purpose-built for IL5+ systems and content
@@ -324,7 +324,7 @@ nudged by the identical RAA delta (`+1` at RAA ≥ 40, `-1` below 15) and the id
 STRIDE-dimension CIA delta described in [§2](#2-the-likelihood-adjustment-raa-and-internet-reachability)
 and [§3](#3-the-impact-adjustment-cia-rank) above — same thresholds, same STRIDE-to-CIA mapping,
 reused deliberately rather than independently retuned a third time. As of this writing, every one
-of the 74 files applies both deltas; `accidental-secret-leak.yaml` was the one exception (a flat,
+of the 66 files applies both deltas; `accidental-secret-leak.yaml` was the one exception (a flat,
 RAA-blind `unlikely` baseline) until it was brought into line with the rest.
 
 **One deliberate difference: no internet-exposure delta.** The custom engine adds `+1` Likelihood
@@ -339,9 +339,9 @@ Likelihood level when that asset is internet-reachable. That is expected, not dr
 **There's no shared helper to call, by design of the DSL.** The script language has no
 cross-file sharing (`pkg/risks/script/risk-rule.go`'s `loadRiskRule()` parses each file
 independently), so the RAA/CIA delta logic is written out in full inside every single file's own
-`get_likelihood`/`get_impact` utility functions — 74 independent copies of the same two formulas,
+`get_likelihood`/`get_impact` utility functions — 66 independent copies of the same two formulas,
 not a shared library call. This is a real, accepted maintenance cost specific to this mechanism:
-retuning the RAA thresholds or the STRIDE-to-CIA mapping means editing up to 74 files by hand, not
+retuning the RAA thresholds or the STRIDE-to-CIA mapping means editing up to 66 files by hand, not
 one shared helper, on top of the existing two-copy (Python/Go) sync burden described in [Keeping
 this in sync](#keeping-this-in-sync).
 
@@ -371,7 +371,7 @@ which asset it landed on. The computation has four steps.
 
 ### 1. Baseline Likelihood and Impact
 
-Every one of the 86 category definitions in `libraries/09-custom-risks-lib.yml` carries its own
+Every one of the 85 category definitions in `libraries/09-custom-risks-lib.yml` carries its own
 `baseline_likelihood` and `baseline_impact` — an author judgment of how exploitable and how
 consequential that *class* of vulnerability inherently is, independent of which asset it lands on.
 Grounded in CWE's own "Likelihood of Exploit" rating or the relevant OWASP Top 10/API Security Top
@@ -658,7 +658,7 @@ about the Fibonacci change requires that to change going forward.
 | Per-category baseline Likelihood/Impact | `models/central-security-repo/libraries/09-custom-risks-lib.yml` — each entry's `baseline_likelihood`/`baseline_impact` |
 | Threagile's own built-in categories | This repo's fork, `jessestarkey/threagile` (built via its default `Dockerfile`) — `pkg/types/risk_exploitation_likelihood.go`/`risk_exploitation_impact.go` for the weight tables, `pkg/types/model.go`'s `CalculateSeverity()` for the thresholds, `pkg/risks/builtin/helpers.go`'s `computeLikelihood()` for the shared per-asset Likelihood delta now used by 35 of ~42 rules (`computeImpact()` in the same file is dead code, not currently called by anything — see [Threagile's built-in risk categories](#threagiles-built-in-risk-categories)), and each individual `pkg/risks/builtin/*_rule.go` file for that rule's own baseline value and detection logic (the one piece that stays closed-upstream in spirit even though this repo's fork can technically see and edit it) |
 | Built-in category enrichment text | `models/central-security-repo/libraries/10-threagile-builtin-risks-lib.yml` |
-| Native script rules | This repo's fork, `pkg/risks/scripts/*.yaml` (74 files) — each file's own `get_likelihood`/`get_impact` utility functions carry the RAA/CIA delta logic independently (no shared helper, no central enrichment library; see [Native script rules](#native-script-rules-a-third-mechanism-same-forked-binary)) |
+| Native script rules | This repo's fork, `pkg/risks/scripts/*.yaml` (66 files) — each file's own `get_likelihood`/`get_impact` utility functions carry the RAA/CIA delta logic independently (no shared helper, no central enrichment library; see [Native script rules](#native-script-rules-a-third-mechanism-same-forked-binary)) |
 | The condensed, report-facing version of this document | `models/central-security-repo/core-policies/templates/report.html.jinja`'s Methodology section |
 | Broader repo/pipeline architecture | `CLAUDE.md` |
 
@@ -683,7 +683,7 @@ file's constants change, check the other and this document together — a drift 
 an error anywhere, it would just quietly make the two engines disagree again on something they're
 currently deliberately aligned on.
 
-**The native script rules multiply this same problem by 74.** Each of the 74 files in
+**The native script rules multiply this same problem by 66.** Each of the 66 files in
 `pkg/risks/scripts/` writes the RAA/CIA delta logic out independently (see [Native script
 rules](#native-script-rules-a-third-mechanism-same-forked-binary)), so a threshold or mapping
 retune isn't a two-place sync problem for this mechanism, it's a 75-place one (`inject_risks.py` +

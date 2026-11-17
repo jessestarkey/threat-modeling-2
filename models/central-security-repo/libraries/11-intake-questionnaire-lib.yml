@@ -208,7 +208,7 @@ categories:
         then:
           "Can the agent call tools, plugins, or functions that invoke external APIs or take real actions?": "-> model each tool as a communication link from the agent (or from an ai-tool-server asset hosting it) to the asset it acts on; readonly: true only if the tool cannot change anything"
 
-          "Is this application specifically the agent framework code itself, such as LangChain, AutoGen, or Semantic Kernel, or one of its dependencies?": "-> ai:agent-framework"
+          "Is this application specifically the agent framework code itself, such as LangChain, AutoGen, or Semantic Kernel, or one of its dependencies?": "-> no tag needed: framework supply chain is covered on every ai-agent-orchestrator asset; model the agent with technology ai-agent-orchestrator"
 
           "Does the agent keep persistent memory or session state across turns or sessions?": "-> ai:agent-memory"
 

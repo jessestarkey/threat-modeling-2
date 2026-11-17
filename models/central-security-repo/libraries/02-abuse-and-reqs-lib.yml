@@ -106,7 +106,7 @@
 #     Triggers: ai:user-prompt-input, ai:indirect-prompt-input, ai:llm-endpoint, ai:rag-pipeline,
 #               ai:agent-orchestrator, ai:ot-adjacent-output, ai:third-party-model-api,
 #               ai:model-serving, ai:model-registry, ai:training-pipeline, ai:dataset-store,
-#               ai:agent-framework, ai:eval-pipeline, ai:on-device-inference, ai:air-gapped-model-delivery,
+#               ai:eval-pipeline, ai:on-device-inference, ai:air-gapped-model-delivery,
 #               ai:rag-ingest-pipeline, ai:agent-memory, ai:model-exfil-risk, ai:multi-agent-boundary
 #   DATA                       ASVS V11, V14
 #     Triggers: storage:persistent, storage:vault, data:external-feed-ingest, data:release-candidate,
@@ -1063,7 +1063,7 @@ categories:
   # ARTIFICIAL INTELLIGENCE
   # Triggers: ai:user-prompt-input, ai:indirect-prompt-input, ai:llm-endpoint, ai:rag-pipeline, ai:agent-orchestrator,
   #           ai:ot-adjacent-output, ai:third-party-model-api, ai:model-serving, ai:model-registry,
-  #           ai:training-pipeline, ai:dataset-store, ai:agent-framework, ai:eval-pipeline, ai:on-device-inference,
+  #           ai:training-pipeline, ai:dataset-store, ai:eval-pipeline, ai:on-device-inference,
   #           ai:air-gapped-model-delivery, ai:rag-ingest-pipeline, ai:agent-memory, ai:model-exfil-risk,
   #           ai:multi-agent-boundary
   # Source: AISVS C1-C10, C11.1-C11.3
@@ -1081,7 +1081,6 @@ categories:
       - ai:model-registry
       - ai:training-pipeline
       - ai:dataset-store
-      - ai:agent-framework
       - ai:eval-pipeline
       - ai:on-device-inference
       - ai:air-gapped-model-delivery
