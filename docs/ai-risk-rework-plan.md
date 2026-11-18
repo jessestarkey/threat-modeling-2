@@ -401,4 +401,21 @@ No decisions are open. Settled in this round:
    rule fires instead, and adding the delta would count it twice. This is documented in
    `risk-methodology.md`. It closes point 5 of the 2026-11-17 review.
 
+   **Noise review (2026-11-18).** Measured on a typical one-agent deployment (web UI -> agent ->
+   LLM, vector store, and a tool server writing to a CRM database). The agent's own 11 AI findings
+   are each a distinct risk and stay. The noise was the same risk raised again on the next asset
+   in the chain; four rules were narrowed, cutting the deployment's AI findings from 21 to 17
+   with no rating change:
+   - `ai-telemetry-prompt-log-leakage` fires only on assets that see prompts (LLM endpoint, model
+     serving, agent, RAG pipeline, AI gateway, multi-agent gateway, guardrails) and on the
+     observability stack, not on tool servers, vector stores or data pipelines.
+   - `ai-excessive-agency-tool-misuse` fires on a tool server only when no in-scope agent calls
+     it; otherwise the agent that steers it carries the finding.
+   - `ai-improper-output-handling` does not count an agent or RAG pipeline caller as a consumer:
+     it passes the output on and carries the finding where the output lands.
+   - Custom `ai-indirect-prompt-injection` fires on an agent only when it reads content (a link
+     to a retrieval store, tool server, other agents, or anything external), not on every agent.
+   Threagile's built-in SSRF still fires once per outgoing link; left as is, since each target is
+   a different place an attacker could reach.
+
 Also decided: #28 is kept (see its row); `ai-tool-server` is added (see above).

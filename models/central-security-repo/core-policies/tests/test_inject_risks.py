@@ -359,6 +359,26 @@ class ReviewRegressions(unittest.TestCase):
         asset["technologies"] = ["ai-rag-pipeline"]
         self.assertIn("Indirect Prompt Injection and Goal Hijack", run_engine(asset))
 
+    def test_agent_indirect_injection_needs_a_content_source(self):
+        # 2026-11-18 noise review: an agent inherits indirect injection only when it reads content
+        # (retrieval, tool results, other agents, anything external), not unconditionally.
+        title = "Indirect Prompt Injection and Goal Hijack"
+        own_stores_only = run_engine(
+            probe_asset([], technology="ai-agent-orchestrator",
+                        communication_links={"Complete": link("llm"), "Save": link("db")}),
+            probe_asset([], id="llm", technology="ai-llm-endpoint"),
+            probe_asset([], id="db", technology="database", type="datastore"))
+        self.assertNotIn(title, own_stores_only, "talks only to its LLM and its own database")
+        for source, technology, extra in (("vectors", "ai-vector-store", {}),
+                                          ("tools", "ai-tool-server", {}),
+                                          ("web", "web-server", {"out_of_scope": True})):
+            with self.subTest(source=source):
+                result = run_engine(
+                    probe_asset([], technology="ai-agent-orchestrator",
+                                communication_links={"Read": link(source, readonly=True)}),
+                    probe_asset([], id=source, technology=technology, **extra))
+                self.assertIn(title, result)
+
 
 if __name__ == "__main__":
     unittest.main()

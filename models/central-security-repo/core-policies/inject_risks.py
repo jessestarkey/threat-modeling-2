@@ -117,6 +117,10 @@ RAG_PIPELINE_TECHNOLOGIES = {"ai-rag-pipeline"}
 AGENT_ORCHESTRATOR_TECHNOLOGIES = {"ai-agent-orchestrator"}
 MULTI_AGENT_GATEWAY_TECHNOLOGIES = {"ai-multi-agent-gateway"}
 DATASET_STORE_TECHNOLOGIES = {"ai-dataset-store"}
+# Assets whose content reaches an agent's model as context: retrieved documents, tool results,
+# other agents' messages. A link to one of these is what makes an agent an indirect-injection target.
+CONTENT_SOURCE_TECHNOLOGIES = {"ai-vector-store", "ai-rag-pipeline", "ai-feature-store",
+                               "ai-tool-server", "ai-multi-agent-gateway"}
 # Technologies the fork marks frontend_related (pkg/types/technologies.yaml): web front ends,
 # proxies, gateways and client devices. Used to decide whether a caller brings outside requests in.
 FRONTEND_TECHNOLOGIES = {
@@ -501,6 +505,18 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             boundary = parent_by_boundary.get(boundary)
         return boundary
 
+    def reads_content(asset_data):
+        # True when the asset has an outgoing link to a content source: a retrieval store or
+        # pipeline, a tool server, another agent's gateway, or anything external or out of scope.
+        for link in (asset_data.get('communication_links') or {}).values():
+            target_id = link.get('target')
+            target = assets_by_id.get(target_id) or {}
+            if technologies_by_id.get(target_id, set()) & CONTENT_SOURCE_TECHNOLOGIES:
+                return True
+            if target.get('out_of_scope') or target.get('type', 'external-entity') == 'external-entity':
+                return True
+        return False
+
     def is_outside_caller(caller_id, own_network_boundary):
         # External (an external entity, out of scope, or internet-facing), or a frontend in a
         # different network boundary -- the same test the fork's native rules use.
@@ -685,8 +701,12 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # ai:ot-adjacent-output, standalone -- it never depended on this tag.) See
         # docs/risk-methodology.md for the full rationale.
         if asset_techs & AGENT_ORCHESTRATOR_TECHNOLOGIES:
-            # Orchestrators that process external content also inherit indirect injection
-            if 'ai:indirect-prompt-input' not in tags:
+            # Orchestrators that read content inherit indirect injection: retrieved documents,
+            # tool results and other agents' messages all reach the model as context. An agent
+            # that talks only to its LLM and its own stores has no such path, so it needs a link
+            # to a content source (or the ai:indirect-prompt-input tag, which injected the same
+            # category above).
+            if 'ai:indirect-prompt-input' not in tags and reads_content(asset_data):
                 inject("Indirect Prompt Injection and Goal Hijack", "Agent Indirect Injection Risk", injection_delta)
 
         # Agent persistent memory (memory/thread poisoning, chat history manipulation); one level
