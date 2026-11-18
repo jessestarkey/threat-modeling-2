@@ -170,9 +170,9 @@ Building this catalogue surfaced two pre-existing issues worth tracking separate
 | Webhook Signature Verification Bypass | Organization-specific category | Unsigned webhooks let anyone knowing the URL send fake notifications triggering business actions. | Webhook Receiver | Possible | Low |
 | Bulk Import/Export Data Abuse | Organization-specific category | Bulk import/export without per-record checks lets low-privilege users dump or overwrite data at scale. | Bulk Import/Export | Possible | Medium |
 | GraphQL Introspection, Query Depth, and Authorization Gaps | Organization-specific category | Open introspection, unlimited query depth and missing field auth aid mapping and resource exhaustion. | GraphQL | Likely | Low |
-| Search Index Abuse and Data Exposure | Organization-specific category | Weak search-engine access controls let crafted queries bypass app permissions to harvest data or exhaust resources. | Search Index, Elasticsearch, Solr | Possible | Medium |
-| WebSocket Origin Validation and Authentication Gaps | Organization-specific category | WebSockets without origin or session checks let malicious sites hijack a user's connection. | WebSocket | Possible | Low |
-| Permissive CORS and Missing Browser Framing/Content Policy | Organization-specific category | Permissive CORS or missing framing protection lets hostile sites read data or clickjack users. | CORS, Framing Policy | Possible | Low |
+| Search Index Abuse and Data Exposure | Organization-specific category | Weak search-engine access controls let crafted queries bypass app permissions to harvest data or exhaust resources. | Search Engine or Search Index asset; an app with built-in search (feature:search-index) | Possible | Medium |
+| WebSocket Origin Validation and Authentication Gaps | Organization-specific category | WebSockets without origin or session checks let malicious sites hijack a user's connection. | Incoming ws/wss link (or feature:websocket where the protocol is not modeled) | Possible | Low |
+| Permissive CORS and Missing Browser Framing/Content Policy | Organization-specific category | Permissive CORS or missing framing protection lets hostile sites read data or clickjack users. | Asset called by a browser | Possible | Low |
 | Background Job Parameter Injection and Authorization Bypass | Organization-specific category | Background jobs run without rechecking permissions, using stale rights or tampered queue parameters. | Background Job, Scheduled Job | Possible | Low |
 | Application Cache Poisoning and Sensitive Data Persistence | Organization-specific category | Poorly keyed or unauthenticated caches leak one user's data to another or allow internal tampering. | Application Cache | Possible | Medium |
 | Unauthorized Marketplace Plugin | Organization-specific category | Third-party add-ons run with the application's full privileges if malicious or compromised. | Third-Party Add-On | Likely | Medium |
@@ -181,7 +181,7 @@ Building this catalogue surfaced two pre-existing issues worth tracking separate
 | Improper API Inventory Management | Organization-specific category | Forgotten old or test API versions stay reachable, unpatched and unmonitored. | Public API | Possible | Low |
 | Unrestricted Access to Sensitive Business Flows | Organization-specific category | Valuable multi-step business flows lack anti-automation, allowing abuse at ordinary request rates. | Business Flow Automation | Likely | Medium |
 | Unsafe Consumption of APIs | Organization-specific category | Unchecked third-party API responses feed malicious or faulty data into processing. | Third-Party API | Possible | Medium |
-| Dangling DNS Record and Subdomain Takeover | Organization-specific category | DNS records pointing to deleted cloud resources let attackers host content under trusted names. | Internet-Facing Asset, DNS Record | Possible | Low |
+| Dangling DNS Record and Subdomain Takeover | Organization-specific category | DNS records pointing to deleted cloud resources let attackers host content under trusted names. | Public endpoint (internet: true, called from outside), DNS Record | Possible | Low |
 
 
 
@@ -267,7 +267,7 @@ Building this catalogue surfaced two pre-existing issues worth tracking separate
 | Insufficient Security Event Logging (AU-2 / AU-6 Gap) | Extension rule | Missing NIST SP 800-53 AU-2 audit records, or records never forwarded to the SIEM, prevent detection and attack reconstruction and blocks DoD RMF authorization. | Audit Logging (AU-2) | Possible | Low |
 | Security Control Tamper Resistance Gap | Extension rule | Security controls lack tamper-evident config and independent audit trails, so attackers can disable them unnoticed. | WAF, IDS/IPS, HSM, Secrets Vault, SIEM | Unlikely | Low |
 | API Abuse and Enumeration Logging Gap | Organization-specific category | Public API doesn't log enumeration or repeated authorization failures, so slow probing stays invisible. | Public API (No Abuse-Pattern Logging) | Possible | Low |
-| Network Intrusion Detection and Traffic Anomaly Blind Spot | Organization-specific category | No network IDS on this internet-reachable component, so scanning and C2 traffic go unalerted. | Network IDS (Missing) | Possible | Low |
+| Network Intrusion Detection and Traffic Anomaly Blind Spot | Organization-specific category | No network IDS on this internet-reachable component, so scanning and C2 traffic go unalerted. | Public endpoint or internet-reachable asset without Network IDS | Possible | Low |
 
 
 

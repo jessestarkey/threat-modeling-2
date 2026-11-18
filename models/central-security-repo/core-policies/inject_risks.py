@@ -117,6 +117,8 @@ RAG_PIPELINE_TECHNOLOGIES = {"ai-rag-pipeline"}
 AGENT_ORCHESTRATOR_TECHNOLOGIES = {"ai-agent-orchestrator"}
 MULTI_AGENT_GATEWAY_TECHNOLOGIES = {"ai-multi-agent-gateway"}
 DATASET_STORE_TECHNOLOGIES = {"ai-dataset-store"}
+# Search engines and indexes: the asset a search-index finding belongs to.
+SEARCH_TECHNOLOGIES = {"search-engine", "search-index"}
 # Network edge devices, preferred as the holder of findings about a whole self-managed network.
 NETWORK_EDGE_TECHNOLOGIES = {"gateway", "load-balancer", "reverse-proxy", "waf", "network-encryptor", "ids", "ips"}
 # Assets whose content reaches an agent's model as context: retrieved documents, tool results,
@@ -626,7 +628,12 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'net:external-api-consumer' in tags:
             inject("Unsafe Consumption of APIs", "Unsafe API Consumption Risk")
         if 'feature:dynamic-code-execution' in tags: inject("Server-Side Template Injection and RCE", "RCE Risk")
-        if 'feature:search-index' in tags: inject("Search Index Abuse and Data Exposure", "Search Index Risk")
+        # Search index abuse belongs to the search engine itself (native technology), or to an app
+        # tagged feature:search-index whose search is built in -- not to every app that merely
+        # calls a modeled search engine, which raised the same risk twice (2026-11-18 review).
+        calls_search_engine = any(technologies_by_id.get(t, set()) & SEARCH_TECHNOLOGIES for t in outgoing_targets)
+        if asset_techs & SEARCH_TECHNOLOGIES or ('feature:search-index' in tags and not calls_search_engine):
+            inject("Search Index Abuse and Data Exposure", "Search Index Risk")
         # feature:deserialization no longer injects a category: Threagile's built-in
         # untrusted-deserialization raises the same risk from the native
         # data_formats_accepted: serialization (2026-11-18 review). The tag still marks the feature.
@@ -645,8 +652,15 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'feature:pdf-generation' in tags: inject("Server-Side PDF Generation Injection", "PDF Generation Injection Risk")
         if 'feature:email-sending' in tags: inject("Email Header Injection and Sending Abuse", "Email Header Injection Risk")
         if 'feature:graphql-endpoint' in tags: inject("GraphQL Introspection, Query Depth, and Authorization Gaps", "GraphQL Security Risk")
-        if 'feature:websocket' in tags: inject("WebSocket Origin Validation and Authentication Gaps", "WebSocket Security Risk")
-        if 'feature:browser-facing' in tags and 'ops:cors-csp-hardened' not in tags:
+        # WebSocket: an incoming ws/wss link, or the feature:websocket tag where the protocol isn't
+        # modeled. Browser-facing: a caller whose technology is a browser -- CORS and framing
+        # policies are browser mechanisms, so a desktop or service caller doesn't count (the
+        # feature:browser-facing tag that restated this was retired, 2026-11-18).
+        accepts_websocket = any(link.get('protocol') in ('ws', 'wss') for _, link in incoming)
+        if accepts_websocket or 'feature:websocket' in tags:
+            inject("WebSocket Origin Validation and Authentication Gaps", "WebSocket Security Risk")
+        browser_facing = any('browser' in technologies_by_id.get(source, set()) for source, _ in incoming)
+        if browser_facing and 'ops:cors-csp-hardened' not in tags:
             inject("Permissive CORS and Missing Browser Framing/Content Policy", "CORS/Framing Policy Gap Risk")
         if 'feature:saml-sp' in tags: inject("SAML Assertion Vulnerabilities", "SAML Security Risk")
         if 'feature:password-reset' in tags: inject("Insecure Password Reset and Credential Recovery", "Password Reset Risk")
@@ -1011,15 +1025,21 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # incoming web link. The custom zone:dmz category and its ops:waf-enabled suppression were
         # retired on 2026-11-18: they ignored a modelled WAF and fired on non-web services.
 
-        # Internet-facing assets without reconciled DNS records
-        if 'zone:dmz' in tags and 'ops:dns-record-reconciled' not in tags:
+        # Public endpoint: internet-facing (native internet field) and called from the public side --
+        # an out-of-scope or external-entity caller. A public DNS name belongs to such an asset, not
+        # to one behind it in the same DMZ, nor to an internet-connected device that only carries
+        # outbound traffic (zone:dmz now only selects requirements, 2026-11-18 review).
+        public_endpoint = bool(asset_data.get('internet')) and any(
+            (assets_by_id.get(source) or {}).get('out_of_scope')
+            or (assets_by_id.get(source) or {}).get('type', 'external-entity') == 'external-entity'
+            for source, _ in incoming)
+        if public_endpoint and 'ops:dns-record-reconciled' not in tags:
             inject("Dangling DNS Record and Subdomain Takeover", "Dangling DNS Risk")
 
-        # Network-based detection gap -- uses the broader net:internet-reachable
-        # tag, not just a direct zone:dmz tag, since an NIDS/NDR sensor
-        # placed at the actual edge component doesn't automatically cover
-        # traffic to the real application a few hops behind it.
-        if (asset_is_internet_reachable or 'zone:dmz' in tags) and 'net:ids-monitored' not in tags:
+        # Network-based detection gap -- the public endpoint itself (see above) or an asset marked
+        # net:internet-reachable, since an NIDS/NDR sensor placed at the actual edge component
+        # doesn't automatically cover traffic to the real application a few hops behind it.
+        if (public_endpoint or asset_is_internet_reachable) and 'net:ids-monitored' not in tags:
             inject("Network Intrusion Detection and Traffic Anomaly Blind Spot", "Network IDS Blind Spot Risk")
 
         # NOTE: "Baseline Security Event Logging and SIEM Forwarding Gap" has been ported into

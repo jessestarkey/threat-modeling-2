@@ -973,8 +973,16 @@ category are retired: the built-in `unencrypted-communication` raises the weakne
 local-authentication waiver keeps its category, narrowed to the identity-provider bypass, because no
 built-in raises that (on the Confluence model the break-glass account has no other finding); missing
 MFA is the built-in two-factor rule's. The root-container waiver stays for the same reason.
-Deferred for a separate decision: moving tags that restate native fields (`zone:dmz`, `feature:search-index`,
-`feature:browser-facing`, the WebSocket tag) onto native fields. Since done: the rogue access point
+Since done: risk triggers that restated native fields read them instead. Dangling DNS and the
+IDS blind spot fire on a public endpoint -- `internet: true` and called by an out-of-scope or
+external-entity asset -- instead of `zone:dmz` (IDS also on `net:internet-reachable`), so an
+egress-only device such as a firewall no longer qualifies; CORS/CSP fires on an asset with a
+browser caller (CORS and framing are browser mechanisms), and the `feature:browser-facing` tag is
+retired; the WebSocket finding fires on an incoming `ws`/`wss`
+link; search-index abuse lands on the modeled search engine, or on an app tagged
+`feature:search-index` whose search is built in. `zone:dmz`, `feature:search-index` and
+`feature:websocket` stay as tags, since libraries 01 and 02 use them to select requirements and
+abuse cases. Since done: the rogue access point
 and route origin validation findings are raised once per network trust boundary, on its edge
 asset where one is modeled, instead of on every self-managed workload; segmentation stays per
 workload. Kept as a documented exception: the built-ins' internet step reads the

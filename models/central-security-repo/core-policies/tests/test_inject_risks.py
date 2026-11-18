@@ -184,13 +184,19 @@ class TagBehaviour(unittest.TestCase):
         # Mission-critical, so the model-level incident-response branches (gated on business
         # criticality, not a tag) are live for their suppression tags to act on.
         critical = "mission-critical"
-        everything = findings(run_engine(probe_asset(TRIGGER_TAGS), business_criticality=critical))
+        # Some branches trigger on native fields rather than a tag (internet-facing, a browser
+        # caller), so the probe sets those too for their suppression tags to act on.
+        browser = probe_asset([], id="browser", technology="browser", type="external-entity", out_of_scope=True,
+                              communication_links={"Use": link("probe")})
+
+        def run(tags):
+            return findings(run_engine(probe_asset(tags, internet=True), browser, business_criticality=critical))
+
+        everything = run(TRIGGER_TAGS)
         self.assertTrue(everything)
         for tag in sorted(SUPPRESSION_TAGS):
             with self.subTest(tag=tag):
-                suppressed = everything - findings(
-                    run_engine(probe_asset(TRIGGER_TAGS | {tag}), business_criticality=critical)
-                )
+                suppressed = everything - run(TRIGGER_TAGS | {tag})
                 self.assertTrue(suppressed, f"{tag!r} is read as a suppression tag but suppresses nothing")
 
     def test_out_of_scope_asset_gets_nothing(self):
@@ -370,6 +376,38 @@ class ReviewRegressions(unittest.TestCase):
         tags = ["mgmt:self-managed-network"]
         self.assertIn(title, run_engine(probe_asset(tags, machine="virtual")))
         self.assertNotIn(title, run_engine(probe_asset(tags, machine="container")))
+
+    def test_native_triggers_replace_tags_that_restated_the_model(self):
+        # 2026-11-18 review: these read the model's own fields instead of (or before) a tag.
+        dns, ids = "Dangling DNS Record and Subdomain Takeover", "Network Intrusion Detection and Traffic Anomaly Blind Spot"
+        public_side = probe_asset([], id="user", type="external-entity", out_of_scope=True,
+                                  communication_links={"Use": link("probe")})
+        internal = probe_asset([], id="svc", communication_links={"Call": link("probe")})
+        for title in (dns, ids):
+            with self.subTest(title=title):
+                self.assertIn(title, run_engine(probe_asset([], internet=True), public_side), "public endpoint")
+                self.assertNotIn(title, run_engine(probe_asset([], internet=True), internal),
+                                 "internet-connected but only called internally (an egress firewall)")
+        self.assertNotIn(dns, run_engine(probe_asset(["zone:dmz"]), public_side), "not internet-facing itself")
+
+        cors = "Permissive CORS and Missing Browser Framing/Content Policy"
+        self.assertIn(cors, run_engine(probe_asset([]), probe_asset([], id="c", technology="browser",
+                                                                    communication_links={"Use": link("probe")})))
+        for caller in (probe_asset([], id="c", technology="desktop", used_as_client_by_human=True,
+                                   communication_links={"Use": link("probe")}), internal):
+            self.assertNotIn(cors, run_engine(probe_asset([]), caller), "CORS and framing are browser mechanisms")
+
+        ws = "WebSocket Origin Validation and Authentication Gaps"
+        socket_link = {"target": "probe", "protocol": "wss"}
+        self.assertIn(ws, run_engine(probe_asset([]), probe_asset([], id="c", communication_links={"Socket": socket_link})))
+        self.assertIn(ws, run_engine(probe_asset(["feature:websocket"])), "tag fallback where the protocol isn't modeled")
+
+        search = "Search Index Abuse and Data Exposure"
+        result = run_engine(probe_asset(["feature:search-index"], communication_links={"Query": link("engine")}),
+                            probe_asset([], id="engine", technology="search-engine"))
+        self.assertEqual([name.split(" at ")[-1] for name in result[search]], ["Asset engine"],
+                         "the modeled search engine carries it, not also every app that queries it")
+        self.assertIn(search, run_engine(probe_asset(["feature:search-index"])), "search built into the app")
 
     def test_wireless_and_routing_findings_land_once_per_network(self):
         # 2026-11-18 review: rogue AP and RPKI are properties of the network, not of each workload.

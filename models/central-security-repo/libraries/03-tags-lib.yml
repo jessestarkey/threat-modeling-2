@@ -70,7 +70,7 @@ tags_available:
   # See docs/risk-methodology.md for the full rationale.
 
   # --- Trust Boundary Classification ---
-  - zone:dmz           # Internet-facing or untrusted transit network — asset is expected to handle hostile traffic
+  - zone:dmz           # Internet-facing or untrusted transit network — asset is expected to handle hostile traffic. Selects requirements and abuse cases; risk triggers read the native internet field instead
   - net:internet-reachable # Internet-originated traffic can plausibly reach this asset, even though it isn't the edge component itself (e.g. the real application behind an already-modeled app gateway/ALB/WAF, which carries its own internet:true field instead) — author-maintained ground truth, not derived from graph topology; feeds inject_risks.py's own Likelihood/IDS-blind-spot/containment-disposition checks. Tag the actual application, not the gateway that fronts it, and not anything merely sharing infrastructure with a real DMZ path (a log-forwarding sink, an unrelated internal integration behind the same shared ingress) — that distinction is exactly what a prior graph-walk version of this signal got wrong, which is why it's an explicit tag now instead
   - zone:restricted    # Deep-internal boundary (data tier, private endpoint) — must never have a direct route to the internet
   - mgmt:csp-managed   # Boundary where Azure owns the underlying security controls (Shared Responsibility Model)
@@ -135,9 +135,8 @@ tags_available:
   - feature:graphql-endpoint        # Asset exposes a GraphQL API (distinct from REST — introspection, query depth, and field-level authorization create a unique attack surface)
 
   # --- Application Feature Risks ---
-  - feature:search-index            # Asset has query capabilities over a search index (e.g., Elasticsearch, Lucene, Solr, Azure AI Search)
-  - feature:websocket               # Asset uses persistent WebSocket connections for real-time communication
-  - feature:browser-facing          # Asset serves HTTP responses directly to a web browser (API responses consumed by frontend JavaScript, or rendered pages) where CORS and framing policy apply
+  - feature:search-index            # Asset has query capabilities over a search index (e.g., Elasticsearch, Lucene, Solr, Azure AI Search). Risks: needed only for search built into the app; a modeled search-engine/search-index asset carries the finding itself
+  - feature:websocket               # Asset uses persistent WebSocket connections for real-time communication. Risks: an incoming ws/wss link raises the WebSocket finding without this tag; the tag covers models that do not model the protocol
   - feature:background-jobs         # Asset processes jobs from a queue or scheduler where job parameters originate from earlier user-supplied input (distinct from app:async-worker which is the infrastructure label)
   - feature:caching-layer           # Asset uses an application-level cache (Redis, Memcached, in-process LRU) to serve responses to users
   - feature:ugc-rendering           # Asset renders content created by one user to be displayed to another user (e.g., comments, forum posts, wiki pages) — XSS risk is covered by Threagile's native cross-site-scripting rule; this tag is retained for model completeness
