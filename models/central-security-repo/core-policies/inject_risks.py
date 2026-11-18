@@ -717,10 +717,12 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             memory_step = 1 if written_from_outside and not asset_is_internet_reachable else 0
             inject("Agent Memory and Context Poisoning", "Agent Memory Poisoning Risk", memory_step)
 
-        # Code the agent or tool runs itself (ASI05/AST06); one level more likely on a machine
-        # with no container or serverless isolation.
+        # Code the agent or tool runs itself (ASI05/AST06); one level more likely when the model
+        # shows it runs on a physical machine, with no VM, container or serverless boundary. A
+        # missing machine says nothing either way, so it gets no step (2026-11-18 review: treating
+        # it as physical pushed this control-not-evidenced finding to Critical on profile T).
         if 'ai:code-execution' in tags:
-            unisolated = asset_data.get('machine', 'physical') not in ('container', 'serverless')
+            unisolated = asset_data.get('machine') == 'physical'
             inject("Unexpected Code Execution and Weak Sandbox", "Code Execution Risk", 1 if unisolated else 0)
 
         # Agent skills loaded into the agent (AST01/04/05/08/10), unless vetted.

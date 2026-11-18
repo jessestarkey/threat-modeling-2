@@ -305,10 +305,15 @@ class LikelihoodSteps(unittest.TestCase):
 
     def test_code_execution_without_isolation_raises_likelihood(self):
         title = "Unexpected Code Execution and Weak Sandbox"
-        for machine, expected in (("physical", "likely"), ("virtual", "likely"),
+        # Only an explicitly physical machine steps up: a VM is an isolation boundary, and a
+        # missing machine says nothing (2026-11-18 review).
+        for machine, expected in (("physical", "likely"), ("virtual", "possible"), (None, "possible"),
                                   ("container", "possible"), ("serverless", "possible")):
             with self.subTest(machine=machine):
-                result = run_engine(probe_asset(["ai:code-execution"], machine=machine))
+                asset = probe_asset(["ai:code-execution"], machine=machine)
+                if machine is None:
+                    del asset["machine"]
+                result = run_engine(asset)
                 self.assertEqual(likelihood_of(result, title), expected)
 
 

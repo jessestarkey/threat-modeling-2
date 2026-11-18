@@ -32,8 +32,10 @@ jobs:
           python-version: '3.10'
 
       - name: Install Dependencies
-        # Same pin as the modular pipeline; the tests use only the standard library otherwise.
-        run: pip install pyyaml==6.0.3
+        # Same pins as the modular pipeline. jinja2 and openpyxl are imported by generate_report.py,
+        # whose finding-class handling test_generate_report.py covers; WeasyPrint is left out (it
+        # needs native GTK libraries) and that test stubs its import instead.
+        run: pip install pyyaml==6.0.3 jinja2==3.1.6 openpyxl==3.1.5
 
       - name: Run Tests
         run: python -m unittest discover -s models/central-security-repo/core-policies/tests -v

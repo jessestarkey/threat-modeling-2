@@ -873,9 +873,40 @@ A rating or class that moves away from the appendix table fails a test:
 | Built-in rules | `pkg/risks/scripts/builtin_calibration_test.go`: the 13 built-ins that fire on the profile-T kitchen-sink model, each named (the rest are covered by their unit tests) |
 | Both fork layers | `pkg/risks/scripts/finding_class_test.go`: every rule's class |
 | Custom engine | `core-policies/tests/test_calibration.py`: every category on profile T, its class, and the class reaching the injected model |
+| Dimensions, fork | `pkg/risks/scripts/dimension_calibration_test.go`: every built-in and script rule the kitchen sink fires (73 of 100) on confidentiality-only, integrity-only and availability-only profiles, so a rule stepping on the wrong dimension or rating source fails (profile T rates C and I alike and can't tell) |
+| Dimensions, custom | `test_calibration.py`: every custom category on the same three single-dimension profiles |
+| Built-in report text | `test_calibration.py`: each built-in's `risk_assessment` in `10-threagile-builtin-risks-lib.yml` states its approved starting likelihood and impact |
+| Report | `core-policies/tests/test_generate_report.py`: finding-class annotation and the weaknesses/controls split |
 
 Changing a baseline, a step or a class therefore means changing the rule and this table
 together, deliberately.
+
+### Independent review of the applied calibration (2026-11-18)
+
+An independent review of the code as applied (not the table) found the arithmetic sound and
+every script rule on its approved baseline and dimension. It led to these changes:
+- **Rating sources:** `missing-authentication` rates the target when its link carries no data
+  (an empty link had stepped it down to Low); `unencrypted-communication` steps on the higher of
+  the link data's confidentiality and integrity, since it fires on either.
+- **Read-and-alter threats:** `untrusted-deserialization` and `code-backdooring` join the
+  injection rules in stepping on the higher of confidentiality and integrity (code execution
+  both reads and alters data).
+- **Whole-model checks:** `missing-build-infrastructure` and `missing-identity-store` keep a flat
+  Unlikely likelihood, like their flat Low impact; the asset they name is only an example.
+- **Agents:** `ai-excessive-agency-tool-misuse` reaches through a tool server to what it writes,
+  and suppresses the tool server's own finding only when the agent's link to it is writable.
+  Custom `ai-unexpected-code-execution` takes its isolation step only on an explicitly physical
+  machine (a missing machine had pushed it to Critical on profile T).
+- **Alignment:** the script `missing-network-micro-segmentation` steps on the highest of C, I and
+  A, like the built-in and custom segmentation rules.
+- **Text:** the built-ins' scoring text in the fork and in `10-threagile-builtin-risks-lib.yml`
+  describes the calibrated scoring; stale "keyed off all three dimensions" comments are gone.
+- **Script built-ins:** an empty baseline, an unknown rating name, or a number passed as a rating
+  is an error instead of a silent one-level drop.
+
+Declined: counting plain datastores as indirect-injection sources (it would make nearly every
+agent fire again, and the model can't tell user content from other data), and scaling the
+cleartext-credential floor by asset value (cleartext credentials are a weakness at any value).
 
 ## Source of truth, by topic
 
@@ -893,7 +924,15 @@ together, deliberately.
 
 ## Keeping this in sync
 
-There's no automation tying this document to the code. If a threshold, weight, or the severity
+The calibrated ratings, classes and dimensions are now enforced by the drift checks (see
+[Drift checks](#drift-checks)); a baseline, step or class change fails a test until the appendix
+table and the matching test map change with it. Three texts describe the scoring in prose and must
+be kept to it by hand: each built-in's `RiskAssessment` in the fork, each built-in's
+`risk_assessment` in `10-threagile-builtin-risks-lib.yml` (the report prints it, and
+`test_calibration.py` checks that it states the approved starting rating), and the threat
+catalogue's calibration notes.
+
+Beyond those, nothing ties this document to the code. If a threshold, weight, or the severity
 matrix itself changes in `inject_risks.py`, update the corresponding number here — and, more
 importantly, update the *reasoning* if the change reflects a new trade-off rather than just a
 retuned value. A stale number is a quick fix; a stale rationale silently misrepresents why the
@@ -1040,7 +1079,7 @@ Every catalogued rule, rated on profile T (confidential / critical / important, 
 | Organization-specific | `background-job-security` | G | Likely / High → High | Possible / Low | Possible / Medium → Elevated | G. Weakness Likely (CWE-863) -> Possible. Medium: one job acts on stale rights. |
 | Organization-specific | `backup-admin-privilege-separation-gap` | G | Likely / Very High → High | Likely / Medium | Likely / High → High | G. Likely: backups targeted in 94% of ransomware (Sophos) = commonly exploited. High: one compromise removes the recovery path. |
 | Organization-specific | `backup-immutability-not-enforced` | G | Likely / Very High → High | Likely / Medium | Likely / High → High | G. Likely: T1490, Veeam 96% targeted. High: removable lock gives no protection from the privileged attacker. |
-| Organization-specific | `backup-integrity-recovery-gap` | G | Possible / Very High → High | Possible / Low | Possible / Medium → Elevated | G assurance gap. Possible (Sophos 94% attempted). Medium anchor: recovery assurance; the direct backup-loss controls are scored by the immutability/separation rows. STRIDE information-disclosure looks wrong for this row. |
+| Organization-specific | `backup-integrity-recovery-gap` | G | Possible / Very High → High | Possible / Low | Possible / Medium → Elevated | G assurance gap. Possible (Sophos 94% attempted). Medium anchor: recovery assurance; the direct backup-loss controls are scored by the immutability/separation rows. STRIDE changed from information-disclosure to tampering, so the step reads integrity (same result on profile T). |
 | Organization-specific | `backup-key-rotation-retention-mismatch` | G | Unlikely / Medium → Medium | Unlikely / Low | Unlikely / Medium → Medium | G. Unlikely: managed KMS keeps old material by default. Medium anchor: recovery. |
 | Organization-specific | `break-glass-circular-dependency-untested` | G | Unlikely / Medium → Medium | Unlikely / Medium | Unlikely / Medium → Medium | G. Unlikely: needs a primary-IdP outage plus a broken path. Medium anchor: recovery. |
 | Organization-specific | `bulk-import-export-abuse` | G | Likely / High → High | Possible / Medium | Possible / High → Elevated | G. Weakness Likely (CWE-862 #4) -> Possible. High: volume disclosure/overwrite. |

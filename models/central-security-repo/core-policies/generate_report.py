@@ -700,6 +700,14 @@ def annotate_finding_classes(categories: list, category_meta: dict) -> None:
                                            or meta.get("risk_assessment", ""))
 
 
+def split_by_finding_class(categories: list) -> tuple:
+    """(weakness-shown, control-not-evidenced, unclassified) categories, in their given order."""
+    weaknesses = [c for c in categories if c["finding_class"] == FINDING_CLASS_WEAKNESS]
+    controls = [c for c in categories if c["finding_class"] == FINDING_CLASS_CONTROL]
+    unclassified = [c for c in categories if c["finding_class"] not in FINDING_CLASS_LABELS]
+    return weaknesses, controls, unclassified
+
+
 def load_custom_risk_defs() -> dict:
     """Returns {category_id: definition_dict} for our own custom risks, keyed
     by the same id used in synthetic_id/category (not the human title the
@@ -1247,10 +1255,8 @@ def build_context(model: dict, output_dir: str) -> dict:
         annotate_finding_classes(group, category_meta)
     # Open risks split by what the model can show: weaknesses its own facts show, and controls
     # it can't evidence (the rule fires because an interface exists; a reviewer confirms it).
-    remaining_weakness_categories = [c for c in remaining_categories if c["finding_class"] == FINDING_CLASS_WEAKNESS]
-    remaining_control_categories = [c for c in remaining_categories if c["finding_class"] == FINDING_CLASS_CONTROL]
-    remaining_unclassified_categories = [c for c in remaining_categories
-                                         if c["finding_class"] not in FINDING_CLASS_LABELS]
+    (remaining_weakness_categories, remaining_control_categories,
+     remaining_unclassified_categories) = split_by_finding_class(remaining_categories)
 
     # Domain-organized presentation, additive alongside the flat lists above
     # (see group_by_domain()'s docstring) -- not built for model failures,
@@ -1416,13 +1422,6 @@ def run_self_checks(context: dict, risks_json_count: int) -> bool:
         print(f"ERROR: open ({context['remaining_finding_count']}) + accepted "
               f"({context['accepted_finding_count']}) + closed ({context['closed_finding_count']}) = "
               f"{split_total}, but total_finding_count is {context['total_finding_count']}")
-        ok = False
-
-    class_total = (context["remaining_weakness_finding_count"] + context["remaining_control_finding_count"]
-                   + context["remaining_unclassified_finding_count"])
-    if class_total != context["remaining_finding_count"]:
-        print(f"ERROR: open findings split by class add up to {class_total}, "
-              f"but there are {context['remaining_finding_count']} open findings")
         ok = False
 
     return ok
