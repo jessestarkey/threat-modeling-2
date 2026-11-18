@@ -30,3 +30,30 @@ risk_tracking:
     ticket: TBD
     date: 2026-04-26
     checked_by: Jesse Starkey
+
+  network-ids-blind-spot@entra-id:
+    status: mitigated
+    justification: >
+      Platform Inherited Mitigation. Entra ID is a Microsoft-operated SaaS identity
+      provider; network intrusion detection and traffic-anomaly monitoring for its
+      public sign-in and token endpoints are Microsoft's, under the service's
+      FedRAMP authorization, not a control this team deploys or can place a
+      sensor for. The tenant-side controls on Entra ID (OAuth/OIDC and SAML
+      configuration, secrets, backup) remain tracked through their own findings.
+    ticket: TBD
+    date: 2026-11-18
+    checked_by: Pending ISSO review
+
+  dangling-dns-subdomain-takeover@entra-id:
+    status: in-discussion
+    justification: >
+      DNS for Entra ID's own sign-in endpoints (login.microsoftonline.us and
+      related Microsoft domains) is Microsoft-operated, under the service's
+      FedRAMP authorization -- an inherited control. Not yet closed: any custom
+      domains verified in this tenant are this organization's DNS, where a stale
+      verification TXT or CNAME record is a real takeover risk. Close as
+      mitigated (inherited) once the tenant is confirmed to use no custom
+      domains, or once their records are reconciled against active resources.
+    ticket: TBD
+    date: 2026-11-18
+    checked_by: Pending ISSO review
