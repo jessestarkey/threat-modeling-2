@@ -53,7 +53,7 @@ mission_criticality: mission-support # values: administrative, mission-support, 
 
 
 
-business_overview:
+threat_landscape:
   description: Some more <i>demo text</i> here and even images...
   images:
 #    - custom-image-1.png: Some dummy image 1

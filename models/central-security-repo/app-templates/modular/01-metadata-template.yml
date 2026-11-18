@@ -1,6 +1,6 @@
 # ==============================================================================
 # Metadata INVENTORY: threagile_version, title, date, author,
-# management_summary_comment, mission_criticality, business_overview,
+# management_summary_comment, mission_criticality, threat_landscape,
 # technical_overview, questions
 # Maintainer: Application Development Team
 # ==============================================================================
@@ -60,7 +60,7 @@ mission_criticality: mission-support # values: administrative, mission-support, 
 
 
 # ------------------------------------------------------------------------------
-# THREAT LANDSCAPE: business_overview
+# THREAT LANDSCAPE: threat_landscape
 # ------------------------------------------------------------------------------
 # PURPOSE: 
 # This section describes the primary security concerns and the overall risk profile of the application from an attacker's perspective. It highlights 
@@ -76,7 +76,7 @@ mission_criticality: mission-support # values: administrative, mission-support, 
 # is mitigating asymmetric Denial of Service (DoS) and unauthorized data scraping. Defense-in-depth is achieved via strict API Gateway rate-limiting and robust 
 # payload validation before traffic enters the internal Kubernetes boundary."
 # ------------------------------------------------------------------------------
-business_overview:
+threat_landscape:
   description: >
     [ENTER YOUR THREAT LANDSCAPE NARRATIVE HERE. Follow the guidance above.]
   images:
@@ -162,7 +162,7 @@ technical_overview:
 # AI ASSISTANCE (optional):
 #   Provide this template, 01-metadata-lib.yml, and a description of your
 #   system's architecture and tags to an AI assistant, and ask it to draft
-#   the narrative sections (management_summary_comment, business_overview,
+#   the narrative sections (management_summary_comment, threat_landscape,
 #   technical_overview), select the applicable question categories based on
 #   your tags/machine types, and draft "[ANSWER REQUIRED]" guidance for each
 #   question rather than inventing compliance answers. Review the output for

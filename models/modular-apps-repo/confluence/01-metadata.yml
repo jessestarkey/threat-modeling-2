@@ -10,13 +10,13 @@ author:
 
 management_summary_comment: >
   Confluence serves as the organization's central knowledge management hub, facilitating cross-functional collaboration
-  by hosting critical project documentation, architectural designs, and institutional policies. It is a critical
+  by hosting critical project documentation, architectural designs, and institutional policies. It is a mission-essential
   application that supports day-to-day operations and decision-making; a loss of availability or data integrity would
   significantly disrupt productivity and result in the loss of vital intellectual property.
 
 mission_criticality: mission-essential
 
-business_overview:
+threat_landscape:
   description: >
     The threat model for this Confluence instance identifies a medium-to-high risk profile primarily driven by its role as a
     high-value target for unauthorized data exfiltration. While core infrastructure protections are in place, the primary security
@@ -264,7 +264,7 @@ questions:
     accounting for the longest-retained backup copy is referenced.
 
     Postgres Database references Azure HA with cross-zone redundancy, which is an availability control, not a validated backup-restore RTO/RPO.
-    [ANSWER REQUIRED, gap] No documented, validated RTO/RPO figure derived from this model's `critical` business-criticality tier is referenced
+    [ANSWER REQUIRED, gap] No documented, validated RTO/RPO figure derived from this model's `mission-essential` mission-criticality tier is referenced
     for a full backup-restore scenario, and no restoration exercise using only the written procedure (performed by someone other than its
     author) is referenced within the current ATO period -- confirm both exist or document the gaps. Confluence is self-hosted on the
     organization's own AKS cluster, not a SaaS tenant, so no independent vendor-export concern applies.

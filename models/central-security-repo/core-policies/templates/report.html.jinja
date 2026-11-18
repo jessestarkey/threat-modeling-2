@@ -106,9 +106,9 @@
     {% endfor %}
   </table>
 
-  {% if business_overview.description %}
-  <h2>Business Overview</h2>
-  {% for para in business_overview.description.split('\n') if para.strip() %}<p>{{ para.strip() }}</p>{% endfor %}
+  {% if threat_landscape.description %}
+  <h2>Threat Landscape</h2>
+  {% for para in threat_landscape.description.split('\n') if para.strip() %}<p>{{ para.strip() }}</p>{% endfor %}
   {% endif %}
   {% if technical_overview.description %}
   <h2>Technical Overview</h2>

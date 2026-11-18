@@ -100,10 +100,19 @@ metadata_fields:
       critical to mission-essential, mission-critical to mission-critical. Set mission_criticality
       in new models; a model that sets both must give them the same value.
 
-  business_overview:
+  threat_landscape:
+    notes: >
+      Shown in the report as "Threat Landscape": the primary threat vectors, the high-value
+      targets an attacker is after, and the core defenses. The system's role in the mission
+      belongs in management_summary_comment (the report's Application Overview).
     fields:
       description: free text
       images:       list of image filename strings (optional)
+
+  business_overview:
+    notes: >
+      Deprecated: the older name for threat_landscape, still accepted. A model that sets both
+      must give them the same text.
 
   technical_overview:
     fields:

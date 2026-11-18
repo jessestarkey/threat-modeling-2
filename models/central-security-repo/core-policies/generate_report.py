@@ -1329,7 +1329,8 @@ def build_context(model: dict, output_dir: str) -> dict:
         "author": model.get("author") or {},
         "mission_criticality": mission_criticality_title(model),
         "management_summary_comment": model.get("management_summary_comment", ""),
-        "business_overview": model.get("business_overview") or {},
+        # threat_landscape; business_overview is its older name, still read
+        "threat_landscape": model.get("threat_landscape") or model.get("business_overview") or {},
         "technical_overview": model.get("technical_overview") or {},
         "stats": stats.get("risks", {}),
         "severity_order": SEVERITY_ORDER,
