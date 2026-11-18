@@ -299,9 +299,9 @@ class LikelihoodSteps(unittest.TestCase):
             probe_asset(["ai:agent-memory"]),
             probe_asset([], id="outside", communication_links={"Read": link("probe", readonly=True)}),
             trust_boundaries=boundaries)
-        self.assertEqual(likelihood_of(writer_inside, title), "possible")
-        self.assertEqual(likelihood_of(writer_outside, title), "likely")
-        self.assertEqual(likelihood_of(reader_outside, title), "possible")
+        self.assertEqual(likelihood_of(writer_inside, title), "unlikely")
+        self.assertEqual(likelihood_of(writer_outside, title), "possible")
+        self.assertEqual(likelihood_of(reader_outside, title), "unlikely")
 
     def test_code_execution_without_isolation_raises_likelihood(self):
         title = "Unexpected Code Execution and Weak Sandbox"
@@ -329,8 +329,8 @@ class ReviewRegressions(unittest.TestCase):
             probe_asset(["ai:agent-memory", "net:internet-reachable"]),
             probe_asset([], id="outside", communication_links={"Write": link("probe")}),
             trust_boundaries=boundaries)
-        # Baseline likely, RAA pinned low (-1), internet tag +1, outside writer suppressed: likely.
-        self.assertEqual(likelihood_of(tagged, title), "likely")
+        # Baseline possible, RAA pinned low (-1), internet tag +1, outside writer suppressed: possible.
+        self.assertEqual(likelihood_of(tagged, title), "possible")
 
     def test_internal_backend_in_another_boundary_is_not_an_outside_writer(self):
         title = "Agent Memory and Context Poisoning"
@@ -340,7 +340,7 @@ class ReviewRegressions(unittest.TestCase):
             probe_asset(["ai:agent-memory"]),
             probe_asset([], id="backend", technology="web-service-rest", communication_links={"Write": link("probe")}),
             trust_boundaries=boundaries)
-        self.assertEqual(likelihood_of(result, title), "possible")
+        self.assertEqual(likelihood_of(result, title), "unlikely")
 
     def test_execution_environment_boundaries_are_looked_through(self):
         title = "Agent Memory and Context Poisoning"
@@ -351,7 +351,7 @@ class ReviewRegressions(unittest.TestCase):
             probe_asset(["ai:agent-memory"]),
             probe_asset([], id="ui", communication_links={"Write": link("probe")}),
             trust_boundaries=boundaries)
-        self.assertEqual(likelihood_of(result, title), "possible", "same network boundary: not outside")
+        self.assertEqual(likelihood_of(result, title), "unlikely", "same network boundary: not outside")
 
     def test_technologies_list_is_read(self):
         asset = probe_asset([])
