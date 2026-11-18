@@ -967,16 +967,20 @@ and the fork. They led to these changes:
   calibrated scoring sentence, followed by the guidance for once the condition is confirmed, and
   `test_calibration.py` checks it.
 
-Deferred for a separate decision: recording policy-exception waivers (cleartext transit, local
-authentication) as `risk_tracking: accepted` on the built-in finding instead of a second finding;
-and moving tags that restate native fields (`zone:dmz`, `feature:search-index`,
+Policy-exception waivers are recorded as `risk_tracking` status `accepted` on the finding the
+waived condition raises (see `08-risk-tracking-lib.yml`). The cleartext-transit waiver tag and its
+category are retired: the built-in `unencrypted-communication` raises the weakness per link. The
+local-authentication waiver keeps its category, narrowed to the identity-provider bypass, because no
+built-in raises that (on the Confluence model the break-glass account has no other finding); missing
+MFA is the built-in two-factor rule's. The root-container waiver stays for the same reason.
+Deferred for a separate decision: moving tags that restate native fields (`zone:dmz`, `feature:search-index`,
 `feature:browser-facing`, the WebSocket tag) onto native fields. Since done: the rogue access point
 and route origin validation findings are raised once per network trust boundary, on its edge
 asset where one is modeled, instead of on every self-managed workload; segmentation stays per
 workload. Kept as a documented exception: the built-ins' internet step reads the
 `net:internet-reachable` tag, which marks a backend behind a gateway as reachable (computing that
-from the graph produced false positives through shared hops). The catalogue now counts 184
-rules (35 built-in, 62 extension, 87 organization-specific).
+from the graph produced false positives through shared hops). The catalogue now counts 183
+rules (35 built-in, 62 extension, 86 organization-specific).
 
 ## Source of truth, by topic
 
@@ -1188,7 +1192,6 @@ Every catalogued rule, rated on profile T (confidential / critical / important, 
 | Organization-specific | `overprivileged-workload-identity` | G | Likely / Very High → High | Likely / High | Likely / Very High → High | G. Likely: workloads use <5% of granted permissions = commonly absent. Very High: control-plane administrator. |
 | Organization-specific | `pdf-generation-injection` | G | Likely / High → High | Possible / Medium | Possible / High → Elevated | G. Weakness Likely (CVE-2022-35583) -> Possible. High: local file read / metadata credentials. |
 | Organization-specific | `permissive-cors-framing-policy` | G | Likely / High → High | Possible / Low | Possible / Medium → Elevated | G. Weakness Likely -> Possible. Medium: needs victim interaction. |
-| Organization-specific | `policy-exception-cleartext-internal` | W | Likely / High → High | Possible / Medium | Possible / High → Elevated | W: exception asserts cleartext internal transit. Possible: interception needs an internal on-path foothold. High: data/credentials on the link (same as built-in unencrypted-communication). |
 | Organization-specific | `policy-exception-direct-admin-access` | W | Likely / Very High → High | Likely / High | Likely / Very High → High | W: exception asserts directly exposed admin ports. Likely (RDP abuse in 90% of Sophos cases; not internet-reachable on T). Very High: interactive admin control. |
 | Organization-specific | `policy-exception-local-auth` | W | Likely / Very High → High | Likely / Medium | Likely / High → High | W: exception tag asserts a local store outside MFA. Likely (CAPEC-600 High, DBIR 22%; not internet-reachable on T). High: one account taken over (same as built-in 2FA). |
 | Organization-specific | `privileged-session-credential-disclosure` | G | Likely / Very High → High | Likely / High | Likely / Very High → High | G. Likely: poor credential hygiene in AA23-278A top ten, infostealer dumps. Very High: revealed shared admin passwords = privileged control (same as standing access). |

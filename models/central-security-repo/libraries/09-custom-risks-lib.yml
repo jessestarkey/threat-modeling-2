@@ -90,8 +90,8 @@ custom_risk_definitions:
     baseline_likelihood: likely
     baseline_impact: medium
     finding_class: weakness-shown
-    description: 'This application maintains a local credential store that bypasses the enterprise identity provider and mandatory MFA enforcement.'
-    impact: 'If this risk remains unmitigated, the local store becomes a backdoor that can be brute-forced or credential-stuffed independent of enterprise conditional access policies.'
+    description: 'This application maintains a local credential store, such as a vendor break-glass account, that bypasses the enterprise identity provider, so conditional access, central deprovisioning and session controls do not apply to it. Missing MFA on its login path is raised separately by the built-in missing-authentication-second-factor.'
+    impact: 'If this risk remains unmitigated, the local store becomes a backdoor that can be brute-forced or credential-stuffed outside enterprise conditional access, and an account removed from the identity provider can still sign in here.'
     asvs: V2 - Authentication
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
     action: Ensure formal AO risk acceptance is on file.
@@ -2034,25 +2034,6 @@ custom_risk_definitions:
   # #############################################################################
 
   # --- 10.1 POLICY EXCEPTIONS ---
-  'Policy Exception: Cleartext Internal Transit':
-    id: policy-exception-cleartext-internal
-    baseline_likelihood: possible
-    baseline_impact: medium
-    finding_class: weakness-shown
-    description: 'This component transmits data in plaintext over the internal network.'
-    impact: 'If this risk remains unmitigated, an attacker who breaches the internal network can sniff sensitive data or credentials in transit.'
-    asvs: V9 - Communications
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html
-    action: Ensure formal AO risk acceptance is on file.
-    mitigation: Compensating controls must include strict network micro-segmentation and IPsec/WireGuard at the host transport layer if possible.
-    references: DoD Zero Trust Reference Architecture
-    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium risk of internal data interception.'
-    false_positives: None. This is an explicit policy waiver.
-    function: architecture
-    stride: information-disclosure
-    cwe: 319
-    risks_identified: {}
-
   EOL Component in ATO Boundary:
     id: eol-component-ato-boundary
     baseline_likelihood: likely

@@ -941,7 +941,9 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'exception:runs-as-root' in tags: inject("Container Runs as Root (Policy Exception)", "Root Waiver")
         if 'exception:eol-component' in tags: inject("EOL Component in ATO Boundary", "EOL Component Waiver")
         if 'exception:direct-admin-access' in tags: inject("Policy Exception: Direct Admin Access", "Admin Access Waiver")
-        if 'exception:cleartext-internal' in tags: inject("Policy Exception: Cleartext Internal Transit", "Cleartext Waiver")
+        # Cleartext internal transit is Threagile's built-in unencrypted-communication finding; an AO
+        # waiver is recorded as status: accepted on that finding (08-risk-tracking-lib.yml), not as
+        # a second finding from an exception tag (2026-11-18).
         if 'exception:local-auth-fallback' in tags: inject("Policy Exception: Local Authentication", "Local Auth Waiver")
 
         # --- 4. INFRASTRUCTURE BASELINE (Absence of Good) ---

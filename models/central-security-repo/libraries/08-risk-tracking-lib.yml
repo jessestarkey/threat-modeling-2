@@ -60,6 +60,21 @@
 #     a tier matching the finding's severity, especially relevant once
 #     inject_risks.py's severity-escalation rule (see CLAUDE.md) has
 #     bumped a finding a level.
+#
+# POLICY WAIVERS (AO-approved exceptions): record a waiver as status: accepted,
+# with the four elements above, on the finding the waived condition raises --
+# not as a separate tag or finding. Example, cleartext transit inside the
+# enclave: the built-in unencrypted-communication finding for that link,
+#     unencrypted-communication@<source-asset-id>@<target-asset-id>@<link-id>:
+#       status: accepted
+#       justification: "AO waiver <ref>. Expiration: YYYY-MM-DD. Extension count: 0.
+#         Compensating measures: ... Accepting authority: AO."
+#       ticket: POAM-1234
+# The exception:cleartext-internal tag and its "Policy Exception: Cleartext
+# Internal Transit" finding were retired on 2026-11-18 for this reason. The
+# exception:local-auth-fallback and exception:runs-as-root waivers keep their
+# own findings, because no built-in raises the identity-provider bypass or a
+# root container; record their acceptance on those findings the same way.
 # ==============================================================================
 
 # NOTE:

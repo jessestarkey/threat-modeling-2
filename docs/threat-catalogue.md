@@ -6,8 +6,8 @@ A complete reference of every threat category this framework can identify, acros
 |---|---|---|
 | Built-in rules | 35 | Threats detected by the underlying threat-modeling platform itself |
 | Extension rules | 62 | Threats added through the platform's own extension mechanism |
-| Organization-specific categories | 87 | IL5-specific threats defined and injected by this organization's own risk engine |
-| **Total** | **184** | |
+| Organization-specific categories | 86 | IL5-specific threats defined and injected by this organization's own risk engine |
+| **Total** | **183** | |
 
 A small additional set of platform rules that check for modeling mistakes (an incomplete model, an asset or connection that was defined but never used, mismatched content between a model element and what it claims to represent) is excluded. Those flag problems in how a model was *built*, not security threats, and have no meaningful likelihood or impact to catalogue the way a real threat does.
 
@@ -58,7 +58,7 @@ Building this catalogue surfaced two pre-existing issues worth tracking separate
 | Missing Identity Store | Built-in platform rule | Model has no identity store, so that component's risks go unseen (model-completeness gap). | Missing Identity Store | Unlikely | Low |
 | Certificate Validation Service Soft-Fail Revocation Checking | Extension rule | Fail-open revocation checks let revoked certificates authenticate, especially in degraded (DDIL) conditions. | OCSP Responder, CRL Distribution Point | Possible | Medium |
 | Insecure Session Management | Extension rule | Front end issues session tokens without secure handling, so stolen tokens grant prolonged access. | Web Application, Client Application | Likely | Medium |
-| Policy Exception: Local Authentication | Organization-specific category | Local login store bypasses the enterprise IdP and MFA, inviting password guessing and credential stuffing. | Policy Exception: Local Authentication | Likely | Medium |
+| Policy Exception: Local Authentication | Organization-specific category | A local login store (such as a break-glass account) bypasses the enterprise IdP, so conditional access and central deprovisioning do not apply to it; missing MFA is the built-in two-factor rule. | Policy Exception: Local Authentication | Likely | Medium |
 | Insecure Password Reset and Credential Recovery | Organization-specific category | Weak or long-lived reset links, or account-revealing messages, enable account takeover or enumeration. | Self-Service Password Reset, Account Recovery | Possible | Medium |
 | OAuth 2.0 and OIDC Implementation Vulnerabilities | Organization-specific category | Token flaws (unchecked redirects, weak signature checks) let attackers forge or replay tokens to impersonate users. | OAuth 2.0 / OIDC Token Issuer, Token Validator | Possible | Medium |
 | SAML Assertion Vulnerabilities | Organization-specific category | Flawed assertion processing allows altered, replayed or misattributed assertions, enabling sign-in as any user. | SAML Service Provider | Unlikely | High |
@@ -304,7 +304,6 @@ Building this catalogue surfaced two pre-existing issues worth tracking separate
 
 | Threat | Location | Description | Technology / Attribute / Behavior | Likelihood | Impact |
 |---|---|---|---|---|---|
-| Policy Exception: Cleartext Internal Transit | Organization-specific category | Unencrypted internal traffic lets an insider-positioned attacker intercept data or credentials. | Policy Exception: Internal Cleartext Transit | Possible | Medium |
 | EOL Component in ATO Boundary | Organization-specific category | End-of-life software in the ATO boundary accumulates unpatchable vulnerabilities. | Policy Exception: EOL Software | Likely | Medium |
 
 
@@ -549,7 +548,6 @@ MITRE ATLAS technique and case-study IDs and case-study counts are as of the ATL
 
 | Threat | Justification |
 |---|---|
-| Policy Exception: Cleartext Internal Transit | Likelihood: Cites CWE-319 (Cleartext Transmission of Sensitive Information); interception is ATT&CK T1040 (Network Sniffing) and CAPEC-157 (Sniffing Attacks). CAPEC-157's only prerequisite is that the stream travel over a medium the adversary can reach, so the likelihood is that of getting a foothold on the internal segment; with credential abuse (22%) and vulnerability exploitation (20%) the leading initial access vectors in Verizon's 2025 DBIR, an internal foothold is a routine outcome, and cleartext traffic makes T1040 a low-effort next step, supporting Likely. Impact: Documented assessment: Medium risk of internal interception; matches CAPEC-157 Typical Severity Medium; CWE-319 maps to OWASP Top 10:2025 A04. Medium fits because interception is passive and limited to what crosses this specific link, though captured credentials (as the Description notes) can widen the effect beyond the link itself. **Calibrated 2026-11-18** (weakness shown in the model): starting rating Possible / Medium; on a typical IL5 asset (confidential, critical, important; mid attractiveness; not internet-facing) Possible / High, severity Elevated. Exception asserts cleartext internal transit. Possible: interception needs an internal on-path foothold. High: data/credentials on the link (same as built-in unencrypted-communication). |
 | EOL Component in ATO Boundary | Likelihood: Cites CWE-1104 (Use of Unmaintained Third Party Components); unpatched flaws are exploited via ATT&CK T1190 (Exploit Public-Facing Application) and T1210 (Exploitation of Remote Services). CISA's Bad Practices guidance calls use of end-of-life software "dangerous" and says it "significantly elevates risk to national security," and CISA's Emergency Directive 26-01 (October 2025) ordered agencies to disconnect public-facing end-of-support F5 devices after a nation-state stole BIG-IP source code. Because no vendor patch will ever arrive, every newly disclosed flaw stays open permanently, and Verizon's 2025 DBIR found vulnerability exploitation in 20% of breaches (up 34% year over year), which supports Very Likely. Impact: Documented assessment rates this High; gap not explained. CWE-1104 maps to OWASP Top 10:2025 A03 (Software Supply Chain Failures). Impact depends on what the EOL component does inside the boundary, and CISA's directive response (disconnection, not just monitoring) suggests that for an internet-reachable component the documented High is closer than Medium. **Calibrated 2026-11-18** (weakness shown in the model): starting rating Likely / Medium; on a typical IL5 asset (confidential, critical, important; mid attractiveness; not internet-facing) Likely / High, severity High. Exception asserts EOL software. Likely, not Very Likely, on a non-internet asset (needs a disclosed flaw + reach). High: unpatchable flaws, escalation with one step (same as unhardened OS). |
 
 

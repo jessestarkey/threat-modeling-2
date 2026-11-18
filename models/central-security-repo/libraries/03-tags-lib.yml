@@ -231,8 +231,7 @@ tags_available:
   # =============================================================================
 
   - exception:runs-as-root       # Container executes as UID 0 — AO waiver required (elevated Linux capabilities are the fork's dangerous-container-capabilities rule)
-  - exception:cleartext-internal # Asset transmits or receives data in plaintext over the internal network — AO waiver required
-  - exception:local-auth-fallback # Asset maintains a local credential store bypassing the Enterprise IdP and mandatory MFA/CAC — AO waiver required
+  - exception:local-auth-fallback # Asset keeps a local credential store (e.g. a vendor break-glass account) that bypasses the Enterprise IdP, so conditional access, central deprovisioning and session controls don't apply. Missing MFA on its login path is the built-in missing-authentication-second-factor's finding; record an AO waiver as status: accepted on the findings (08-risk-tracking-lib.yml)
   - exception:eol-component      # Asset includes a software component that has reached End-of-Life and no longer receives security patches — AO waiver required
   - exception:direct-admin-access # VM has SSH/RDP exposed without routing through a Bastion host or enforcing JIT access — AO waiver required
 
