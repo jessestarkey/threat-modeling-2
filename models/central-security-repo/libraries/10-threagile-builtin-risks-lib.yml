@@ -171,53 +171,36 @@ builtin_risks:
       (Software Supply Chain Failures); NIST SP 800-218 (SSDF) PS.1, PS.2;
       SLSA v1.0 Build Track
 
-  container-baseimage-backdooring:
-    title: "Container Base Image Backdooring"
+  cluster-control-plane-audit-gap:
+    title: Container Orchestrator Control-Plane Audit Logging Gap
     description: >
-      This asset runs as a container whose base image and intermediate
-      layers come from a source not verified as trusted: a public registry
-      image referenced by mutable tag (for example FROM node:latest),
-      an unsigned image, or a layer never scanned. Attackers publish
-      typosquatted or trojanized images to public registries (the 2018
-      Docker Hub cryptomining images were pulled more than 5 million times
-      before removal), and a compromised upstream maintainer can retag an
-      existing trusted name to a malicious digest.
+      The cluster's API server audit policy is left at its default, which does not capture pod
+      exec, attach and port-forward, secret access, or admission-controller decisions. This rule is
+      a built-in of the jessestarkey/threagile fork (moved from a script rule on 2026-11-18) so it
+      can attach to the cluster -- the shared runtime the containers run on -- once, rather than
+      once per container.
     impact: >
-      If this risk remains unmitigated, malicious code in the base layer
-      executes inside every container built from it, with the application's
-      credentials, network position, and mounted secrets, and survives
-      application redeploys because it is rebuilt into each new image.
-      Unscanned layers also carry known-exploitable CVEs in system packages
-      that an external attacker can reach through the application.
-    asvs: "V10 - Malicious Code Verification Requirements"
-    cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
+      If this risk remains unmitigated, post-compromise lateral movement inside the cluster
+      produces no audit trail for an incident responder to reconstruct.
+    asvs: V7 - Error Handling and Logging
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html
     risk_assessment: >
-      Likelihood starts at Unlikely; impact starts at High, stepping on the integrity of the data
-      the container processes. Each impact step is one level: up for a rating of
-      Confidential/Critical or above, down for Internal/Operational or below; likelihood also moves
-      one level with the asset's attractiveness (RAA) and internet exposure. Escalate to High where
-      images are pulled directly from public registries at deploy time without digest pinning or
-      signature verification.
+      Likelihood starts at Likely, taken from the most attractive container on the cluster; impact
+      starts at Low, stepping on the highest integrity rating among its containers. Each impact
+      step is one level: up for a rating of Confidential/Critical or above, down for
+      Internal/Operational or below; likelihood also moves one level with the asset's
+      attractiveness (RAA) and internet exposure. Treat any cluster running the API server's default
+      audit policy (or none) as High.
     false_positives: >
-      Images built only from hardened, signature-verified base images
-      (for example Iron Bank) referenced by sha256 digest, scanned in CI and
-      rescanned on a schedule, and admitted only by a signature-enforcing
-      admission controller can be treated as false positives after review.
+      Fires once per shared runtime that runs in-scope containers, and once for any in-scope
+      container that runs on no shared runtime. Model each cluster as a shared runtime so the
+      finding lands on it once.
     detection_logic: >
-      Grep every Dockerfile and Helm/manifest image reference for tags
-      without an @sha256 digest and for registries outside the approved
-      internal mirror. Run trivy image or grype against each deployed image
-      and compare the base layer digest to the approved catalog. Query the
-      admission controller policy (Kyverno/Gatekeeper/policy-controller) and
-      attempt to deploy an unsigned test image to a non-production namespace
-      to confirm rejection. Check registry audit logs for pulls from public
-      registries.
+      Review the API server's configured audit policy for coverage of exec/attach/port-forward,
+      secret access, and admission decisions, and confirm the audit log is forwarding to the SIEM.
     references: >
-      CWE-506 (Embedded Malicious Code); CWE-1395 (Dependency on Vulnerable
-      Third-Party Component); MITRE ATT&CK T1525 (Implant Internal Image);
-      MITRE ATT&CK T1195.002 (Compromise Software Supply Chain); OWASP Top
-      10:2025 A03 (Software Supply Chain Failures); NIST SP 800-190
-      (Application Container Security Guide)
+      CWE-778 (Insufficient Logging); NIST SP 800-53 AU-2 and AU-12; CIS Kubernetes Benchmark
+      (Control Plane Logging); MITRE ATT&CK T1609 (Container Administration Command)
 
   container-platform-escape:
     title: "Container Platform Escape"

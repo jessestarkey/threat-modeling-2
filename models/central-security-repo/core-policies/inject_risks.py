@@ -1012,7 +1012,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
 
         # NOTE: "Baseline Security Event Logging and SIEM Forwarding Gap" has been ported into
         # the jessestarkey/threagile fork as a native script rule
-        # (pkg/risks/scripts/baseline-security-event-logging-gap.yaml), triggered off the
+        # (pkg/risks/scripts/baseline-security-event-logging-gap.yaml, since merged into insufficient-audit-logging.yaml), triggered off the
         # frontend_related/backend_related technology attributes instead of APP_TIER_TAGS.
         # Removed here rather than left duplicated. This was the last use of APP_TIER_TAGS, so
         # the constant and its 3 member tags are now fully unused -- see the removal below and

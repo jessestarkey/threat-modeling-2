@@ -228,9 +228,9 @@ SINGLE_DIMENSION_PROFILES = {
 # built-in's risk_assessment from 10-threagile-builtin-risks-lib.yml, so its scoring sentence must
 # match the calibration.
 APPROVED_BUILTIN_BASELINES = {
+    "cluster-control-plane-audit-gap": ("Likely", "Low"),
     "accidental-secret-leak": ("Likely", "Low"),
     "code-backdooring": ("Possible", "Medium"),
-    "container-baseimage-backdooring": ("Unlikely", "High"),
     "container-platform-escape": ("Unlikely", "High"),
     "cross-site-request-forgery": ("Possible", "Low"),
     "cross-site-scripting": ("Likely", "Medium"),

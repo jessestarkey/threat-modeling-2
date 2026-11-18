@@ -109,6 +109,7 @@ FALLBACK_DOMAIN = "Uncategorized"
 # local model has triggered yet) falls back to FALLBACK_DOMAIN rather than
 # breaking report generation -- deliberately not exhaustive by design.
 THREAGILE_BUILTIN_DOMAIN_MAP = {
+    "cluster-control-plane-audit-gap": "Detection",
     # Identity
     "missing-authentication": "Identity",
     "missing-authentication-second-factor": "Identity",
@@ -116,7 +117,6 @@ THREAGILE_BUILTIN_DOMAIN_MAP = {
     "missing-identity-provider-isolation": "Identity",
     "missing-identity-store": "Identity",
     # Device and Infrastructure
-    "container-baseimage-backdooring": "Device and Infrastructure",
     "missing-cloud-hardening": "Device and Infrastructure",
     "missing-hardening": "Device and Infrastructure",
     "mixed-targets-on-shared-runtime": "Device and Infrastructure",
@@ -246,8 +246,6 @@ THREAGILE_FORK_SCRIPT_DOMAIN_MAP = {
     "unencrypted-virtual-disk": "Data",
     "unscanned-data-store": "Data",
     # Detection
-    "baseline-security-event-logging-gap": "Detection",
-    "cluster-control-plane-audit-gap": "Detection",
     "data-store-audit-detection-gap": "Detection",
     "insufficient-audit-logging": "Detection",
     "security-control-tamper-resistance-gap": "Detection",

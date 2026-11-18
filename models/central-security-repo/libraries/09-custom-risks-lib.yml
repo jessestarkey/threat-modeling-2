@@ -1794,7 +1794,7 @@ custom_risk_definitions:
 
   # Container Orchestrator Control-Plane Audit Logging Gap has been ported into the
   # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/cluster-control-plane-audit-gap.yaml), triggered off the native
+  # (pkg/risks/scripts/cluster-control-plane-audit-gap.yaml, since moved to the built-in pkg/risks/builtin/cluster_control_plane_audit_gap_rule.go), triggered off the native
   # `machine == container` field instead of a tag. Removed here rather than left duplicated.
   # See docs/risk-methodology.md for the full rationale.
 
@@ -1820,7 +1820,7 @@ custom_risk_definitions:
 
   # Baseline Security Event Logging and SIEM Forwarding Gap has been ported into the
   # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/baseline-security-event-logging-gap.yaml), triggered off the
+  # (pkg/risks/scripts/baseline-security-event-logging-gap.yaml, since merged into insufficient-audit-logging.yaml), triggered off the
   # frontend_related/backend_related technology attributes instead of APP_TIER_TAGS. Removed
   # here rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 

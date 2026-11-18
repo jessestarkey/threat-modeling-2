@@ -908,6 +908,33 @@ Declined: counting plain datastores as indirect-injection sources (it would make
 agent fire again, and the model can't tell user content from other data), and scaling the
 cleartext-credential floor by asset value (cleartext credentials are a weakness at any value).
 
+### Review of the non-AI script rules (2026-11-18)
+
+A review of the fork's non-AI script rules, measured on the Confluence model (43 rules, 134
+findings, 14 on a typical container app), found three sources of repetition and acted on them:
+- **Merged:** `baseline-security-event-logging-gap` (forwarding security events to the SIEM) into
+  `insufficient-audit-logging` (generating them), now "Insufficient Security Event Logging (AU-2 /
+  AU-6 Gap)". They had identical triggers, STRIDE and CWE, and fired on exactly the same assets.
+- **Evidence respected:** `missing-network-micro-segmentation` does not fire on a container inside a
+  `network-policy-namespace-isolation` trust boundary, which is the model showing the control.
+- **Once per cluster:** `cluster-control-plane-audit-gap` moved from a script to a built-in, so it
+  attaches to the shared runtime (the cluster) once instead of to every container; script rules can
+  only attach findings to technical assets. Its calibration is unchanged (Likely / Low).
+- **Duplicate retired:** Threagile's built-in `container-baseimage-backdooring` fired on the same
+  containers for the same risk as the script `untrusted-container-image`, with conflicting ratings;
+  the fork retires the built-in and the script's description covers backdoored base layers.
+- **Trigger narrowed:** `cui-telemetry-spillage` fires only on assets handling confidential or
+  higher data.
+- **STRIDE:** `missing-endpoint-security-agents` and `security-control-tamper-resistance-gap` move
+  from information-disclosure to repudiation (CWE-778, insufficient logging), stepping on
+  integrity; ratings on profile T are unchanged.
+
+Kept as they are: the authorization rules (BOLA, BFLA, BOPLA), because link authentication can't
+show object-level checks either way, and the per-workload container rules
+(`mutable-container-filesystem`, `dangerous-container-capabilities`), which are set per pod spec.
+The appendix table reflects these changes; the result tables above record the calibration as
+first applied (190 rules).
+
 ## Source of truth, by topic
 
 | Topic | Where |
@@ -918,7 +945,7 @@ cleartext-credential floor by asset value (cleartext credentials are a weakness 
 | Per-category baseline Likelihood/Impact | `models/central-security-repo/libraries/09-custom-risks-lib.yml` — each entry's `baseline_likelihood`/`baseline_impact` |
 | Threagile's own built-in categories | This repo's fork, `jessestarkey/threagile` (built via its default `Dockerfile`) — `pkg/types/risk_exploitation_likelihood.go`/`risk_exploitation_impact.go` for the weight tables, `pkg/types/model.go`'s `CalculateSeverity()` for the thresholds, `pkg/risks/builtin/helpers.go`'s `computeLikelihood()` for the shared per-asset Likelihood delta now used by 35 of ~42 rules (`computeImpact()` in the same file is dead code, not currently called by anything — see [Threagile's built-in risk categories](#threagiles-built-in-risk-categories)), and each individual `pkg/risks/builtin/*_rule.go` file for that rule's own baseline value and detection logic (the one piece that stays closed-upstream in spirit even though this repo's fork can technically see and edit it) |
 | Built-in category enrichment text | `models/central-security-repo/libraries/10-threagile-builtin-risks-lib.yml` |
-| Native script rules | This repo's fork, `pkg/risks/scripts/*.yaml` (66 files) — each file's own `get_likelihood`/`get_impact` utility functions carry the RAA/CIA delta logic independently (no shared helper, no central enrichment library; see [Native script rules](#native-script-rules-a-third-mechanism-same-forked-binary)) |
+| Native script rules | This repo's fork, `pkg/risks/scripts/*.yaml` (64 files) — each file's own `get_likelihood`/`get_impact` utility functions carry the RAA/CIA delta logic independently (no shared helper, no central enrichment library; see [Native script rules](#native-script-rules-a-third-mechanism-same-forked-binary)) |
 | The condensed, report-facing version of this document | `models/central-security-repo/core-policies/templates/report.html.jinja`'s Methodology section |
 | Broader repo/pipeline architecture | `CLAUDE.md` |
 
@@ -965,8 +992,8 @@ Every catalogued rule, rated on profile T (confidential / critical / important, 
 | Layer | Rule | Class | Current on T | New baseline | New on T | Reason |
 |---|---|---|---|---|---|---|
 | Built-in | `accidental-secret-leak` | G | Likely / Medium → Elevated | Likely / Low | Likely / Medium → Elevated | G: fires on every repo/registry. Likely kept: GitGuardian 35% of private repos hold plaintext secrets = control commonly absent (G-cap exception), capped at Likely. Impact Medium anchor (missing scanning control); the secret's own consequence is scored by the W-class hardcoded-credentials rule. |
+| Built-in | `cluster-control-plane-audit-gap` | G | Likely / High → High | Likely / Low | Likely / Medium → Elevated | G detection gap. Likely: Kubernetes audits nothing by default = commonly absent (cap Likely). Medium anchor: detection. Moved to a built-in on 2026-11-18 so it fires once per cluster (shared runtime). |
 | Built-in | `code-backdooring` | W | Unlikely / High → Medium | Possible / Medium | Possible / High → Elevated | W: model shows an internet-reachable dev asset. Possible: needs dev-environment access/credentials (prior foothold); CAPEC-444 Medium, Codecov/SolarWinds real. High anchor: backdoored code still has to be built and shipped (one further step), so not Very High. |
-| Built-in | `container-baseimage-backdooring` | G | Unlikely / Medium → Medium | Unlikely / High | Unlikely / Very High → Elevated | G: fires on every container deployment. Unlikely kept: deliberate backdoors rare (Sysdig <1% malicious; CAPEC-538 Low), one below a Possible weakness. Very High anchor: supply-chain code that runs on load. Overlaps untrusted-container-image (script). |
 | Built-in | `container-platform-escape` | G | Unlikely / High → Medium | Unlikely / High | Unlikely / Very High → Elevated | G: fires on every container platform. Unlikely: needs a compromised container first (CAPEC-480 Low), one below the Possible escape weakness. Very High anchor: platform control = privileged control of every container. |
 | Built-in | `cross-site-request-forgery` | G | Likely / Low → Medium | Possible / Low | Possible / Medium → Elevated | G: fires on every web app link (anti-CSRF not modelled). Weakness ~Likely (CAPEC-62 High but CWE Medium, 6 KEV, SameSite defaults) -> one below = Possible. Medium anchor: limited direct harm (one forged action as the victim). |
 | Built-in | `cross-site-scripting` | G | Very Likely / Medium → High | Likely / Medium | Likely / High → High | G: fires on every web app. Weakness Very Likely (CWE #1, CAPEC High, 30k CVEs) but G-cap = Likely. High anchor: stored XSS is the rubric's own High example. |
@@ -1025,7 +1052,6 @@ Every catalogued rule, rated on profile T (confidential / critical / important, 
 | Extension (script) | `ai-vector-store-exposure` | G | Likely / High → High | Unlikely / Medium | Unlikely / High → Medium | G in its usual state (fires on confidential content alone; unencrypted/multi-tenant are the W cases). Weakness Possible (Vec2Text research) -> Unlikely. High: corpus disclosure after inversion. |
 | Extension (script) | `air-ground-station-c2-link-hijack` | G | Likely / Very High → High | Possible / Medium | Possible / High → Elevated | G: fires on every GCS. Weakness Likely for downlink interception (SkyGrabber 2009), hijack rarer -> Possible. High typical (downlink exposure); total loss of control is the worst case. |
 | Extension (script) | `air-vehicle-gps-spoofing` | G | Likely / Very High → High | Likely / Medium | Likely / High → High | G: every aircraft/drone. Likely: 310k flights affected in 2024 = commonly present, cap Likely. High typical (navigation error/redirect); crash/capture is the worst case. |
-| Extension (script) | `baseline-security-event-logging-gap` | G | Likely / High → High | Possible / Low | Possible / Medium → Elevated | G detection gap. Possible: one below the Likely attacks it hides; no evidence logging is commonly absent. Medium anchor: detection. |
 | Extension (script) | `broken-function-level-authorization` | G | Very Likely / Very High → Critical | Likely / High | Likely / Very High → High | G: fires on every request-serving API. Weakness Very Likely (API5 Easy, OWASP A01 100%) but G-cap = Likely. Very High anchor: privileged/administrative functions invoked. |
 | Extension (script) | `broken-object-level-authorization` | G | Very Likely / Very High → Critical | Likely / Medium | Likely / High → High | G: every request-serving API. Weakness Very Likely (API1 widespread, Optus) but G-cap = Likely. High anchor: IDOR is the rubric's own High example. |
 | Extension (script) | `broken-object-property-level-authorization` | G | Likely / Very High → High | Possible / Medium | Possible / High → Elevated | G: every API. Weakness Likely (API3 Easy/Common, no KEV) -> Possible. High: writable privileged properties. |
@@ -1033,7 +1059,6 @@ Every catalogued rule, rated on profile T (confidential / critical / important, 
 | Extension (script) | `cds-guard-ruleset-bypass` | G | Likely / Very High → High | Possible / Medium | Possible / High → Elevated | G: guard rule currency not evidenced. Weakness Likely (operational drift, judgment) -> Possible. High: prohibited content crosses for the stale rule's format; not a wholesale boundary collapse. |
 | Extension (script) | `certificate-validation-soft-fail` | G | Likely / Very High → High | Possible / Medium | Possible / High → Elevated | G: fires on every OCSP/CRL service. Possible: needs a revoked-but-stolen credential plus on-path position; soft-fail is a common default (Langley). High: one revoked identity authenticates. |
 | Extension (script) | `cicd-pipeline-tampering-outside-repo` | G | Unlikely / Very High → Elevated | Unlikely / Medium | Unlikely / High → Medium | G: console access not evidenced as restricted. Unlikely: CAPEC-511 Low (Codecov real). Medium anchor: change-control gap; the malicious change it lets through is the further attack. Reviewer override (user-approved): High, not Medium -- a tampered pipeline ships attacker code. |
-| Extension (script) | `cluster-control-plane-audit-gap` | G | Likely / High → High | Likely / Low | Likely / Medium → Elevated | G detection gap. Likely: Kubernetes audits nothing by default = commonly absent (cap Likely). Medium anchor: detection. |
 | Extension (script) | `cui-telemetry-spillage` | G | Very Likely / High → High | Likely / Low | Likely / Medium → Elevated | G: fires on every non-AI app asset. Weakness commonly present (CWE-532, Meta plaintext passwords) but G-cap = Likely. Medium: incidental fragments exposed to internal staff (limited direct harm); reportable spill. |
 | Extension (script) | `dangerous-container-capabilities` | G | Likely / Very High → High | Possible / Medium | Possible / High → Elevated | G: fires on every container (capability drop not evidenced). Possible: needs code execution in the container first; permissive privilege common (Sysdig 76% root). High: escape primitives = broad compromise needing one further step. |
 | Extension (script) | `data-store-audit-detection-gap` | G | Likely / High → High | Likely / Low | Likely / Medium → Elevated | G detection gap. Likely: Snowflake/UNC5537 shows unmonitored bulk export as routine = commonly absent. Medium anchor: detection/attribution. |
