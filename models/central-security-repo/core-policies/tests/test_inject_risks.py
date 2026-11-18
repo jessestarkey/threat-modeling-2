@@ -364,6 +364,13 @@ class ReviewRegressions(unittest.TestCase):
         asset["technologies"] = ["ai-rag-pipeline"]
         self.assertIn("Indirect Prompt Injection and Goal Hijack", run_engine(asset))
 
+    def test_self_managed_segmentation_leaves_containers_to_the_fork(self):
+        # 2026-11-18 review: the fork's missing-network-micro-segmentation owns containers.
+        title = "No Macro or Micro-Segmentation of Self-Managed Network"
+        tags = ["mgmt:self-managed-network"]
+        self.assertIn(title, run_engine(probe_asset(tags, machine="virtual")))
+        self.assertNotIn(title, run_engine(probe_asset(tags, machine="container")))
+
     def test_agent_indirect_injection_needs_a_content_source(self):
         # 2026-11-18 noise review: an agent inherits indirect injection only when it reads content
         # (retrieval, tool results, other agents, anything external), not unconditionally.

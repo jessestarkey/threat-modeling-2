@@ -76,7 +76,6 @@ APPROVED = {
     "forensic-chain-of-custody-gap": ("unlikely", "medium", "control-not-evidenced"),
     "graphql-security-gaps": ("likely", "medium", "control-not-evidenced"),
     "improper-api-inventory-management": ("possible", "medium", "control-not-evidenced"),
-    "insecure-deserialization": ("possible", "very-high", "control-not-evidenced"),
     "insecure-password-reset": ("possible", "high", "control-not-evidenced"),
     "malicious-file-parsing": ("possible", "high", "control-not-evidenced"),
     "media-downgrade-procedure-gap": ("unlikely", "high", "control-not-evidenced"),
@@ -84,7 +83,6 @@ APPROVED = {
     "missing-data-rights-management": ("likely", "medium", "control-not-evidenced"),
     "missing-privacy-impact-assessment": ("possible", "medium", "control-not-evidenced"),
     "missing-token-binding": ("likely", "high", "control-not-evidenced"),
-    "missing-waf-internet-facing": ("possible", "medium", "control-not-evidenced"),
     "network-ids-blind-spot": ("possible", "medium", "control-not-evidenced"),
     "oauth-illicit-consent-grant": ("possible", "high", "control-not-evidenced"),
     "oauth-oidc-vulnerabilities": ("possible", "high", "control-not-evidenced"),
@@ -172,7 +170,6 @@ APPROVED_DIMENSION = {
     "forensic-chain-of-custody-gap": "I",
     "graphql-security-gaps": "C",
     "improper-api-inventory-management": "CIA",
-    "insecure-deserialization": "CIA",
     "insecure-password-reset": "I",
     "malicious-file-parsing": "I",
     "media-downgrade-procedure-gap": "C",
@@ -180,8 +177,7 @@ APPROVED_DIMENSION = {
     "missing-data-rights-management": "C",
     "missing-privacy-impact-assessment": "C",
     "missing-token-binding": "I",
-    "missing-waf-internet-facing": "I",
-    "network-ids-blind-spot": "C",
+    "network-ids-blind-spot": "I",
     "oauth-illicit-consent-grant": "I",
     "oauth-oidc-vulnerabilities": "I",
     "overprivileged-workload-identity": "CIA",
@@ -330,6 +326,19 @@ class Calibration(unittest.TestCase):
                 text = " ".join(BUILTIN_LIBRARY[rule_id]["risk_assessment"].split())
                 self.assertRegex(text, rf"^Likelihood starts at (a flat )?{likelihood}(?![a-z])")
                 self.assertRegex(text, rf"impact starts at (a flat )?{impact}(?![a-z])")
+
+
+    def test_custom_report_text_states_the_approved_starting_rating(self):
+        # The report prints each category's risk_assessment as the severity to assign if the
+        # control is confirmed missing, so its opening scoring sentence must match the library.
+        names = {"unlikely": "Unlikely", "possible": "Possible", "likely": "Likely", "very-likely": "Very Likely",
+                 "low": "Low", "medium": "Medium", "high": "High", "very-high": "Very High"}
+        for cid, definition in DEFINITIONS.items():
+            with self.subTest(category=cid):
+                text = " ".join(definition["risk_assessment"].split())
+                self.assertTrue(text.startswith(
+                    f"Likelihood starts at {names[definition['baseline_likelihood']]}; "
+                    f"impact starts at {names[definition['baseline_impact']]},"), text[:120])
 
 
 if __name__ == "__main__":

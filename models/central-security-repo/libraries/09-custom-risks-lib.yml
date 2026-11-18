@@ -15,13 +15,19 @@
 #   loader hard-fails at startup if any entry is missing it.
 #
 # ADDING A NEW RISK:
-#   1. Add an entry below with: id, description, impact, asvs, cheat_sheet,
-#      action, mitigation, references, risk_assessment, false_positives,
-#      function, stride, risks_identified: {}
+#   1. Add an entry below with: id, baseline_likelihood, baseline_impact,
+#      finding_class (weakness-shown or control-not-evidenced), description,
+#      impact, asvs, cheat_sheet, action, mitigation, references,
+#      risk_assessment (starting with the calibrated scoring sentence; see
+#      test_calibration.py), false_positives, function, stride, cwe,
+#      detection_logic, risks_identified: {}
 #   2. If it's triggered by a new tag, document that tag in 03-tags-lib.yml.
 #   3. Wire an `if 'tag:name' in tags: inject("<this entry's key>", "<short
-#      title>", "<severity>")` line into the tag-scanning loop in
-#      inject_risks.py.
+#      title>")` line into the tag-scanning loop in inject_risks.py. inject()'s
+#      optional third argument is an integer likelihood step (likelihood_delta),
+#      not a severity.
+#   4. Add the category to the calibration table in docs/risk-methodology.md
+#      and to test_calibration.py's APPROVED and APPROVED_DIMENSION maps.
 #
 # STRUCTURE:
 #   Entries are grouped into sections numbered `D.S` (domain D, section S
@@ -91,7 +97,7 @@ custom_risk_definitions:
     action: Ensure formal AO risk acceptance is on file.
     mitigation: The local account must have a complex, vault-generated password rotated every 30 days. IP restrictions must limit access to the login endpoint.
     references: DoD Identity, Credential, and Access Management (ICAM)
-    risk_assessment: High risk of unauthorized access.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High risk of unauthorized access.'
     false_positives: None. This is an explicit policy waiver.
     function: architecture
     stride: spoofing
@@ -110,7 +116,7 @@ custom_risk_definitions:
     action: Use cryptographically random tokens with short expiry, enforce single-use invalidation, and derive reset URLs from a configured base URL only.
     mitigation: Generate password reset tokens using a cryptographically secure random number generator with at least 128 bits of entropy. Invalidate the token immediately on first use. Set token expiry to 15 minutes or less. Return identical responses for registered and unregistered addresses to prevent enumeration — implement consistent timing using a dummy hash operation for unregistered addresses. Derive the reset link base URL from a hardcoded configuration value, never from the HTTP Host or X-Forwarded-Host header. Require re-authentication via MFA after password reset before accessing sensitive functionality.
     references: NIST SP 800-63B (Digital Identity Guidelines); OWASP Forgot Password Cheat Sheet; NIST SP 800-53 IA-5 (Authenticator Management)
-    risk_assessment: High for custom-implemented reset flows. Medium for reset flows built on a maintained authentication framework where token generation and invalidation are handled by the library.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for custom-implemented reset flows. Medium for reset flows built on a maintained authentication framework where token generation and invalidation are handled by the library.'
     false_positives: Credential recovery is fully delegated to the enterprise IdP (e.g., Entra ID self-service password reset) with no custom reset token issuance or validation in the application.
     function: architecture
     stride: spoofing
@@ -130,7 +136,7 @@ custom_risk_definitions:
     action: Audit authorization callback redirect_uri validation, state parameter enforcement, token audience validation, and JWT algorithm handling.
     mitigation: Enforce exact-match redirect_uri validation — no wildcards, no partial path matches. Require and validate the state parameter on all authorization responses to prevent CSRF. Use authorization code flow with PKCE for all clients; never use implicit flow. Validate JWT audience (aud) claim against the expected service identifier on every token verification. Explicitly specify the expected algorithm in JWT validation — never accept alg:none or derive the algorithm from the token header. Use short-lived access tokens (15 minutes or less) with refresh token rotation.
     references: OWASP OAuth 2.0 Security Best Current Practice (draft-ietf-oauth-security-topics); NIST SP 800-63C (Federation and Assertions); DoD ICAM Reference Design
-    risk_assessment: High for assets acting as authorization servers or custom token validation middleware. Medium for assets that are pure OIDC relying parties consuming tokens from a well-configured upstream IdP.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for assets acting as authorization servers or custom token validation middleware. Medium for assets that are pure OIDC relying parties consuming tokens from a well-configured upstream IdP.'
     false_positives: Asset delegates all OAuth/OIDC handling to a hardened upstream IdP (e.g., Entra ID, Okta) with no custom token issuance or validation logic — the asset only consumes pre-validated identity assertions.
     function: architecture
     stride: spoofing
@@ -150,7 +156,7 @@ custom_risk_definitions:
     action: Use a hardened SAML library with XSW protection, validate all assertion constraints, and disable XXE in the XML parser.
     mitigation: 'Use a well-maintained SAML library that provides XSW protection (e.g., python3-saml, OneLogin SAML, Spring Security SAML with XSW patches applied). Disable XXE and DTD processing in the XML parser used for SAML document parsing. Validate all assertion constraints: NotBefore/NotOnOrAfter timestamps, Recipient URL, AudienceRestriction, and InResponseTo (replay prevention). Sanitize the NameID value before use as a username — strip XML comments and normalize whitespace. Log all SAML assertion processing events including validation failures.'
     references: OWASP SAML Security Cheat Sheet; NIST SP 800-63C (Federation); DoD ICAM Reference Design; CVE-2017-11427 (SAML comment injection)
-    risk_assessment: High for custom or lightly-maintained SAML SP implementations. Medium for well-maintained SAML library implementations where XSW protection and constraint validation have been verified.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at High, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for custom or lightly-maintained SAML SP implementations. Medium for well-maintained SAML library implementations where XSW protection and constraint validation have been verified.'
     false_positives: SAML processing is fully delegated to a hardened platform IdP integration (e.g., Azure AD SAML app with no custom assertion processing code) — the application does not parse or validate SAML XML directly.
     function: architecture
     stride: spoofing
@@ -177,7 +183,7 @@ custom_risk_definitions:
     action: Bind session and refresh tokens to the issuing client using DPoP or mutual TLS, so a captured token cannot be replayed from a different host.
     mitigation: Implement OAuth 2.0 Demonstrating Proof of Possession (DPoP) or mutual TLS client certificate binding for session and refresh tokens, so the resource server can verify the presenter of the token is the same client the token was issued to. Reject a syntactically valid token presented without the matching proof of possession. Where the identity provider does not yet support proof-of-possession tokens, treat this as a documented gap rather than an unstated assumption of bearer-token safety.
     references: RFC 9449 (OAuth 2.0 Demonstrating Proof of Possession); NIST SP 800-63B (Digital Identity Guidelines, Authenticator Assurance Level requirements); NIST SP 800-53 SC-23 (Session Authenticity)
-    risk_assessment: Critical for any asset issuing bearer session/refresh tokens with no proof-of-possession binding, particularly where the asset also enforces phishing-resistant primary authentication that a bearer-token replay would otherwise bypass.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any asset issuing bearer session/refresh tokens with no proof-of-possession binding, particularly where the asset also enforces phishing-resistant primary authentication that a bearer-token replay would otherwise bypass.'
     false_positives: The asset is tagged ops:token-binding-enforced confirming session and refresh tokens are bound to the issuing client via DPoP or mutual TLS.
     function: architecture
     stride: spoofing
@@ -196,7 +202,7 @@ custom_risk_definitions:
     action: Require administrator consent for any application requesting high-privilege delegated scopes, and block user self-service consent grants to unverified or newly registered applications.
     mitigation: Configure the authorization server/IdP to require administrator review and consent for applications requesting high-privilege scopes (mail read/send, files, directory data), rather than permitting individual users to self-consent. Restrict user self-service consent to a curated allow-list of verified publishers where the platform supports it. Monitor and alert on new OAuth application registrations and consent grants, particularly grants of broad scope to newly registered or unverified applications. Periodically review and revoke consent grants to applications no longer in active use.
     references: NIST SP 800-53 AC-3 (Access Enforcement); MITRE ATT&CK T1550.001 (Application Access Token); Microsoft/industry guidance on illicit consent grant attacks
-    risk_assessment: Critical for any authorization server/IdP permitting unrestricted user self-service consent to high-privilege scopes with no administrator review.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any authorization server/IdP permitting unrestricted user self-service consent to high-privilege scopes with no administrator review.'
     false_positives: The asset is tagged ops:oauth-consent-governed confirming administrator consent is required for high-privilege scope requests and user self-service consent is restricted to a verified-publisher allow-list.
     function: architecture
     stride: spoofing
@@ -215,7 +221,7 @@ custom_risk_definitions:
     action: Audit this directory for unconstrained delegation, AdminSDHolder tampering, missing SID filtering on trusts, and unsigned LDAP, and rotate krbtgt credential material using the required two-pass procedure.
     mitigation: Eliminate unconstrained Kerberos delegation in favor of constrained or resource-based constrained delegation. Audit and alert on AdminSDHolder ACL changes. Enable SID filtering on every cross-forest/cross-domain trust this directory participates in. Require LDAP signing and channel binding, rejecting unsigned binds. Rotate the krbtgt account password twice in sequence (a single rotation is insufficient — the account retains two valid password versions) on a recurring schedule and immediately after any suspected compromise.
     references: NIST SP 800-53 IA-5 (Authenticator Management); NIST SP 800-53 AC-6 (Least Privilege); MITRE ATT&CK T1558 (Steal or Forge Kerberos Tickets)
-    risk_assessment: Critical for any self-managed directory instance where these controls have not been audited, since this framework's enterprise identity Tier-0 hardening does not extend to infrastructure the app team operates itself.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at High, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any self-managed directory instance where these controls have not been audited, since this framework''s enterprise identity Tier-0 hardening does not extend to infrastructure the app team operates itself.'
     false_positives: The asset is tagged mgmt:self-managed-identity-hardened confirming unconstrained delegation, AdminSDHolder tampering, trust SID filtering, and LDAP signing have been audited, and krbtgt rotation follows the required two-pass procedure. Not applicable if this asset authenticates exclusively through the enterprise-managed identity tenant.
     function: architecture
     stride: spoofing
@@ -234,7 +240,7 @@ custom_risk_definitions:
     action: Audit every certificate template on this CA for subject-name enrollee control, and remove or restrict any template permitting a low-privileged requester to specify a privileged subject name.
     mitigation: Review every enrollment template's permissions and the CA's `EDITF_ATTRIBUTESUBJECTALTNAME2` flag for enrollee-suppliable subject names. Restrict enrollment on any template that grants a broad principal group (e.g., Domain Users) enrollment rights combined with client authentication EKU and enrollee-suppliable subject name. Require manager approval or issuance-policy-gated enrollment for any template capable of producing a certificate usable for authentication as a privileged identity.
     references: NIST SP 800-53 SC-17 (Public Key Infrastructure Certificates); MITRE ATT&CK T1649 (Steal or Forge Authentication Certificates)
-    risk_assessment: Critical for any self-managed CA with at least one enrollment template permitting enrollee-controlled subject names combined with broad enrollment rights.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at High, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any self-managed CA with at least one enrollment template permitting enrollee-controlled subject names combined with broad enrollment rights.'
     false_positives: The asset is tagged mgmt:self-managed-identity-hardened confirming every enrollment template has been audited against ESC1-class misconfiguration. Not applicable if this asset relies exclusively on the enterprise-managed PKI.
     function: architecture
     stride: spoofing
@@ -253,7 +259,7 @@ custom_risk_definitions:
     action: Administer this hybrid sync server with the same Tier-0 rigor as the directory infrastructure it bridges — not as ordinary application infrastructure.
     mitigation: Restrict administrative access to the hybrid sync server to the same privileged-access tier as the directory infrastructure it connects to, not to general application/infrastructure administrators. Monitor the server for credential-extraction attempts (it typically holds a highly privileged service account on both sides of the bridge). Isolate it on a management network segment distinct from general application infrastructure, and patch it on an accelerated cadence given its Tier-0-equivalent blast radius.
     references: NIST SP 800-53 AC-6 (Least Privilege); NIST SP 800-53 SC-7 (Boundary Protection); MITRE ATT&CK T1556 (Modify Authentication Process)
-    risk_assessment: Critical for any hybrid identity sync server administered without Tier-0-equivalent access restriction and network isolation.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any hybrid identity sync server administered without Tier-0-equivalent access restriction and network isolation.'
     false_positives: The asset is tagged mgmt:self-managed-identity-hardened confirming this server is administered at Tier-0 rigor, network-isolated from general application infrastructure, and monitored for credential extraction.
     function: operations
     stride: elevation-of-privilege
@@ -280,7 +286,7 @@ custom_risk_definitions:
     action: Restrict admin interface access to an IP-allowlisted management network segment and require a separate, elevated authentication factor.
     mitigation: Restrict admin interface access to an approved IP range (management VNET, Bastion subnet, or privileged access workstation range) enforced at the NSG or Ingress layer — not just application-layer RBAC. Require a separate, elevated authentication step (e.g., step-up MFA, PIV re-authentication) for admin access even for users already authenticated to the application. Serve the admin interface on a separate subdomain or port to enable distinct WAF policy and access logging. Ensure all admin server-side endpoints enforce the same role checks as the UI — never rely on UI hiding as an authorization control. Audit all admin panel access events to a tamper-evident SIEM.
     references: NIST SP 800-53 AC-6 (Least Privilege); NIST SP 800-53 AC-17 (Remote Access); DISA Application Security STIG
-    risk_assessment: High for admin panels accessible on the same domain as the user-facing application without IP restriction. Critical if admin functionality is accessible to any authenticated user without an explicit admin role check.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for admin panels accessible on the same domain as the user-facing application without IP restriction. Critical if admin functionality is accessible to any authenticated user without an explicit admin role check.'
     false_positives: Admin interface is served on a separate internal-only domain with NSG-enforced IP restriction to a privileged access workstation range and requires a separate MFA step-up authentication — confirmed in the network architecture documentation.
     function: architecture
     stride: elevation-of-privilege
@@ -300,7 +306,7 @@ custom_risk_definitions:
     action: Scope vendor remote support access to a specific, time-bound support case and deactivate it automatically at case closure or a defined expiry, whichever comes first.
     mitigation: Grant vendor remote support access through a mechanism that is scoped to a specific support case identifier and expires automatically (either at a defined time limit or when the linked case is closed) rather than requiring a manual deactivation step. Log all vendor remote access sessions to the SIEM distinctly from internal administrative access, so vendor access is independently reviewable. Periodically audit for any vendor access grant with no associated open support case.
     references: NIST SP 800-53 AC-17 (Remote Access); NIST SP 800-53 SA-9 (External System Services); NIST SP 800-53 PS-7 (External Personnel Security)
-    risk_assessment: High for any asset granting vendor remote support access with no case-bound scope or automatic expiry.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any asset granting vendor remote support access with no case-bound scope or automatic expiry.'
     false_positives: The asset is tagged ops:vendor-access-case-bound confirming vendor remote support access is scoped to a specific support case with automatic expiry.
     function: operations
     stride: elevation-of-privilege
@@ -319,7 +325,7 @@ custom_risk_definitions:
     action: Implement just-in-time privilege activation for administrative roles on this asset, and restrict authentication of high-tier credentials to a dedicated, hardened privileged access workstation tier.
     mitigation: Replace standing administrative role assignment with just-in-time activation (time-bound, approval-gated elevation) so a credential is privileged only for the duration of an active task. Establish administrative tiering (at minimum, separating the highest-privilege tier from general-purpose endpoints) and technically prevent high-tier credentials from authenticating outside their designated tier — not merely a policy expectation.
     references: NIST SP 800-53 AC-6(1) (Least Privilege — Authorize Access to Security Functions); NIST SP 800-53 AC-2(6) (Dynamic Privilege Management); Microsoft/industry privileged access tiering guidance
-    risk_assessment: Critical for any self-managed asset with standing (non-JIT) high-privilege role assignment and no administrative tiering.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any self-managed asset with standing (non-JIT) high-privilege role assignment and no administrative tiering.'
     false_positives: The asset is tagged mgmt:self-managed-pam-hardened confirming just-in-time privilege activation and administrative tiering are both enforced. Not applicable if privileged access to this asset is governed by the enterprise PAM program.
     function: operations
     stride: elevation-of-privilege
@@ -338,7 +344,7 @@ custom_risk_definitions:
     action: Broker administrative access to shared credentials through a session that checks out and rotates the secret without disclosing it to the human operator.
     mitigation: Route administrative access to shared credentials (appliance/hypervisor/database engine/out-of-band controller logins) through a privileged access management broker that checks out the credential for the session duration, rotates it after use, and never displays the underlying secret to the operator. Where brokering isn't yet available for a given asset class, treat direct credential disclosure as a documented gap with a compensating control (individual named accounts where the platform supports them) rather than an unstated assumption.
     references: NIST SP 800-53 IA-5 (Authenticator Management); NIST SP 800-53 AC-6 (Least Privilege)
-    risk_assessment: High for any self-managed asset where shared administrative credentials are disclosed directly rather than brokered through a vaulted session.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any self-managed asset where shared administrative credentials are disclosed directly rather than brokered through a vaulted session.'
     false_positives: The asset is tagged mgmt:self-managed-pam-hardened confirming administrative access to shared credentials is brokered through a vaulted session with no direct disclosure. Not applicable if privileged access to this asset is governed by the enterprise PAM program.
     function: operations
     stride: elevation-of-privilege
@@ -357,7 +363,7 @@ custom_risk_definitions:
     action: Ensure break-glass credentials for this asset do not depend on the primary identity platform for storage or retrieval, and exercise the break-glass procedure on a recurring schedule.
     mitigation: Store break-glass credentials in a vault or safe with an access path independent of the primary identity platform being protected against, so a primary-platform outage or compromise does not also block emergency access. Exercise the actual break-glass procedure (not a tabletop review) on a recurring schedule, updating the documented steps with anything the exercise reveals is missing or outdated.
     references: NIST SP 800-53 CP-2 (Contingency Plan); NIST SP 800-53 IA-5 (Authenticator Management)
-    risk_assessment: High for any self-managed asset whose break-glass access depends on the primary identity platform, or whose break-glass procedure has not been exercised within the current ATO period.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any self-managed asset whose break-glass access depends on the primary identity platform, or whose break-glass procedure has not been exercised within the current ATO period.'
     false_positives: The asset is tagged mgmt:self-managed-pam-hardened confirming break-glass credentials have an access path independent of the primary identity platform and the procedure has been exercised within the current ATO period. Not applicable if this asset relies on the enterprise PAM/break-glass program.
     function: operations
     stride: denial-of-service
@@ -376,7 +382,7 @@ custom_risk_definitions:
     action: Scope this workload identity's role assignments to only the specific resources and actions its function requires, and confirm its credential/token endpoint is not reachable from code outside this asset's own trust boundary.
     mitigation: Replace broad subscription- or resource-group-scoped role assignments (Contributor, Owner, or wildcard data-plane roles) with custom roles scoped to the exact resources and actions this workload genuinely needs. Where the platform supports it, prefer workload-identity federation over a long-lived service-principal secret. Restrict access to the cloud instance metadata service (IMDS) or automounted Kubernetes service-account token to the specific code paths that need it -- do not leave it reachable from general request-handling code (e.g. via an unpatched SSRF path) or from every pod in a namespace by default. Periodically review actual role usage against the assignment and remove unused grants.
     references: NIST SP 800-53 AC-6 (Least Privilege); MITRE ATT&CK T1078.004, T1098.001, T1098.003, T1552.005, T1548.005
-    risk_assessment: Critical for any workload identity holding subscription-/resource-group-wide or wildcard data-plane roles with no documented least-privilege review, or whose credential endpoint is reachable from code outside its own trust boundary.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any workload identity holding subscription-/resource-group-wide or wildcard data-plane roles with no documented least-privilege review, or whose credential endpoint is reachable from code outside its own trust boundary.'
     false_positives: The asset is tagged mgmt:workload-identity-least-privilege confirming its role assignments are scoped to only the specific resources and actions its function requires, with no subscription/resource-group-wide or wildcard data-plane roles, and its credential/token endpoint is not reachable from code outside this asset's own trust boundary.
     function: architecture
     stride: elevation-of-privilege
@@ -404,14 +410,14 @@ custom_risk_definitions:
     baseline_likelihood: possible
     baseline_impact: medium
     finding_class: weakness-shown
-    description: 'This container executes as the root user or with elevated Linux capabilities rather than the least privilege its function requires.'
+    description: 'This container executes as the root user (UID 0) rather than the least privilege its function requires. Elevated Linux capabilities are covered by the dangerous-container-capabilities rule.'
     impact: 'If this risk remains unmitigated, an attacker who compromises the container has a substantially easier path to escalate privileges on the underlying node.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
     action: Ensure formal AO risk acceptance is on file.
     mitigation: Compensating controls must be strictly enforced via admission-controller policy (Azure Policy for AKS / OPA Gatekeeper) — scope the waiver to the exact workload it applies to rather than a namespace-wide exception, drop every Linux capability not explicitly required even while running as root, and apply a restrictive seccomp/AppArmor profile to narrow the syscall surface a root process can actually reach.
     references: DISA Kubernetes STIG; NIST SP 800-53 AC-6 (Least Privilege); DoD Container Hardening Guide
-    risk_assessment: High risk of container breakout and full node compromise if the container is also internet-reachable or processes untrusted input — root inside the container removes the last layer between a code-execution bug and privilege escalation on the host.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High risk of container breakout and full node compromise if the container is also internet-reachable or processes untrusted input — root inside the container removes the last layer between a code-execution bug and privilege escalation on the host.'
     false_positives: None. This is an explicit policy waiver.
     function: operations
     stride: elevation-of-privilege
@@ -441,7 +447,7 @@ custom_risk_definitions:
     action: Ensure formal AO risk acceptance is on file.
     mitigation: Compensating controls must include strict Network Security Group (NSG) source-IP allowlisting scoped to a known management range (never 0.0.0.0/0), mandatory MFA on the remote-management credential, and a break-glass credential rotation schedule. A just-in-time access broker or bastion host remains the preferred fix over this waiver where feasible.
     references: NIST SP 800-53 AC-17 (Remote Access); DISA OS STIGs; DoD Cloud Computing SRG
-    risk_assessment: High risk of unauthorized administrative access.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High risk of unauthorized administrative access.'
     false_positives: None. This is an explicit policy waiver.
     function: architecture
     stride: elevation-of-privilege
@@ -461,7 +467,7 @@ custom_risk_definitions:
     action: Replace default BMC credentials, disable unneeded BMC services, and bind BMC network access to an isolated management network segment.
     mitigation: Change default BMC/iDRAC/iLO/IPMI/Redfish credentials on every physical host before it enters service, and rotate them on the same schedule as other privileged credentials. Disable unused BMC services and interfaces (legacy IPMI over LAN where Redfish is available, unused virtual media features). Place BMC network interfaces on an isolated out-of-band management network with no route from general application traffic, reachable only from a dedicated administrative path.
     references: NIST SP 800-53 CM-6 (Configuration Settings); NIST SP 800-53 SC-7 (Boundary Protection); CIS Benchmarks (Server/BMC hardening)
-    risk_assessment: Critical for any self-managed physical host whose BMC has not been confirmed to use non-default credentials and isolated network placement.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any self-managed physical host whose BMC has not been confirmed to use non-default credentials and isolated network placement.'
     false_positives: The asset is tagged mgmt:self-managed-hardware-hardened confirming BMC credentials are non-default and rotated, unused services are disabled, and network access is isolated to a dedicated management segment. Not applicable to virtual/cloud-provisioned compute with no accessible BMC layer.
     function: operations
     stride: elevation-of-privilege
@@ -480,7 +486,7 @@ custom_risk_definitions:
     action: Extend patch management to firmware (UEFI/BIOS, TPM, BMC, option-ROM) on this physical host, tracked and patched on a defined cadence independent of OS patching.
     mitigation: Inventory the firmware version of every below-OS component on this host (UEFI/BIOS, TPM, BMC, option-ROMs on network/storage controllers) and subscribe to the hardware vendor's firmware security advisories. Patch firmware on a defined cadence separate from OS patch management, since it is not covered by the same tooling. Where the platform supports it, enable firmware-level attestation so a below-OS modification is detectable rather than silently persistent.
     references: NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity); NIST SP 800-193 (Platform Firmware Resiliency Guidelines)
-    risk_assessment: Critical for any self-managed physical host with no firmware patch tracking independent of OS patch management.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any self-managed physical host with no firmware patch tracking independent of OS patch management.'
     false_positives: The asset is tagged mgmt:self-managed-hardware-hardened confirming firmware across UEFI/BIOS, TPM, BMC, and option-ROMs is inventoried and patched on a defined cadence. Not applicable to virtual/cloud-provisioned compute where firmware is the cloud provider's responsibility.
     function: operations
     stride: tampering
@@ -499,7 +505,7 @@ custom_risk_definitions:
     action: Enable secure boot and TPM-backed measured-boot attestation on this physical host, and verify attestation results before trusting the host's post-boot state.
     mitigation: Enable UEFI Secure Boot to reject unsigned or improperly signed bootloaders and kernels. Enable TPM-backed measured boot so each boot stage's hash is recorded and can be remotely attested, and integrate attestation verification into the host's admission to the fleet (a host that fails attestation should not be trusted with workload placement). Treat a host with secure boot disabled or no TPM as non-compliant rather than a silently accepted gap.
     references: NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity); NIST SP 800-155 (BIOS Integrity Measurement Guidelines)
-    risk_assessment: High for any self-managed physical host with secure boot disabled or no TPM-backed measured-boot attestation.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any self-managed physical host with secure boot disabled or no TPM-backed measured-boot attestation.'
     false_positives: The asset is tagged mgmt:self-managed-hardware-hardened confirming secure boot is enabled and TPM-backed measured-boot attestation is verified. Not applicable to virtual/cloud-provisioned compute where boot-chain integrity is the cloud provider's responsibility.
     function: architecture
     stride: tampering
@@ -531,7 +537,7 @@ custom_risk_definitions:
     action: Map this network's actual required communication paths and implement default-deny macro- and micro-segmentation permitting only that mapped baseline.
     mitigation: Document the actual required communication paths between tiers and workloads, then implement default-deny segmentation (firewall/NSG/NACL rules or equivalent) permitting only that mapped baseline — deny-all as the starting posture, with explicit allow rules added only as justified. Place internet-facing services, administrative planes, and sensitive data stores in distinct network segments from each other and from lower-trust systems, not sharing a flat network.
     references: NIST SP 800-53 SC-7 (Boundary Protection); NIST SP 800-207 (Zero Trust Architecture)
-    risk_assessment: Critical for any self-managed network with no mapped, default-deny segmentation between trust tiers.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any self-managed network with no mapped, default-deny segmentation between trust tiers.'
     false_positives: The asset is tagged mgmt:self-managed-network-hardened confirming default-deny macro- and micro-segmentation is implemented against a documented communication baseline. Not applicable to assets in the enterprise-managed landing zone, where segmentation is a platform-inherited control.
     function: architecture
     stride: elevation-of-privilege
@@ -550,7 +556,7 @@ custom_risk_definitions:
     action: Deploy rogue access point / evil-twin detection for this self-managed wireless network, and require mutual authentication (e.g., EAP-TLS or a certificate-validated method) that resists credential harvesting by an impersonating access point.
     mitigation: Deploy wireless intrusion detection capable of identifying rogue/impersonating access points broadcasting this network's SSID, alerting the SOC on detection. Require a wireless authentication method with mutual/server certificate validation (EAP-TLS, or PEAP/EAP-TTLS with certificate pinning) so a client can detect and reject an impersonating access point rather than a credential-harvesting method that any access point broadcasting the right SSID can capture.
     references: NIST SP 800-53 SC-40 (Wireless Link Protection); NIST SP 800-153 (Guidelines for Securing WLANs)
-    risk_assessment: High for any self-managed wireless network with no rogue access point detection and a wireless authentication method vulnerable to credential harvesting by an impersonating access point.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any self-managed wireless network with no rogue access point detection and a wireless authentication method vulnerable to credential harvesting by an impersonating access point.'
     false_positives: The asset is tagged mgmt:self-managed-network-hardened confirming rogue access point detection is active and wireless authentication resists credential harvesting. Not applicable to assets with no self-managed wireless network, or where wireless is provided by the enterprise-managed landing zone.
     function: operations
     stride: spoofing
@@ -569,7 +575,7 @@ custom_risk_definitions:
     action: Enable RPKI-based route origin validation on this asset's external routing adjacencies, and register route origin authorizations for its advertised prefixes.
     mitigation: Register Route Origin Authorizations (ROAs) for every prefix this asset originates, and enable RPKI-based route origin validation on external routing adjacencies to reject invalid announcements. Apply prefix and max-prefix filtering on peering sessions as a defense-in-depth backstop against both malicious hijacks and operational route leaks.
     references: NIST SP 800-53 SC-7 (Boundary Protection); RFC 6480 (RPKI); NIST SP 800-189 (Resilient Interdomain Traffic Exchange)
-    risk_assessment: High for any self-managed asset with an external routing adjacency and no RPKI route origin validation.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any self-managed asset with an external routing adjacency and no RPKI route origin validation.'
     false_positives: The asset is tagged mgmt:self-managed-network-hardened confirming RPKI route origin validation and ROA registration are in place for this asset's routing adjacencies. Not applicable to assets with no self-managed external routing, or where routing is provided by the enterprise-managed landing zone.
     function: architecture
     stride: spoofing
@@ -593,7 +599,7 @@ custom_risk_definitions:
     action: Enforce schema validation at every API ingestion point and validate marking values against an approved controlled vocabulary allowlist.
     mitigation: Enforce classification marking validation as server-side middleware on every ingestion endpoint — not only at the UI layer. Validate marking values against an approved controlled vocabulary allowlist (exact match, not just non-null presence). Reject and log any submission where markings are absent, malformed, or outside the approved vocabulary. Gate broker queue writes on successful validation — content must not reach the queue until validation passes. Include the validation result and marking value in the transfer audit log.
     references: DoD CUI Registry; NIST SP 800-53 SI-10 (Information Input Validation); ICD 710 (Classification Management)
-    risk_assessment: Critical for any low-to-high transfer path. The application is the last validation point before content reaches the CDS.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Medium, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any low-to-high transfer path. The application is the last validation point before content reaches the CDS.'
     false_positives: Marking validation is enforced at the server-side API layer on every ingestion path, values are validated against a hardcoded approved vocabulary allowlist, and no direct queue write access exists that bypasses the application.
     function: architecture
     stride: information-disclosure
@@ -613,7 +619,7 @@ custom_risk_definitions:
     action: Implement a complete, tamper-evident transfer audit trail capturing full submission context and forward to a write-once SIEM.
     mitigation: 'Generate an immutable audit record for every transfer submission containing: authenticated user identity, submission timestamp, content identifier, asserted classification marking, schema validation result, CDS submission status, and CDS response code. Forward to a write-once SIEM the application cannot modify. Implement anomaly detection on transfer patterns — alert on atypical submission volumes, atypical content types, or marking values inconsistent with a user''s historical pattern. Require re-authentication before bulk transfer submissions.'
     references: NIST SP 800-53 AU-2 (Event Logging); NIST SP 800-53 AU-9 (Protection of Audit Information); DoD Insider Threat Program; ICD 710
-    risk_assessment: High. The audit trail is the primary compensating control for misclassification risk. Its absence elevates residual risk to Critical.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High. The audit trail is the primary compensating control for misclassification risk. Its absence elevates residual risk to Critical.'
     false_positives: Transfer audit records capture full submission context, are forwarded to a write-once SIEM, and anomaly detection on transfer patterns is active and tuned.
     function: operations
     stride: repudiation
@@ -634,7 +640,7 @@ custom_risk_definitions:
     action: Apply the same input validation and malware scanning to CDS-sourced content as to any other externally-sourced data.
     mitigation: 'Process all inbound CDS content through the same validation pipeline as direct user uploads: content-type verification, malware scanning, format-specific parser hardening (XXE disabled, macros disabled, JavaScript disabled in PDF renderers), and file extension allow-listing. Do not grant CDS-sourced content elevated trust or bypass input validation based on transfer origin. Log all inbound content receipt events with content identifier, type, size, and validation result. Alert on validation failures for CDS-sourced content.'
     references: NIST SP 800-53 SI-3 (Malicious Code Protection); NIST SP 800-53 SI-10 (Information Input Validation); DoD CDS implementation guidance
-    risk_assessment: High for applications parsing complex file formats (Office, PDF, XML). Medium for applications consuming structured schema-validated data from the CDS.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for applications parsing complex file formats (Office, PDF, XML). Medium for applications consuming structured schema-validated data from the CDS.'
     false_positives: All inbound CDS content passes through the same validation and malware scanning pipeline as direct user uploads with no bypass based on CDS transfer origin.
     function: architecture
     stride: elevation-of-privilege
@@ -655,7 +661,7 @@ custom_risk_definitions:
     action: Restrict broker write access exclusively to the authenticated application service account and enforce message integrity verification on dequeue.
     mitigation: Restrict write access to all transfer queues to the application service account only — no human accounts, no direct developer access. Restrict outbound queue read access to the CDS interface service account only. Apply message-level integrity signing at enqueue and verify at dequeue to detect tampering. Enforce queue-level encryption at rest. Set aggressive message TTL to minimize the staging window. Log all enqueue and dequeue events with actor identity. Alert on any enqueue event from an identity other than the approved service account.
     references: NIST SP 800-53 SC-8 (Transmission Integrity); NIST SP 800-53 AC-3 (Access Enforcement); NIST SP 800-53 AU-2 (Event Logging)
-    risk_assessment: Critical. Unauthorized broker write access nullifies all application-layer controls on the transfer path.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical. Unauthorized broker write access nullifies all application-layer controls on the transfer path.'
     false_positives: Broker write access is restricted to the application service account enforced at the queue policy level, message integrity signing is implemented, and queue access logs are forwarded to the SIEM with alerting on unexpected write origins.
     function: architecture
     stride: tampering
@@ -676,7 +682,7 @@ custom_risk_definitions:
     action: Enforce multi-layer pre-submission sanitization and require explicit human release authority approval before content is queued for the CDS.
     mitigation: Implement automated sanitization that strips metadata, revision history, tracked changes, embedded objects, and document properties before human review. Require explicit release authority sign-off (logged with identity and timestamp) as a mandatory gate before content enters the downward transfer queue — sanitization alone is not sufficient. Maintain an approved content type allowlist and reject any format the sanitization tooling cannot fully process. Log all sanitization actions and their results in the transfer audit record. Apply secondary content inspection after sanitization as a defense-in-depth check.
     references: DoD CDS implementation guidance; ICD 710 (Classification Management); NIST SP 800-53 SI-12 (Information Management and Retention); DoD Manual 5200.01 (Information Security Program)
-    risk_assessment: Critical for any automated or partially-automated downward release workflow. The consequence of a miss is a classified spill — there is no compensating control after content passes the CDS filter.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Medium, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any automated or partially-automated downward release workflow. The consequence of a miss is a classified spill — there is no compensating control after content passes the CDS filter.'
     false_positives: All content undergoes multi-layer automated sanitization followed by mandatory human release authority review and approval before reaching the transfer queue, with full audit logging of both steps.
     function: architecture
     stride: information-disclosure
@@ -696,7 +702,7 @@ custom_risk_definitions:
     action: Enforce release authority approval as a server-side gate on every downward transfer submission path and restrict high-side broker write access to the approval-gated application workflow only.
     mitigation: Enforce release authority approval as server-side middleware on every submission ingestion path — not only on the primary UI workflow. Restrict write access to the high-side transfer broker queue exclusively to the application service account that runs after approval is confirmed. Implement approval token validation at queue write time — the queue write must carry a cryptographically signed approval token that is verified before the message is accepted. Log every release authority decision with the approver identity, timestamp, content identifier, and approval outcome. Alert on any queue write event not accompanied by a valid approval token.
     references: DoD CDS implementation guidance; NIST SP 800-53 AC-3 (Access Enforcement); NIST SP 800-53 AU-2 (Event Logging); ICD 710 (Classification Management)
-    risk_assessment: Critical. There is no compensating control downstream of a release authority bypass — content that reaches the CDS without approval has not been reviewed for releasability.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical. There is no compensating control downstream of a release authority bypass — content that reaches the CDS without approval has not been reviewed for releasability.'
     false_positives: Every submission path enforces approval gating at the server-side middleware layer, high-side broker write access is restricted to the post-approval application service account, and approval tokens are cryptographically verified at queue write time.
     function: architecture
     stride: elevation-of-privilege
@@ -716,7 +722,7 @@ custom_risk_definitions:
     action: Enforce two-person integrity on high-side release authority (submitter and approver must be different individuals) and deploy behavioral analytics on submission patterns to surface deviations from an individual's baseline before release occurs.
     mitigation: Enforce separation of duties between the submitter role and the release authority role — no individual should hold both, and the approval workflow should technically prevent self-approval. Require two-person integrity (dual authorization) for release of any content above a defined sensitivity threshold, so a single insider cannot complete a release unilaterally even with full legitimate access. Deploy user and entity behavior analytics (UEBA) on submission activity — volume, timing, content sensitivity, and deviation from an individual's historical baseline — as a detection layer independent of content inspection, since deliberately malicious content is by definition designed to pass content-based filters. Integrate with the organization's insider threat program so submission-pattern anomalies are correlated against other insider threat indicators (e.g., adverse personnel actions, upcoming separation) rather than evaluated in isolation. Apply least-privilege and need-to-know scoping so submitter/approver access is granted only for the specific content domains an individual's role actually requires, limiting the blast radius of any one compromised or malicious account. Periodically rotate personnel in the release authority role.
     references: DoDD 5205.16 (The DoD Insider Threat Program); National Insider Threat Policy and Minimum Standards (implementing EO 13587); NIST SP 800-53 AC-5 (Separation of Duties); NIST SP 800-53 PM-12 (Insider Threat Program); NIST SP 800-53 AU-6 (Audit Record Review, Analysis, and Reporting)
-    risk_assessment: Critical for any high-side submitter or release authority role, regardless of how well the technical sanitization and approval workflow is implemented — this risk is orthogonal to those controls rather than a failure mode of them. Cannot be fully mitigated by application-layer controls alone; requires organizational insider threat program integration.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at High, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any high-side submitter or release authority role, regardless of how well the technical sanitization and approval workflow is implemented — this risk is orthogonal to those controls rather than a failure mode of them. Cannot be fully mitigated by application-layer controls alone; requires organizational insider threat program integration.'
     false_positives: Separation of duties is enforced between the submitter and release authority roles with no individual holding both, two-person integrity is required for release of sensitive content, UEBA-based behavioral monitoring is deployed on submission activity, and submission-pattern anomalies are correlated with the organization's insider threat program.
     function: architecture
     stride: information-disclosure
@@ -737,7 +743,7 @@ custom_risk_definitions:
     action: Implement independent high-side validation of inbound low-side content integrity and maintain anomaly detection on inbound data patterns.
     mitigation: Apply schema validation and business logic checks to all inbound low-side content on the high side — do not treat CDS approval as a guarantee of data integrity. Implement anomaly detection on inbound data patterns (statistical outliers, unexpected value ranges, structural deviations from baseline) that may indicate manipulation. Maintain a data provenance chain — log the low-side source identity, submission timestamp, and content hash for every inbound transfer. For high-confidence mission-critical data feeds, implement out-of-band verification against a secondary source where available.
     references: NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity); NIST SP 800-53 AU-10 (Non-Repudiation); DoD CDS implementation guidance
-    risk_assessment: High for high-side systems that make operational or analytical decisions based on low-side data feeds. Medium for systems where low-side data is advisory or cross-referenced against independent high-side sources.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for high-side systems that make operational or analytical decisions based on low-side data feeds. Medium for systems where low-side data is advisory or cross-referenced against independent high-side sources.'
     false_positives: Inbound low-side data is treated as untrusted and undergoes independent schema validation, anomaly detection, and provenance logging before being used in any high-side analytical or operational workflow.
     function: architecture
     stride: tampering
@@ -758,7 +764,7 @@ custom_risk_definitions:
     action: Restrict high-side broker write access exclusively to the post-approval application service account and enforce message integrity signing on all queue operations.
     mitigation: Restrict write access to the high-side outbound transfer queue exclusively to the application service account that operates after release authority approval is confirmed — no human accounts, no developer access, no other service accounts. Apply message-level integrity signing at enqueue and verify at dequeue. Restrict outbound queue read access to the CDS interface service account only. Set aggressive message TTL on both queues to minimize the staging window for above-releasable content. Log all enqueue and dequeue events with actor identity. Alert immediately on any queue write from an unexpected identity.
     references: NIST SP 800-53 SC-8 (Transmission Integrity); NIST SP 800-53 AC-3 (Access Enforcement); NIST SP 800-53 AU-2 (Event Logging); DoD CDS implementation guidance
-    risk_assessment: Critical. Unauthorized write access to the high-side outbound queue nullifies all release authority and sanitization controls on the downward transfer path.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical. Unauthorized write access to the high-side outbound queue nullifies all release authority and sanitization controls on the downward transfer path.'
     false_positives: Write access to the high-side outbound queue is restricted to the post-approval service account enforced at the queue policy level, message integrity signing is implemented, and all queue access events are logged and alerted on anomalous writes.
     function: architecture
     stride: tampering
@@ -779,7 +785,7 @@ custom_risk_definitions:
     action: Implement transfer rate normalization on the CDS interface to degrade timing channel bandwidth, and restrict CDS response signals to binary approved/rejected with no timing information an observer could correlate.
     mitigation: Implement transfer rate normalization on the CDS interface (fixed inter-transfer intervals or jitter injection) to degrade timing channel bandwidth. Restrict CDS response signals to binary approved/rejected with no timing information that could be correlated by an observer. Apply statistical analysis to transfer patterns to detect non-random timing that may indicate covert signaling. Normalize or strip approved metadata fields (filenames, timestamps, page/record counts) that are not operationally required, to close storage-channel avenues.
     references: NIST SP 800-53 SC-31 (Covert Channel Analysis); DoD CDS implementation guidance; UCDMO CDS baseline requirements
-    risk_assessment: High for timing and storage channels on any CDS submitter or receiver interface — low bandwidth but persistent and hard to detect through content inspection alone.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for timing and storage channels on any CDS submitter or receiver interface — low bandwidth but persistent and hard to detect through content inspection alone.'
     false_positives: Covert channel analysis has been formally conducted and documented per NIST SP 800-53 SC-31 for this interface, confirming transfer rate normalization, binary-only CDS response signaling, and metadata normalization are implemented.
     function: architecture
     stride: information-disclosure
@@ -804,7 +810,7 @@ custom_risk_definitions:
     action: Sandbox script execution and utilize logic-less templates.
     mitigation: Strictly avoid dynamic `eval()` functions. If dynamic execution is absolutely required, run the logic within a strictly isolated, unprivileged sandbox container (e.g., gVisor) with zero network egress.
     references: DoD DevSecOps Reference Architecture
-    risk_assessment: Critical risk if raw user input is evaluated directly as code or templates.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical risk if raw user input is evaluated directly as code or templates.'
     false_positives: Input is strictly validated against a hardcoded, safe regex allow-list before any backend processing.
     function: architecture
     stride: elevation-of-privilege
@@ -812,44 +818,24 @@ custom_risk_definitions:
     detection_logic: Utilize robust SAST/DAST tools in the CI/CD pipeline to specifically flag unsafe execution functions.
     risks_identified: {}
 
-  Malicious File Parsing and XXE:
+  Malicious Archive Processing (Zip Slip and Decompression Bombs):
     id: malicious-file-parsing
     baseline_likelihood: possible
     baseline_impact: medium
     finding_class: control-not-evidenced
-    description: 'The application parses complex user-uploaded files such as XML, PDF, or ZIP archives, which can carry XXE, path traversal, or decompression-bomb payloads.'
-    impact: 'If this risk remains unmitigated, a crafted file can cause server-side request forgery, unauthorized file reads, or denial of service.'
+    description: 'The application extracts or decompresses user-supplied archives (ZIP, TAR, GZIP and similar), which can carry entries whose paths escape the extraction directory (zip slip) or that expand to exhaust disk and memory (decompression bombs).'
+    impact: 'If this risk remains unmitigated, a crafted archive can overwrite files outside the extraction directory -- including code or configuration the application later loads -- or take the service down by exhausting disk or memory.'
     asvs: V12 - File and Resources
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
-    action: Implement secure XML parsing and strict file type validation.
-    mitigation: Disable external entity resolution (DTD) in all XML parsers. Use strict allow-lists for MIME types and utilize an ICAP-integrated antivirus scanner for all uploads before processing.
-    references: NIST SP 800-53 SI-3 (Malicious Code Protection)
-    risk_assessment: High if parsing untrusted B2B or external user files.
-    false_positives: 'The application only stores files blindly in blob storage without actively parsing their internal contents. NOTE: Threagile''s built-in ''xml-external-entity'' rule may generate a partially overlapping finding on assets with XML data flows, and its built-in ''missing-file-validation'' rule fires on the same file-accepting assets more generically (filename/type validation only); this entry provides broader coverage including Zip Bomb and LFI vectors and fires on the feature:file-upload-processing tag regardless of data flow modeling completeness.'
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+    action: Validate every archive entry's resolved path against the extraction directory and cap total expanded size, entry count and compression ratio before extracting.
+    mitigation: Resolve each archive entry's canonical path and reject any that falls outside the target directory (or is an absolute path or symlink); enforce limits on total uncompressed size, number of entries, nesting depth and compression ratio while streaming, aborting as soon as one is exceeded; extract into a dedicated, size-limited, non-executable location with least-privilege file permissions.
+    references: CWE-22 (Path Traversal, zip slip); CWE-409 (Improper Handling of Highly Compressed Data); NIST SP 800-53 SI-10 (Information Input Validation)
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High if parsing untrusted B2B or external user files.'
+    false_positives: 'The application never extracts or decompresses user-supplied archives. XML external entities and generic file validation are covered by Threagile''s built-in xml-external-entity and missing-file-validation rules, which read the asset''s native data_formats_accepted; this category covers only archive extraction, which they do not.'
     function: architecture
     stride: tampering
-    cwe: 611
+    cwe: 22
     detection_logic: Scan source code via SAST for insecure XML parser configurations and monitor WAF logs for standard XXE payloads.
-    risks_identified: {}
-
-  Insecure Deserialization:
-    id: insecure-deserialization
-    baseline_likelihood: possible
-    baseline_impact: high
-    finding_class: control-not-evidenced
-    description: 'The asset deserializes objects from user-supplied or externally sourced data using a mechanism capable of instantiating arbitrary objects, such as Java native serialization or Python pickle.'
-    impact: 'If this risk remains unmitigated, a crafted serialized payload can execute a gadget chain achieving remote code execution with the application''s own privileges.'
-    asvs: V5 - Validation, Sanitization and Encoding
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
-    action: Replace unsafe deserialization with data-format-based deserialization (JSON, Protobuf) or implement strict type filtering before any object construction.
-    mitigation: 'Replace Java native serialization, .NET BinaryFormatter, and Python pickle for user-controlled data with safe data formats (JSON with a schema validator, Protocol Buffers, MessagePack with type constraints). If native serialization cannot be eliminated immediately: implement a deserialization filter (Java 9+ ObjectInputFilter, .NET SerializationBinder) that whitelists only expected class types and rejects all others. Run applications using deserializing code in a hardened sandbox with no outbound network access and minimal filesystem permissions to limit post-exploitation impact. Ensure agent-based RASP controls flag deserialization activity.'
-    references: 'OWASP Top 10: A08:2021 (Software and Data Integrity Failures); NIST SP 800-53 SI-10 (Information Input Validation); CWE-502'
-    risk_assessment: Critical for Java applications using ObjectInputStream or .NET applications using BinaryFormatter on externally-sourced data. High for Python/Ruby applications using pickle/Marshal on user-controlled input.
-    false_positives: 'All deserialization of externally-sourced data uses type-safe formats (JSON, Protobuf) with schema validation — no native object serialization formats are accepted from user-controlled input. NOTE: Threagile''s built-in ''deserialization-of-untrusted-data'' rule may generate an overlapping finding if data flows are fully modeled; this injected risk provides coverage when the data flow model is sparse.'
-    function: architecture
-    stride: elevation-of-privilege
-    cwe: 502
-    detection_logic: Run SAST rules targeting unsafe deserialization calls (ObjectInputStream, BinaryFormatter, pickle.loads, Marshal.load, YAML.load) in the CI/CD pipeline. Monitor Java application logs for ClassNotFoundException or InvalidClassException which may indicate probing with malformed gadget chains. Deploy a Java agent (e.g., SerialKiller) to intercept and log all deserialization events in production.
     risks_identified: {}
 
   Server-Side PDF Generation Injection:
@@ -864,7 +850,7 @@ custom_risk_definitions:
     action: Disable JavaScript execution and external resource loading in the PDF renderer and sanitize all user-supplied content before template insertion.
     mitigation: 'Disable JavaScript execution in the PDF renderer configuration (wkhtmltopdf: --disable-javascript; Puppeteer: set javascript=false). Disable external resource loading (--no-background, --disable-local-file-access for wkhtmltopdf). Sanitize all user-supplied content with a strict HTML sanitizer (e.g., DOMPurify) before insertion into the PDF template — allow only a safe subset of formatting tags. Run the PDF renderer process in a network-isolated sandbox with no outbound connectivity and no access to the filesystem beyond the template directory. Apply the same IMDS blocking controls as for SSRF.'
     references: NIST SP 800-53 SC-7 (Boundary Protection); NIST SP 800-53 SI-10 (Information Input Validation); Azure IMDS security guidance
-    risk_assessment: High for renderers with JavaScript enabled that incorporate unsanitized user content. Medium for renderers with JavaScript disabled but external URL loading enabled.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for renderers with JavaScript enabled that incorporate unsanitized user content. Medium for renderers with JavaScript disabled but external URL loading enabled.'
     false_positives: The PDF renderer runs in a fully network-isolated sandbox with JavaScript and external resource loading disabled, and all user-supplied content is sanitized with a vetted HTML sanitizer before template insertion.
     function: architecture
     stride: information-disclosure
@@ -884,7 +870,7 @@ custom_risk_definitions:
     action: Validate and sanitize all user-supplied values used in email construction and enforce SPF/DKIM/DMARC on the sending domain.
     mitigation: "Strip or reject CRLF sequences (\r\n, \r, \n) from all user-supplied values used in email headers before constructing the message. Use a well-maintained email library that handles header encoding safely rather than building raw SMTP messages via string concatenation. Validate recipient addresses against an allowlist or strict RFC 5322 format check — reject addresses containing special characters. Enforce SPF, DKIM, and DMARC (p=reject) on the sending domain. Log all outbound email with sender identity, recipient, and subject for audit."
     references: NIST SP 800-53 SI-10 (Information Input Validation); NIST SP 800-53 SC-7; CWE-93 (CRLF Injection)
-    risk_assessment: Medium for applications sending transactional email with partial user-controlled content. Escalates to High if arbitrary recipient addresses can be injected or if the sending domain has no DMARC enforcement.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium for applications sending transactional email with partial user-controlled content. Escalates to High if arbitrary recipient addresses can be injected or if the sending domain has no DMARC enforcement.'
     false_positives: All email recipient addresses are drawn exclusively from a pre-validated internal directory with no user-supplied address input — user input only influences email body content which is sanitized before insertion.
     function: architecture
     stride: spoofing
@@ -904,7 +890,7 @@ custom_risk_definitions:
     action: Implement HMAC-SHA256 signature verification on all inbound webhook payloads before processing.
     mitigation: Verify the HMAC-SHA256 (or provider-specified) signature on every inbound webhook request before performing any business logic. Use a constant-time comparison function to prevent timing oracle attacks against the signature check. Reject requests with missing, malformed, or expired timestamps (replay prevention). Validate that the webhook source IP is within the provider's documented egress range as a defense-in-depth layer. Log all signature verification failures and alert on elevated failure rates.
     references: NIST SP 800-53 SC-8 (Transmission Confidentiality and Integrity); NIST SP 800-53 SI-10 (Information Input Validation)
-    risk_assessment: High for webhooks that trigger write operations, financial transactions, or account management actions. Medium for read-only notification webhooks where the worst case is a spurious notification.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for webhooks that trigger write operations, financial transactions, or account management actions. Medium for read-only notification webhooks where the worst case is a spurious notification.'
     false_positives: The webhook endpoint is protected by mutual TLS client certificate authentication with the sending system's certificate pinned — no HMAC signature is needed because the transport layer provides equivalent integrity assurance.
     function: architecture
     stride: spoofing
@@ -924,7 +910,7 @@ custom_risk_definitions:
     action: Sanitize all exported cell values against formula injection, enforce per-user scope on export queries, and enforce authorization checks on bulk import operations.
     mitigation: Sanitize all string values written to CSV/Excel exports by prefixing dangerous leading characters (=, +, -, @, tab, carriage return) with a single quote or space. Enforce per-user data scope on all export queries — apply the same row-level security as individual record access, never export the full table. Implement hard size limits on both import and export operations with pagination. Require re-authentication or MFA confirmation before bulk export of CUI. Log all bulk export operations with the requesting user identity, timestamp, and record count.
     references: OWASP CSV Injection; NIST SP 800-53 AC-3 (Access Enforcement); NIST SP 800-53 SC-5 (DoS Protection)
-    risk_assessment: High for export operations on CUI datasets without per-user scoping. Medium for import operations with authorization checks. Escalates to Critical if export is available to unauthenticated or low-privilege users.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for export operations on CUI datasets without per-user scoping. Medium for import operations with authorization checks. Escalates to Critical if export is available to unauthenticated or low-privilege users.'
     false_positives: Export operations enforce row-level security identical to individual record access, all exported string values are sanitized against formula injection, and export size is bounded by a hard per-request limit.
     function: architecture
     stride: information-disclosure
@@ -944,7 +930,7 @@ custom_risk_definitions:
     action: Disable introspection in production, enforce query depth and complexity limits, and apply field-level authorization to all sensitive resolvers.
     mitigation: Disable GraphQL introspection in production environments — allow only in non-production. Implement query depth limiting (maximum 5-7 levels) and query complexity analysis with hard limits per request. Disable query batching or apply strict per-batch limits. Apply authorization checks at the resolver level for every sensitive field — do not rely solely on type-level access controls. Implement query cost analysis and rate limiting keyed to the authenticated user identity. Log all GraphQL operations with the full query for SOC analysis.
     references: OWASP GraphQL Cheat Sheet; NIST SP 800-53 SC-5 (DoS Protection); NIST SP 800-53 AC-3 (Access Enforcement)
-    risk_assessment: High if introspection is enabled in production or if query depth/complexity limits are absent. Medium with introspection disabled and depth limits enforced but field-level authorization not audited.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High if introspection is enabled in production or if query depth/complexity limits are absent. Medium with introspection disabled and depth limits enforced but field-level authorization not audited.'
     false_positives: Introspection is disabled in production, query depth and complexity limits are enforced, and all resolvers have been audited for field-level authorization coverage — documented with test evidence.
     function: architecture
     stride: information-disclosure
@@ -965,7 +951,7 @@ custom_risk_definitions:
     action: Enforce strict query sanitization, pagination, and index-level RBAC.
     mitigation: Do not expose the raw search API to users. Abstract all search requests through an application-layer proxy that enforces rate-limiting, strict query timeouts (to prevent DoS), and filters the results based on the user's explicit permissions before returning data.
     references: NIST SP 800-53 SC-5 (Denial of Service Protection)
-    risk_assessment: High risk if the raw search endpoint is exposed or if queries are unbounded.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High risk if the raw search endpoint is exposed or if queries are unbounded.'
     false_positives: The search index only contains public, non-sensitive data.
     function: architecture
     stride: information-disclosure
@@ -985,7 +971,7 @@ custom_risk_definitions:
     action: Validate the Origin header on WebSocket upgrade requests, require explicit token-based authentication, and enforce wss:// only.
     mitigation: Validate the Origin header on all WebSocket upgrade requests against a strict allowlist of permitted origins — reject connections from unexpected origins. Require an explicit authentication token (not relying solely on cookies) passed in the initial handshake or first message, and validate it server-side. Periodically re-validate the session token for long-lived connections (e.g., every 15 minutes). Enforce wss:// (TLS) for all WebSocket connections — reject plain ws:// upgrade requests. Implement per-connection message rate limiting.
     references: NIST SP 800-53 SC-8 (Transmission Integrity); OWASP HTML5 Security Cheat Sheet; CWE-346 (Origin Validation Error)
-    risk_assessment: Medium for read-only WebSocket endpoints. Escalates to High for endpoints processing write operations or streaming CUI to the client.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium for read-only WebSocket endpoints. Escalates to High for endpoints processing write operations or streaming CUI to the client.'
     false_positives: WebSocket upgrade requests validate the Origin header against a strict allowlist, require explicit token-based authentication independent of cookies, and all connections use wss://.
     function: architecture
     stride: spoofing
@@ -1005,7 +991,7 @@ custom_risk_definitions:
     action: Restrict CORS to an explicit allow-list of trusted origins with credentials disabled for cross-origin requests, and enforce a restrictive Content-Security-Policy frame-ancestors directive on every rendered page.
     mitigation: Replace a reflected or wildcard Access-Control-Allow-Origin with an explicit allow-list of trusted origins, and never combine a wildcard origin with Access-Control-Allow-Credentials. Set a restrictive Content-Security-Policy frame-ancestors directive (or the legacy X-Frame-Options header) on every page capable of a privileged action, permitting framing only from origins that genuinely need to embed it, none by default. Treat this as a response-header configuration distinct from CSRF protection -- CORS/framing policy governs cross-origin reads and UI embedding, not forged same-origin-looking requests, which CSRF tokens address separately.
     references: OWASP Top 10:2025 A02; CWE-942; CWE-1021; MITRE CAPEC-103, CAPEC-111
-    risk_assessment: Medium for any browser-facing asset with a permissive CORS policy or no frame-ancestors/X-Frame-Options directive. Escalates to High where a privileged, state-changing action is reachable from a framed or cross-origin-read page.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium for any browser-facing asset with a permissive CORS policy or no frame-ancestors/X-Frame-Options directive. Escalates to High where a privileged, state-changing action is reachable from a framed or cross-origin-read page.'
     false_positives: The asset is tagged ops:cors-csp-hardened confirming CORS is restricted to an explicit allow-list with credentials disabled for cross-origin requests, and a restrictive frame-ancestors/X-Frame-Options directive is enforced on every rendered page.
     function: architecture
     stride: spoofing
@@ -1025,7 +1011,7 @@ custom_risk_definitions:
     action: Re-validate user permissions at job execution time, not only at enqueue time, and restrict queue write access to the application service account only.
     mitigation: Re-validate the originating user's current permissions when a job is dequeued and executed — do not assume permissions granted at enqueue time are still valid. Store the minimum necessary parameters in job payloads — avoid storing CUI or credentials in job queue messages; reference them by ID and fetch at execution time with fresh authorization checks. Restrict queue write access to the application service account only — no direct user or external access to the job queue. Sanitize job parameters for injection before constructing any downstream queries or commands. Implement job payload signing to detect parameter tampering in transit.
     references: NIST SP 800-53 AC-3 (Access Enforcement); CWE-367 (TOCTOU Race Condition); NIST SP 800-53 AU-3 (Audit Record Content)
-    risk_assessment: Medium for background jobs processing non-CUI data. Escalates to High for jobs performing bulk CUI operations, cross-tenant actions, or executing with elevated service account privileges.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium for background jobs processing non-CUI data. Escalates to High for jobs performing bulk CUI operations, cross-tenant actions, or executing with elevated service account privileges.'
     false_positives: All background jobs re-validate user permissions at execution time, job queues are accessible only to the application service account, and no CUI is stored in job payloads.
     function: architecture
     stride: elevation-of-privilege
@@ -1045,7 +1031,7 @@ custom_risk_definitions:
     action: Include all response-influencing parameters in cache keys, enforce authentication on cache servers, and apply CUI-appropriate TTLs.
     mitigation: Include all request parameters that influence the response (user ID, tenant ID, role, content-type) in cache key construction — never cache user-specific responses under user-agnostic keys. Require authentication (Redis AUTH with a strong password or Azure Cache for Redis with Entra ID auth) on all cache server connections. Apply network micro-segmentation to restrict cache server access to only the application pods that require it. Set TTLs on all cache entries containing user data — do not cache CUI without a TTL of 15 minutes or less. Never cache responses containing session tokens, credentials, or CUI at a shared cache layer — use client-side or private caches for sensitive per-user data.
     references: NIST SP 800-53 SC-28 (Protection of Information at Rest); NIST SP 800-53 AC-3 (Access Enforcement); OWASP Cache Poisoning
-    risk_assessment: High for Redis/Memcached instances without authentication accessible to multiple application pods. Critical if session tokens or CUI are cached at the shared layer without proper key scoping.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for Redis/Memcached instances without authentication accessible to multiple application pods. Critical if session tokens or CUI are cached at the shared layer without proper key scoping.'
     false_positives: Cache server requires authentication, is network-restricted to only authorized application pods, cache keys include all user- and tenant-scoping parameters, and no CUI or session data is stored at the shared cache layer.
     function: architecture
     stride: information-disclosure
@@ -1065,7 +1051,7 @@ custom_risk_definitions:
     action: Establish and enforce a cryptographically signed plugin allow-list; disable end-user self-service plugin installation entirely.
     mitigation: Maintain a centrally managed, AO-approved allow-list of permitted plugins verified by vendor code signing. Disable end-user plugin installation via platform policy. Require security review and SAST scan of all plugin code before admission to the allow-list. Enforce plugin execution in a sandboxed context with restricted API surface where the platform supports it. Audit installed plugins periodically against the allow-list and alert on unauthorized additions.
     references: DoD DevSecOps Reference Architecture; NIST SP 800-53 CM-7 (Least Functionality); NIST SP 800-53 SA-12 (Supply Chain Protection)
-    risk_assessment: Critical if end-user or admin plugin installation is permitted without vetting. High if installation requires elevated privilege but no code review gate exists.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Medium, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical if end-user or admin plugin installation is permitted without vetting. High if installation requires elevated privilege but no code review gate exists.'
     false_positives: All installed plugins are internally developed, cryptographically signed by an internal PKI, and have passed mandatory security review — no third-party marketplace plugins are present.
     function: architecture
     stride: elevation-of-privilege
@@ -1085,7 +1071,7 @@ custom_risk_definitions:
     action: Disable clipboard redirection in AVD host pool RDP properties and enforce via Azure Policy.
     mitigation: Set the AVD host pool RDP property `redirectclipboard:i:0` to disable clipboard redirection. Enforce this configuration via Azure Policy to prevent drift. Restrict local resource redirection (drives, printers, USB) to GFE devices only using Conditional Access device compliance policies. Enable AVD connection diagnostics and forward to the SIEM for session activity monitoring.
     references: NIST SP 800-53 AC-19 (Access Control for Mobile Devices); NIST SP 800-53 AC-3 (Access Enforcement); DoD Zero Trust Reference Architecture
-    risk_assessment: High for deployments permitting non-GFE or personally-owned device access to AVD sessions containing CUI. Medium if access is restricted to GFE devices with Defender for Endpoint enrolled.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for deployments permitting non-GFE or personally-owned device access to AVD sessions containing CUI. Medium if access is restricted to GFE devices with Defender for Endpoint enrolled.'
     false_positives: Clipboard redirection is disabled at the host pool level and enforced by Azure Policy with no active exceptions on file.
     function: operations
     stride: information-disclosure
@@ -1111,7 +1097,7 @@ custom_risk_definitions:
     action: Enforce API Gateway rate limiting and pagination.
     mitigation: Implement strict rate limiting (e.g., token-bucket algorithm) at the Ingress or API Gateway layer. Require robust authentication and enforce hard limits on database query response sizes.
     references: NIST SP 800-53 SC-5 (Denial of Service Protection)
-    risk_assessment: Medium risk of availability disruption during high-volume events.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium risk of availability disruption during high-volume events.'
     false_positives: API is shielded by an upstream enterprise API Gateway that successfully handles rate limits.
     function: operations
     stride: denial-of-service
@@ -1131,7 +1117,7 @@ custom_risk_definitions:
     action: Maintain a current, authoritative inventory of every API version and environment reachable from the internet, and formally decommission -- not just stop documenting -- any version no longer in active use.
     mitigation: 'Maintain a single authoritative API inventory (e.g. an API gateway''s own registered-route list, or a dedicated API catalog tool) as the source of truth for what''s actually deployed and reachable -- not a wiki page that drifts from reality. Require every API version to carry an explicit sunset/decommission date at the time a newer version ships, and enforce it: the old version returns 410 Gone or is removed from the ingress, not just left running unmonitored. Extend the same rate-limiting, WAF, and monitoring coverage applied to the current API version to every other reachable version. Periodically scan the organization''s own internet-facing IP ranges and DNS records for API endpoints not present in the authoritative inventory.'
     references: 'OWASP API Security Top 10: API9:2023 (Improper Inventory Management); NIST SP 800-53 CM-8 (System Component Inventory); NIST SP 800-53 CA-7 (Continuous Monitoring)'
-    risk_assessment: Medium as a standalone structural gap; escalates sharply once any deprecated version is confirmed to carry a control the current version has since fixed (a removed rate limit, a patched vulnerability, weaker authentication), since that gap is now silently exploitable.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium as a standalone structural gap; escalates sharply once any deprecated version is confirmed to carry a control the current version has since fixed (a removed rate limit, a patched vulnerability, weaker authentication), since that gap is now silently exploitable.'
     false_positives: A single authoritative API inventory exists, every reachable version is present in it, and every deprecated version has been formally decommissioned (returns 410 Gone or is removed from the ingress) rather than merely undocumented.
     function: architecture
     stride: elevation-of-privilege
@@ -1151,7 +1137,7 @@ custom_risk_definitions:
     action: Identify which business flows on this asset are sensitive enough to warrant anti-automation controls, and apply bot detection, behavioral analysis, or step-up friction to each one specifically.
     mitigation: 'Identify this asset''s sensitive business flows (account creation, checkout, application submission, bulk redemption) separately from its general API surface, since generic rate limiting alone does not stop a low-and-slow distributed automation campaign. Apply flow-specific controls: CAPTCHA or proof-of-work at flow entry, device/behavioral fingerprinting to detect non-human interaction patterns, velocity limits scoped to the specific flow (not just the API as a whole), and step-up authentication for the highest-value flows. Monitor for completion-rate and timing anomalies characteristic of automation (near-instant form completion, identical inter-request timing) rather than relying on volume alone.'
     references: 'OWASP API Security Top 10: API6:2023 (Unrestricted Access to Sensitive Business Flows); OWASP Automated Threats to Web Applications (OAT); NIST SP 800-53 SC-5 (Denial of Service Protection)'
-    risk_assessment: High for any publicly-reachable flow with direct business value (inventory, credential issuance, financial approval) and no anti-automation control distinct from generic rate limiting.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any publicly-reachable flow with direct business value (inventory, credential issuance, financial approval) and no anti-automation control distinct from generic rate limiting.'
     false_positives: Every identified sensitive business flow on this asset has a flow-specific anti-automation control (CAPTCHA, behavioral fingerprinting, flow-scoped velocity limits, or step-up authentication) confirmed active, distinct from generic API rate limiting.
     function: architecture
     stride: denial-of-service
@@ -1171,32 +1157,12 @@ custom_risk_definitions:
     action: Apply the same schema validation, size limits, and content sanitization to every external API response this asset consumes that would be applied to direct user input.
     mitigation: 'Validate every external API response against an explicit, versioned schema before using its content -- never deserialize directly into internal objects without validation. Apply response size and depth limits to prevent resource exhaustion from an oversized or maliciously nested payload. Treat redirects and TLS certificates from the external API with the same scrutiny as the response body -- do not blindly follow redirects. Apply timeouts and circuit-breaking so a slow or unresponsive upstream API cannot cascade into this asset''s own availability. Sanitize any response content that will be rendered, logged, or passed to a downstream system exactly as if it were direct user input, since from this asset''s perspective it originates outside its own trust boundary.'
     references: 'OWASP API Security Top 10: API10:2023 (Unsafe Consumption of APIs); NIST SP 800-53 SI-10 (Information Input Validation)'
-    risk_assessment: Medium as a standalone structural gap; escalates to High if the consumed API is a soft or unauthenticated third-party integration whose own security posture this organization cannot verify.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium as a standalone structural gap; escalates to High if the consumed API is a soft or unauthenticated third-party integration whose own security posture this organization cannot verify.'
     false_positives: Every external API response is validated against an explicit schema with size/depth limits enforced, and response content is sanitized identically to direct user input before use.
     function: architecture
     stride: tampering
     cwe: 20
     detection_logic: Audit integration code for direct deserialization of external API responses without schema validation. Monitor for anomalous response sizes, depths, or processing latency from each external API dependency as a signal of upstream compromise or malfunction.
-    risks_identified: {}
-
-  Missing Web Application Firewall on Internet-Facing Asset:
-    id: missing-waf-internet-facing
-    baseline_likelihood: possible
-    baseline_impact: low
-    finding_class: control-not-evidenced
-    description: 'This internet-facing asset has no Web Application Firewall with a managed ruleset in its ingress path.'
-    impact: 'If this risk remains unmitigated, the application relies entirely on its own application-layer controls, with no network-layer blocking of common injection and protocol-level attacks.'
-    asvs: V1 - Architecture, Design and Threat Modeling
-    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Virtual_Patching_Cheat_Sheet.html
-    action: Deploy a WAF with a managed ruleset in Prevention mode in the ingress path for all internet-facing assets.
-    mitigation: Deploy Azure Application Gateway WAF v2 or Azure Front Door WAF in Prevention mode with the OWASP 3.2 or Microsoft-managed DRS ruleset enabled. Configure WAF to log all detected requests to the SIEM. Enable bot protection rules. Tune custom rules to reduce false positives before enabling Prevention mode. Tag the ingress asset with ops:waf-enabled once WAF is confirmed in the ingress path and configured in Prevention mode.
-    references: NIST SP 800-53 SC-7 (Boundary Protection); NIST SP 800-53 SI-3 (Malicious Code Protection); DoD Cloud Computing SRG; Azure WAF best practices
-    risk_assessment: Medium as a standalone finding. Escalates to High when combined with other injection or input-validation findings on the same asset, as WAF absence removes the compensating control that would otherwise reduce their exploitability.
-    false_positives: Asset is tagged ops:waf-enabled confirming a WAF with a managed ruleset in Prevention mode is deployed and confirmed in the ingress path.
-    function: architecture
-    stride: tampering
-    cwe: 693
-    detection_logic: Verify Azure Application Gateway or Front Door resource configuration via Azure Resource Graph query — check WAF policy assignment and mode. Alert via Azure Policy on any internet-facing Application Gateway without an associated WAF policy in Prevention mode.
     risks_identified: {}
 
   Dangling DNS Record and Subdomain Takeover:
@@ -1211,7 +1177,7 @@ custom_risk_definitions:
     action: Reconcile this asset's DNS records against live resource state on a recurring basis, and remove any DNS record for a resource that has been deprovisioned or renamed.
     mitigation: Maintain an inventory of every DNS record pointing at a cloud-managed resource, and reconcile it against actual live resource state on a recurring schedule (e.g., via cloud provider APIs) — not only at the time a resource is decommissioned, since that is exactly the step that gets missed. Remove the DNS record as part of the same change that deprovisions or renames the underlying resource, not as a separate follow-up task. Where the platform supports it, use a DNS record type that fails closed (resolves to nothing) rather than remaining claimable when its target is gone.
     references: NIST SP 800-53 SC-20 (Secure Name/Address Resolution Service); OWASP Testing Guide (Subdomain Takeover)
-    risk_assessment: High for any internet-facing asset with DNS records that are not reconciled against live resource state on a recurring schedule.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any internet-facing asset with DNS records that are not reconciled against live resource state on a recurring schedule.'
     false_positives: The asset is tagged ops:dns-record-reconciled confirming its DNS records are reconciled against live resource state on a recurring schedule.
     function: operations
     stride: spoofing
@@ -1251,7 +1217,7 @@ custom_risk_definitions:
     action: Deploy an inline prompt injection classifier and enforce strict instruction/data channel separation.
     mitigation: Apply a prompt injection classifier (e.g., LlamaGuard, Azure AI Content Safety, Prompt Shield) before every model call. Treat the system prompt as a secret — never echo it in error messages or outputs. Enforce a structural separation between the instruction channel (system prompt) and the data channel (user content) using clearly delimited XML/JSON wrappers. Monitor for prompt obfuscation patterns (base64, Unicode homoglyphs, token smuggling). Apply rate limiting per user to slow enumeration attacks. Route requests through an AI guardrail that screens inputs and outputs, and test the guardrail itself against known bypass and obfuscation techniques -- configure it to fail closed when it errors or times out, never to pass traffic through unscreened.
     references: OWASP LLM Top 10 2026 LLM01 (Prompt Injection); MITRE ATLAS AML.T0051.000 (Direct Prompt Injection), AML.T0054 (LLM Jailbreak), AML.T0056 (Extract LLM System Prompt), AML.T0057 (LLM Data Leakage), AML.T0062 (Discover LLM Hallucinations), AML.T0065 (LLM Prompt Crafting), AML.T0068 (LLM Prompt Obfuscation), AML.T0069 (Discover LLM System Information); OWASP LLM01:2025, LLM02:2025
-    risk_assessment: Critical when the model has tool/plugin access. High for information-only deployments handling CUI.
+    risk_assessment: 'Likelihood starts at Very Likely; impact starts at Medium, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical when the model has tool/plugin access. High for information-only deployments handling CUI.'
     false_positives: Asset passes user input to a fully isolated, stateless model with no system prompt containing privileged data and no tool access. Likelihood is one level lower when an ai-guardrails asset is on the request path -- this asset calls it to screen traffic, or it calls this asset and every other non-monitoring caller is a guardrail too.
     function: architecture
     stride: elevation-of-privilege
@@ -1271,7 +1237,7 @@ custom_risk_definitions:
     action: 'Enforce strict content isolation: all externally sourced data must be structurally isolated from the instruction channel.'
     mitigation: Wrap all external content in clearly delimited data-only structural markers and instruct the model that content within those markers is passive data, never commands. Apply a secondary content safety classifier to all retrieved external content before it enters the context window. Implement human-in-the-loop confirmation before any tool action initiated in response to externally-sourced context. Implement output filtering to detect exfiltration patterns in model responses (base64 payloads, suspicious URLs). Monitor for rendered markdown that includes external image or link beacons. Route requests through an AI guardrail that screens inputs and outputs, and test the guardrail itself against known bypass and obfuscation techniques -- configure it to fail closed when it errors or times out, never to pass traffic through unscreened.
     references: OWASP LLM Top 10 2026 LLM01 (Prompt Injection); OWASP Top 10 for Agentic Applications 2026 ASI01 (Agent Goal Hijack); OWASP Agentic Skills Top 10 2026 AST05 (Untrusted External Instructions); OWASP GenAI Data Security 2026 DSGAI09 (Multimodal Cross-Channel Leakage, for cross-modal payloads); MITRE ATLAS AML.T0051.001 (Indirect Prompt Injection), AML.T0051.002 (Triggered), AML.T0066 (Retrieval Content Crafting), AML.T0067 (Trusted Output Components Manipulation), AML.T0073 (Impersonation), AML.T0074 (Masquerading), AML.T0093 (Prompt Infiltration via Public-Facing App), AML.T0094 (Delay Execution); OWASP LLM01:2025
-    risk_assessment: Critical in any agentic or RAG deployment that processes untrusted third-party content and has tool-use or write capabilities.
+    risk_assessment: 'Likelihood starts at Very Likely; impact starts at Medium, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical in any agentic or RAG deployment that processes untrusted third-party content and has tool-use or write capabilities.'
     false_positives: External content is always passed through a fully controlled sanitization pipeline and the LLM has no tool access and no ability to render active content. On an agent orchestrator it fires only when the agent reads content -- an outgoing link to a vector store, RAG pipeline, feature store, tool server, multi-agent gateway, or anything external or out of scope. Likelihood is one level lower when an ai-guardrails asset is on the request path -- this asset calls it to screen traffic, or it calls this asset and every other non-monitoring caller is a guardrail too.
     function: architecture
     stride: elevation-of-privilege
@@ -1314,7 +1280,7 @@ custom_risk_definitions:
     action: Apply integrity controls to all persisted agent memory and enforce strict access control on memory write paths.
     mitigation: Cryptographically sign or hash all persisted memory entries and verify integrity before loading. Restrict write access to memory stores to the authenticated agent runtime only. Implement memory content validation on load — flag entries that contain instruction-like language. Log all memory write and modification events. Implement session memory expiry and enforce periodic re-authentication of memory state.
     references: MITRE ATLAS AML.T0080 (AI Agent Context Poisoning — T0080.000 Memory, T0080.001 Thread), AML.T0081 (Modify AI Agent Configuration), AML.T0092 (Manipulate User LLM Chat History); OWASP Top 10 for Agentic Applications 2026 ASI06 (Memory and Context Poisoning)
-    risk_assessment: High for persistent-memory agentic systems with multi-session continuity. Medium for in-session-only memory with no cross-session persistence.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for persistent-memory agentic systems with multi-session continuity. Medium for in-session-only memory with no cross-session persistence.'
     false_positives: Agent uses in-context-window-only memory with no external persistence layer; memory is discarded entirely at session end. Likelihood is one level higher when the memory store is written from outside its trust boundary (internet-facing, or a non-readonly incoming link from another boundary).
     function: architecture
     stride: tampering
@@ -1402,7 +1368,7 @@ custom_risk_definitions:
     action: Insert a technical, AI-system-unbypassable human authorization gate between any AI-generated output and OT/safety-critical actuation, and document a standing policy prohibiting fully autonomous safety-relevant decisions.
     mitigation: Architect the actuation path so the AI system's output is a proposal routed to a human approver through a channel the AI system itself has no ability to complete or bypass (not a UI element the AI system could theoretically also be granted access to). Maintain a documented, enforced policy listing prohibited autonomous use cases (autonomous safety decisions, autonomous mission-critical control, unsupervised process changes) checked at system intake/design review, not left to individual deployment teams to self-assess.
     references: NIST AI RMF (GOVERN 1.2, MANAGE 2.3); MAESTRO L6 (Security and Compliance); IEC 61508 (Functional Safety) where applicable to the actuated process
-    risk_assessment: Critical for any AI system with output reaching an OT actuator or safety-critical process through any path not mediated by an unbypassable human gate.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any AI system with output reaching an OT actuator or safety-critical process through any path not mediated by an unbypassable human gate.'
     false_positives: AI system output is strictly advisory with no technical path to actuation, or every actuation path is confirmed to route through a human approval gate the AI system cannot complete or bypass.
     function: architecture
     stride: elevation-of-privilege
@@ -1436,7 +1402,7 @@ custom_risk_definitions:
     action: Assemble the model (weights, tokenizer, config, manifest) into a single signed package verified against a pinned key on every load inside the disconnected enclave, not only at transfer time.
     mitigation: Package the complete model artifact set (weights, tokenizer, configuration, and a manifest listing hashes of each component) and sign the package with a key held outside the disconnected enclave's own administrative control. Verify the signature at every model load inside the enclave — not only once when the package first arrives — so a substitution introduced after transfer is still caught. Maintain the signing key's custody chain outside the enclave to prevent an enclave insider from re-signing a tampered package.
     references: NIST SP 800-53 SR-4 (Provenance); NIST SP 800-218 (Secure Software Development Framework); NIST AI RMF (MANAGE 2.3)
-    risk_assessment: Critical for any model delivered into a disconnected/air-gapped enclave without per-load signature verification against an externally-held key.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at High, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any model delivered into a disconnected/air-gapped enclave without per-load signature verification against an externally-held key.'
     false_positives: The asset is tagged ai:model-package-signed confirming the model package is signed with an externally-held key and verified at every load, not only at transfer time.
     function: architecture
     stride: tampering
@@ -1471,7 +1437,7 @@ custom_risk_definitions:
     action: Restrict which data classifications may be transmitted to this vendor model API (including RAG-retrieved context), confirm a training-use opt-out term is on file, vault and rotate the API key as an internal secret, and review the vendor's security posture on a recurring cadence.
     mitigation: 'Implement a technical or procedural gate restricting what classification of content — including content retrieved by a RAG pipeline and passed along with the prompt, not only the user''s direct input — may be sent to this vendor API. Confirm and retain the vendor''s contractual training-use opt-out (the vendor does not use submitted content to train its own models) as a condition of use. Treat the API key with the same vaulting and rotation discipline as any internal credential, not a static value embedded in configuration. Schedule a recurring review of the vendor''s SOC 2 report, subprocessor list, and incident notification terms.'
     references: NIST AI RMF (GOVERN 6.1, MAP 4.1); NIST SP 800-53 SA-9 (External System Services); DoD Cloud Computing SRG (for vendor authorization level)
-    risk_assessment: Critical for any asset transmitting CUI-adjacent or classification-sensitive content (directly or via RAG context) to a vendor model API with no data-transmission restriction or confirmed training-use opt-out.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any asset transmitting CUI-adjacent or classification-sensitive content (directly or via RAG context) to a vendor model API with no data-transmission restriction or confirmed training-use opt-out.'
     false_positives: The asset is tagged ai:vendor-model-governed confirming a data-transmission classification restriction is enforced, a training-use opt-out is on file, the API key is vaulted/rotated as an internal secret, and vendor security posture is reviewed on a recurring cadence.
     function: architecture
     stride: information-disclosure
@@ -1490,7 +1456,7 @@ custom_risk_definitions:
     action: Surface a confidence indicator, source citation, or provenance trail alongside AI-generated output feeding any consequential decision, and require explicit human verification before the decision is finalized.
     mitigation: Attach source citations or retrieval provenance to AI-generated output wherever the underlying answer is grounded in retrieved content, so a reviewer can check the answer against its source directly. Surface a calibrated confidence or uncertainty indicator rather than presenting every answer with uniform, confident phrasing. For decisions above a defined consequence threshold, require an explicit human acknowledgment step that the output has been checked against an independent source before the decision is recorded as final. Periodically sample production outputs feeding real decisions against ground truth to measure actual hallucination rate in context, not just in a lab benchmark.
     references: OWASP LLM Top 10 2026 LLM07 (Misinformation; LLM09 in the 2025 list); OWASP Top 10 for Agentic Applications 2026 ASI09 (Human-Agent Trust Exploitation); OWASP GenAI Data Security 2026 DSGAI21 (Disinformation via Data Poisoning); NIST AI RMF (MEASURE 2.7, MANAGE 2.3); MAESTRO L6 (Security and Compliance)
-    risk_assessment: High where the AI output directly informs a consequential decision (classification, compliance status, operational action) with no citation or confidence signal. Medium where output is advisory in a low-stakes context or already paired with partial provenance.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High where the AI output directly informs a consequential decision (classification, compliance status, operational action) with no citation or confidence signal. Medium where output is advisory in a low-stakes context or already paired with partial provenance.'
     false_positives: The asset is tagged ai:output-confidence-disclosed confirming AI-generated output feeding decisions carries citations, confidence indicators, or a mandatory human-verification step before the decision is finalized.
     function: operations
     stride: tampering
@@ -1510,7 +1476,7 @@ custom_risk_definitions:
     action: Run every piece of model-produced or tool-returned code in an isolated, ephemeral sandbox with no credentials, no network by default, and strict resource limits.
     mitigation: Execute generated or returned code only in an isolated, ephemeral sandbox (a separate microVM or hardened container with seccomp/AppArmor, no host mounts) that holds no credentials and has no network access unless a specific allow-list is required. Enforce CPU, memory, time and output limits. Never pass model output to eval/exec or a shell in the agent's own process. Require human approval before code with side effects runs outside the sandbox. Log every execution with the prompt that produced it.
     references: OWASP Top 10 for Agentic Applications 2026 ASI05 (Unexpected Code Execution); OWASP Agentic Skills Top 10 2026 AST06 (Weak Isolation); MITRE ATLAS AML.T0040, AML.T0054, AML.T0037; CWE-94, CWE-78, CWE-77; NIST SP 800-53 CM-7, SC-7, SC-39 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk)
-    risk_assessment: Critical when generated code runs in the agent's own process or on a host with credentials or network reach. High when it runs in a container that is not hardened or ephemeral.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical when generated code runs in the agent''s own process or on a host with credentials or network reach. High when it runs in a container that is not hardened or ephemeral.'
     false_positives: Fires on any asset tagged ai:code-execution. Likelihood is one level higher when the asset's machine is physical (no VM, container or serverless boundary); a missing machine gets no step. Dispose of a confirmed-compliant asset through risk_tracking once execution in an isolated, credential-free, network-restricted ephemeral sandbox is confirmed.
     function: architecture
     stride: elevation-of-privilege
@@ -1529,7 +1495,7 @@ custom_risk_definitions:
     action: Load agent skills only from an approved, pinned and scanned internal catalogue, and review each skill's instructions and permissions before it is enabled.
     mitigation: Maintain an internal catalogue of approved skills and load only from it, pinned to exact reviewed versions with hash verification -- no auto-updating skills. Review each skill's instructions, metadata and bundled scripts for embedded instructions, over-broad permissions and network calls before approval, and scan bundled code. Grant each skill only the tools it needs. Re-review on every update, and keep an inventory of which skills each agent loads.
     references: OWASP Agentic Skills Top 10 2026 AST01 (Malicious Skills), AST04 (Insecure Metadata), AST05 (Untrusted External Instructions), AST08 (Poor Scanning), AST10 (Cross-Platform Reuse); MITRE ATLAS AML.T0115 (Publish Poisoned AI Artifacts); MAESTRO layers 3, 4, 6 and 7; CWE-829, CWE-494 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk)
-    risk_assessment: High for any agent that loads skills from public or unvetted sources, or that auto-updates skills, especially with write-capable tools.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any agent that loads skills from public or unvetted sources, or that auto-updates skills, especially with write-capable tools.'
     false_positives: Fires on any asset tagged ai:skills-enabled unless it is also tagged ai:skills-vetted, confirming skills load only from an approved, pinned, scanned catalogue with review before enablement.
     function: architecture
     stride: tampering
@@ -1548,7 +1514,7 @@ custom_risk_definitions:
     action: Minimize and redact what labelers and reviewers see, and allow access only to personnel with the clearance and need-to-know the data requires, on controlled platforms.
     mitigation: Redact, mask or synthesize sensitive fields before data reaches labelers or reviewers, and send only the records each task needs. Use labeling and review platforms inside an environment accredited for the data, with no download, copy or screenshot capability where possible. Restrict access to personnel with the required clearance and need-to-know, under agreements that bind them to the data's handling rules. Log access and audit it.
     references: OWASP GenAI Data Security 2026 DSGAI19 (Human-in-Loop and Labeler Overexposure); MITRE ATLAS AML.T0036 (Data from Information Repositories); MAESTRO layers 2, 6 and 7; CWE-285, CWE-359; NIST SP 800-53 PS-3, AC-21, SA-9 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk)
-    risk_assessment: High when CUI or classified-adjacent data reaches labelers or reviewers without matching clearance, or through a third-party platform outside the accredited environment.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High when CUI or classified-adjacent data reaches labelers or reviewers without matching clearance, or through a third-party platform outside the accredited environment.'
     false_positives: Fires on any asset tagged ai:human-labeling. Dispose of a confirmed-compliant asset through risk_tracking once redaction before labeling, an accredited platform, and clearance-matched access are confirmed.
     function: operations
     stride: information-disclosure
@@ -1567,7 +1533,7 @@ custom_risk_definitions:
     action: Allow only approved endpoint AI assistants, restrict what each can read on the device, and route their traffic to an approved model service.
     mitigation: Permit only approved endpoint and browser AI assistants through endpoint management, and block unapproved extensions and desktop agents. Restrict each assistant's access to the files, sites and applications its use case needs, and disable screen, clipboard and broad file access by default. Route assistant traffic only to an approved model service accredited for the data, with DLP inspection. Disable autonomous actions in the browser without user confirmation.
     references: OWASP GenAI Data Security 2026 DSGAI16 (Endpoint and Browser Overreach); MITRE ATLAS AML.T0036, AML.T0024; MAESTRO layers 2, 4 and 6; CWE-668, CWE-272; NIST SP 800-53 CM-7, AC-6, SC-7 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk)
-    risk_assessment: High on endpoints that handle CUI where an assistant can read local files or screens and send them to a service outside the accredited environment.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High on endpoints that handle CUI where an assistant can read local files or screens and send them to a service outside the accredited environment.'
     false_positives: Fires on any asset tagged ai:endpoint-assistant. Dispose of a confirmed-compliant asset through risk_tracking once an approved assistant with restricted local access and an accredited model service is confirmed.
     function: operations
     stride: information-disclosure
@@ -1598,7 +1564,7 @@ custom_risk_definitions:
     action: Document a Privacy Impact Assessment for this system covering what PII is collected, the legal authority for collecting it, how it is used and shared, retention, and safeguards, and reassess it whenever PII handling changes materially.
     mitigation: Complete a Privacy Impact Assessment (PIA) per the sponsoring agency's PIA template and Section 208 of the E-Government Act of 2002, documenting what PII this asset collects, the legal authority for collecting it, how it is used and shared, retention, and the safeguards protecting it. Route the PIA through the organization's Senior Agency Official for Privacy (or equivalent) for review and publication where publicly releasable. Reassess and update the PIA whenever the system's PII collection, use, or sharing changes materially, not on a fixed calendar alone.
     references: E-Government Act of 2002, Section 208 (Privacy Impact Assessments); OMB Circular A-130; DoD Instruction 5400.16 (DoD Privacy Impact Assessment Guidance)
-    risk_assessment: High for any asset processing PII with no current PIA on file, or a PIA that predates a material change to what PII is collected or how it is used.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any asset processing PII with no current PIA on file, or a PIA that predates a material change to what PII is collected or how it is used.'
     false_positives: The asset is tagged data:pia-documented confirming a current Privacy Impact Assessment covers this asset's actual PII collection, use, and sharing, and has been reviewed since the last material change.
     function: operations
     stride: information-disclosure
@@ -1617,7 +1583,7 @@ custom_risk_definitions:
     action: Establish an origin register for every external feed this asset ingests, and enforce a provenance/integrity check (hash manifest, signed manifest, or equivalent) at consumption time before the data is trusted downstream.
     mitigation: Maintain an append-only provenance log recording the source identity, transfer timestamp, and content hash for every batch or record ingested from an external feed. Verify the hash (or a cryptographic signature, where the upstream source supports one) at consumption time and reject or quarantine any batch that fails verification. Do not allow the ingest pipeline itself to be the sole authority for what was received — the provenance log must be written by a component the ingest pipeline cannot silently rewrite.
     references: NIST SP 800-53 SR-4 (Provenance); NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity); NIST SP 800-161 (Cybersecurity Supply Chain Risk Management Practices)
-    risk_assessment: High for any pipeline ingesting external or third-party data that feeds a decision, a model, or a downstream mission system, where no origin/integrity record exists.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any pipeline ingesting external or third-party data that feeds a decision, a model, or a downstream mission system, where no origin/integrity record exists.'
     false_positives: The ingest pipeline verifies a cryptographic signature or hash manifest against each batch at consumption time and writes the result to a provenance log the pipeline itself cannot modify.
     function: architecture
     stride: tampering
@@ -1636,7 +1602,7 @@ custom_risk_definitions:
     action: Route every bulk-export, attachment, and outbound file-transfer path through the enterprise DLP inspection point before content leaves the asset's boundary.
     mitigation: Inspect outbound content at every egress path (export endpoint, email-sending integration, upload-to-external-destination feature) against the enterprise DLP engine's classification-aware policy before the transfer completes. Where DLP inspection cannot be inserted inline, log the full content manifest of every bulk export to the SIEM so post-hoc review is possible. Treat an export feature added after the DLP policy was last reviewed as out of compliance until the policy is extended to cover it.
     references: NIST SP 800-53 AC-4 (Information Flow Enforcement); NIST SP 800-53 SC-7(10) (Boundary Protection — Prevent Exfiltration); DoDI 8500.01 (Cybersecurity)
-    risk_assessment: High for any asset with a bulk-export, attachment, or external-transfer feature that is not covered by the enterprise DLP policy.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any asset with a bulk-export, attachment, or external-transfer feature that is not covered by the enterprise DLP policy.'
     false_positives: All identified egress paths for this asset are enumerated in the DLP policy and confirmed to route through classification-aware inspection before content leaves.
     function: architecture
     stride: information-disclosure
@@ -1661,7 +1627,7 @@ custom_risk_definitions:
     action: Apply a documented, independently verified downgrading procedure — distinct from routine media destruction — to any media or dataset moved to a lower classification enclave, per NIST SP 800-53 MP-8.
     mitigation: Document a downgrading procedure separate from the standard media sanitization/disposal procedure, covering content review for residual higher-classification material, technical sanitization of any metadata or embedded artifacts (document properties, deleted-but-recoverable content, thumbnails), and independent verification by a second reviewer before the media or dataset is released to the lower enclave. Log every downgrade action with the reviewer identity and verification result.
     references: NIST SP 800-53 MP-8 (Media Downgrading); NIST SP 800-53 MP-6 (Media Sanitization); CNSSI 1253; DoD 5200.01 (DoD Information Security Program)
-    risk_assessment: Critical for any asset performing high-to-low media or dataset downgrading without a documented, independently verified procedure distinct from routine disposal.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any asset performing high-to-low media or dataset downgrading without a documented, independently verified procedure distinct from routine disposal.'
     false_positives: A documented downgrading procedure with independent second-reviewer verification is in place and evidenced by a per-transaction log, distinct from the routine media sanitization procedure.
     function: architecture
     stride: information-disclosure
@@ -1680,7 +1646,7 @@ custom_risk_definitions:
     action: Run a motivated-intruder re-identification test against the de-identified dataset using realistic auxiliary data before release, and document the result as part of the release approval.
     mitigation: Before release, conduct a re-identification risk assessment following NIST SP 800-188 methodology — attempt re-identification using auxiliary data an adversary could plausibly obtain, quantify the proportion of records at risk, and apply additional statistical disclosure limitation (generalization, suppression, k-anonymity/differential privacy techniques) until the residual risk is acceptable to the data owner. Re-run the assessment if the dataset is updated or if a new plausible auxiliary source becomes available before subsequent releases.
     references: NIST SP 800-188 (De-Identification of Government Datasets); NIST SP 800-53 SI-12 (Information Management and Retention)
-    risk_assessment: High for any dataset containing PII or CUI-adjacent personal attributes released externally or broadly shared without a documented re-identification test.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any dataset containing PII or CUI-adjacent personal attributes released externally or broadly shared without a documented re-identification test.'
     false_positives: A motivated-intruder re-identification test following NIST SP 800-188 has been conducted and documented for this specific release, with residual risk formally accepted by the data owner.
     function: architecture
     stride: information-disclosure
@@ -1699,7 +1665,7 @@ custom_risk_definitions:
     action: Apply the enterprise rights-management capability (persistent encryption bound to identity/policy, with revocation support) to files released outside the originating boundary, rather than relying on recipient-side policy alone.
     mitigation: Route file releases through the enterprise Information Rights Management / Enterprise Digital Rights Management capability so the exported file remains encrypted and bound to an access policy the releasing organization controls, including expiration and revocation, independent of where the copy is subsequently stored. Reserve unprotected release for cases where the recipient system cannot honor rights-managed content and document that exception.
     references: NIST SP 800-53 AC-21 (Information Sharing); NIST SP 800-53 SC-28 (Protection of Information at Rest); DoD Enterprise Rights Management guidance
-    risk_assessment: Medium, escalating to High for CUI releases to external or lower-trust recipients where no revocation capability exists once the file has left the boundary.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium, escalating to High for CUI releases to external or lower-trust recipients where no revocation capability exists once the file has left the boundary.'
     false_positives: Released files are routed through an enterprise rights-management capability providing persistent, revocable access control, or the release is to a fully trusted internal recipient under the same authorization boundary.
     function: architecture
     stride: information-disclosure
@@ -1726,7 +1692,7 @@ custom_risk_definitions:
     action: Verify FIPS 140-2/3 validated module usage for all cryptographic operations on this asset and document the certificate number in the SSP.
     mitigation: 'For AKS nodes: enable FIPS mode on the node pool (`--enable-fips-image` in Azure CLI) to restrict the OS to FIPS-validated OpenSSL. For application-layer crypto: verify that the runtime''s crypto provider uses a CMVP-validated module (e.g., BoringCrypto for Go, OpenSSL in FIPS mode for Python/Java). For TLS termination: confirm that the ingress controller or load balancer cipher suite configuration excludes non-FIPS algorithms (RC4, 3DES, MD5). Document the CMVP certificate number for each validated module in the SSP.'
     references: DoD Cloud Computing SRG IL5; NIST CMVP (https://csrc.nist.gov/projects/cryptographic-module-validation-program); FIPS 140-3
-    risk_assessment: High risk to ATO. FIPS non-compliance at a TLS termination point or encryption-at-rest boundary is typically a CAT II finding under DoD STIGs.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High risk to ATO. FIPS non-compliance at a TLS termination point or encryption-at-rest boundary is typically a CAT II finding under DoD STIGs.'
     false_positives: Asset handles only publicly releasable, non-CUI data with no confidentiality requirement, confirmed by data classification review — or FIPS validated module usage is documented in the SSP with a valid CMVP certificate number.
     function: architecture
     stride: information-disclosure
@@ -1746,7 +1712,7 @@ custom_risk_definitions:
     action: Restrict TLS configuration to TLS 1.2 minimum (TLS 1.3 preferred) and an approved FIPS-compatible cipher suite list.
     mitigation: 'Configure TLS to support TLS 1.2 and TLS 1.3 only — explicitly disable TLS 1.0, TLS 1.1, and SSL 3.0. Restrict cipher suites to those providing forward secrecy (ECDHE key exchange) and strong symmetric ciphers (AES-128-GCM, AES-256-GCM, CHACHA20-POLY1305). Disable RC4, 3DES, NULL, EXPORT, and anonymous DH cipher suites. For Azure Application Gateway and Front Door: apply a predefined TLS policy of AppGwSslPolicy20220101S or equivalent. Verify configuration with automated TLS scanning on every deployment.'
     references: DISA Application Security and Development STIG V5R3 (APSC-DV-002010, APSC-DV-002030); NIST SP 800-52r2 (Guidelines for TLS); NSA/CISA TLS Best Practices
-    risk_assessment: Medium (CAT II STIG finding). Escalates to High if the asset is internet-facing and TLS 1.0/1.1 is enabled for compatibility with legacy clients.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium (CAT II STIG finding). Escalates to High if the asset is internet-facing and TLS 1.0/1.1 is enabled for compatibility with legacy clients.'
     false_positives: TLS configuration has been audited and confirmed to support only TLS 1.2+ with an approved cipher suite list, documented in the SSP with the scan output as evidence.
     function: architecture
     stride: information-disclosure
@@ -1785,7 +1751,7 @@ custom_risk_definitions:
     action: Log quota/rate-limit rejections, object-ID request sequences, and repeated per-caller authorization failures on this endpoint, and forward them to the SIEM with correlation by caller identity.
     mitigation: Emit a distinct log event for every rate-limit/quota rejection, every authorization failure, and every request touching an object-identifier parameter, tagged with the calling identity (API key, token subject, or source IP where unauthenticated). Forward these to the SIEM and build a correlation rule that flags a single caller crossing a threshold of authorization failures or sequential/randomized object-ID requests within a rolling window — well below the volume that would trigger a rate-limit block.
     references: NIST SP 800-53 AU-2 (Event Logging); NIST SP 800-53 SI-4 (System Monitoring); OWASP API Security Top 10 (API4:2023 Unrestricted Resource Consumption, API1:2023 Broken Object Level Authorization)
-    risk_assessment: High for any public API where object identifiers are part of the request path/body and no correlation rule exists for per-caller authorization-failure or object-enumeration patterns.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any public API where object identifiers are part of the request path/body and no correlation rule exists for per-caller authorization-failure or object-enumeration patterns.'
     false_positives: The endpoint logs rate-limit rejections, authorization failures, and object-ID request patterns with caller-identity correlation, and a SIEM detection rule is confirmed active against that log stream.
     function: operations
     stride: repudiation
@@ -1810,10 +1776,10 @@ custom_risk_definitions:
     action: Deploy network-based intrusion detection (NIDS/NDR) or equivalent traffic-anomaly monitoring on the ingress/egress path for this asset, alerting the SOC on detection.
     mitigation: Deploy a network intrusion detection system or network detection-and-response (NDR) capability positioned to observe all ingress/egress traffic for this asset — inline or via traffic mirroring/TAP — tuned with signatures and behavioral baselines appropriate to the protocols this asset actually serves. Forward alerts to the SIEM and define an escalation path to the SOC. Tag the asset net:ids-monitored once coverage is confirmed and actively alerting.
     references: NIST SP 800-53 SI-4 (System Monitoring); NIST SP 800-53 AU-2 (Event Logging); DoD Zero Trust Reference Architecture (Network and Environment pillar)
-    risk_assessment: High for any internet-reachable or zone:dmz asset with no network-based detection observing its ingress/egress traffic.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any internet-reachable or zone:dmz asset with no network-based detection observing its ingress/egress traffic.'
     false_positives: The asset is tagged net:ids-monitored confirming network-based intrusion detection or NDR coverage is deployed and actively alerting on the traffic path to and from this asset.
     function: operations
-    stride: information-disclosure
+    stride: repudiation
     cwe: 778
     detection_logic: Confirm NIDS/NDR sensor placement covers 100% of the asset's ingress/egress paths (no unmonitored network segment), and validate alerting is live by running a benign signature-triggering test and confirming a SOC-visible alert fires.
     risks_identified: {}
@@ -1841,7 +1807,7 @@ custom_risk_definitions:
     action: Document, for this asset, whether automated containment/isolation is permitted, requires human approval, or is prohibited, and record that disposition where the incident response team can find it during an active incident.
     mitigation: For every asset tagged business-critical or mission-critical, record a containment disposition (auto-isolation permitted / human approval required / auto-isolation prohibited) in the asset's own documentation or the incident response runbook, decided in advance by the asset owner together with the response team — not improvised during an incident. Where auto-isolation is prohibited (e.g., a safety-relevant or highly available system), document the manual containment procedure to use instead.
     references: NIST SP 800-53 IR-4 (Incident Handling); NIST SP 800-61r2 (Computer Security Incident Handling Guide)
-    risk_assessment: High for any business-critical or mission-critical asset with no documented containment disposition.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any business-critical or mission-critical asset with no documented containment disposition.'
     false_positives: A containment disposition for this asset is documented in the incident response runbook and was agreed by both the asset owner and the response team.
     function: operations
     stride: denial-of-service
@@ -1860,7 +1826,7 @@ custom_risk_definitions:
     action: Maintain an inventory of every credential/secret this asset consumes or issues, sufficient to support a complete rotation without an extended outage during incident response.
     mitigation: Maintain a current inventory (manual or, preferably, generated from the secrets broker/vault's own access records) of every credential and secret this asset consumes, and every downstream system that trusts a credential this asset issues. Ensure the rotation procedure for each can be executed without an extended service outage, so a full rotation is operationally feasible to actually perform during incident response rather than being skipped under time pressure.
     references: NIST SP 800-53 IR-4 (Incident Handling); NIST SP 800-53 IA-5 (Authenticator Management); NIST SP 800-61r2 (Computer Security Incident Handling Guide)
-    risk_assessment: High for any asset holding or issuing credentials where no consumer inventory exists to support a complete post-compromise rotation.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any asset holding or issuing credentials where no consumer inventory exists to support a complete post-compromise rotation.'
     false_positives: A current credential/secret consumer inventory exists for this asset and rotation of every entry has been exercised (not merely documented) within the current ATO period.
     function: operations
     stride: elevation-of-privilege
@@ -1879,7 +1845,7 @@ custom_risk_definitions:
     action: Conduct a tabletop or live-fire incident response exercise covering this asset's likely compromise scenarios on a recurring schedule, and update the plan with anything the exercise reveals is missing or outdated.
     mitigation: Schedule a recurring incident response exercise (tabletop at minimum, live-fire where feasible) that walks through a realistic compromise scenario for this asset — detection, containment, eradication, recovery, and stakeholder notification — using only the documented plan rather than institutional knowledge. Involve every role the plan assigns responsibilities to, not just the security team. Record findings and update the plan before the next ATO renewal.
     references: NIST SP 800-53 IR-3 (Incident Response Testing); NIST SP 800-61r2 (Computer Security Incident Handling Guide)
-    risk_assessment: High for any business-critical or mission-critical asset whose incident response plan has not been exercised within the current ATO period.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any business-critical or mission-critical asset whose incident response plan has not been exercised within the current ATO period.'
     false_positives: The asset is tagged ir:plan-tested confirming a tabletop or live-fire incident response exercise covering this asset has been conducted within the current ATO period.
     function: operations
     stride: denial-of-service
@@ -1898,7 +1864,7 @@ custom_risk_definitions:
     action: Document the cyber incident reporting procedure required by this system's contract (e.g., DFARS 252.204-7012's 72-hour DIBNet reporting requirement for a covered contractor information system), naming the party responsible for executing it.
     mitigation: Identify which contracts covering this asset carry DFARS 252.204-7012 (or an equivalent DoD cyber incident reporting clause), and document the exact reporting timeline, the DIBNet submission process, and the specific role responsible for initiating it once an incident affecting covered defense information is confirmed. Rehearse the reporting step itself (not just detection/containment) during incident response exercises so the 72-hour clock is a practiced procedure, not a first-time scramble.
     references: DFARS 252.204-7012 (Safeguarding Covered Defense Information and Cyber Incident Reporting); NIST SP 800-53 IR-6 (Incident Reporting); NIST SP 800-171
-    risk_assessment: High for any business-critical or mission-critical asset covered by a DFARS 252.204-7012 clause with no documented reporting procedure or owner.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any business-critical or mission-critical asset covered by a DFARS 252.204-7012 clause with no documented reporting procedure or owner.'
     false_positives: The asset is tagged ir:breach-notification-procedure-documented confirming a documented reporting procedure identifies the contract-mandated timeline and the responsible party, and the procedure has been rehearsed.
     function: operations
     stride: denial-of-service
@@ -1917,7 +1883,7 @@ custom_risk_definitions:
     action: Document a forensic evidence-handling procedure for this asset covering acquisition, custody logging, storage, and transfer, and assign ownership of executing it during an incident.
     mitigation: Establish a documented forensic evidence-handling procedure covering how evidence relevant to this asset (disk/memory images, logs, network captures) is acquired, hashed at acquisition time, logged in a continuous custody record (who held it, when, why), stored, and transferred — modeled on standard forensic chain-of-custody practice. Assign a named role responsible for executing this procedure during an incident, distinct from whoever performs containment, so evidence handling isn't improvised under pressure.
     references: NIST SP 800-53 IR-4 (Incident Handling); NIST SP 800-86 (Guide to Integrating Forensic Techniques into Incident Response)
-    risk_assessment: High for any business-critical or mission-critical asset with no documented forensic evidence-handling procedure.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any business-critical or mission-critical asset with no documented forensic evidence-handling procedure.'
     false_positives: The asset is tagged ir:evidence-handling-documented confirming a documented forensic evidence-handling procedure (acquisition, custody log, storage, transfer) exists and names a responsible role.
     function: operations
     stride: repudiation
@@ -1941,7 +1907,7 @@ custom_risk_definitions:
     action: Verify backup encryption, access isolation, geographic separation, and conduct a documented recovery test against defined RTO/RPO targets.
     mitigation: Encrypt all backups at rest using FIPS-validated cryptography with keys stored separately from the backup data (Azure Backup with CMK in Key Vault). Store backups in a geographically separate Azure region to a storage account accessible only to the backup service principal — not to application workload identities. Implement immutable backup storage (Azure Backup soft delete + lock) to prevent deletion by ransomware. Conduct and document a full recovery test at least annually, validating actual RTO/RPO against documented targets. Alert on backup job failures within 1 hour.
     references: NIST SP 800-53 CP-9 (Information System Backup); NIST SP 800-53 CP-10 (Information System Recovery); DoD COOP requirements; Azure Backup security baseline
-    risk_assessment: High for assets storing CUI where backup procedures have never been tested or where backup storage is co-located with or accessible from the primary environment.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for assets storing CUI where backup procedures have never been tested or where backup storage is co-located with or accessible from the primary environment.'
     false_positives: Backup encryption, geographic separation, access isolation, and recovery testing are all documented in the COOP plan and have been validated within the current ATO period.
     function: operations
     stride: tampering
@@ -1961,7 +1927,7 @@ custom_risk_definitions:
     action: Ensure backup administration is a distinct role from production administration, and require dual authorization plus step-up authentication for any destructive backup operation.
     mitigation: Assign backup platform administration to a role held by individuals who do not also hold production administrative access to the same workload. Require a second approver and step-up MFA for destructive operations specifically (delete backup, shorten retention, disable job, remove immutability lock) — routine backup operations (create, restore-test) do not need this. Alert on any destructive backup operation regardless of who performs it.
     references: NIST SP 800-53 AC-6(1) (Least Privilege — Authorize Access to Security Functions); NIST SP 800-53 CP-9(7) (Dual Authorization for Deletion)
-    risk_assessment: Critical for any asset where the same identity or role holds both production administrative access and destructive backup permissions.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any asset where the same identity or role holds both production administrative access and destructive backup permissions.'
     false_positives: Backup administration is confirmed to be a distinct role from production administration, and destructive backup operations require dual authorization and step-up authentication, verified by an access review within the current ATO period.
     function: operations
     stride: tampering
@@ -1980,7 +1946,7 @@ custom_risk_definitions:
     action: Enable a compliance-mode (not governance-mode) immutability lock on the backup store, verified to be irreversible by any account for the duration of the retention period.
     mitigation: Enable immutable backup storage in compliance mode (e.g., Azure Backup vault immutability with the "immutable and cannot be reverted" setting locked, not merely enabled) so that no account, including the backup vault's own owner, can shorten retention or delete backups before expiry. Verify this by attempting to disable the lock with a fully privileged test account in a non-production vault and confirming the platform refuses the operation.
     references: NIST SP 800-53 CP-9 (Information System Backup); NIST SP 800-53 SI-4(24) (Indicators of Compromise); CISA Ransomware Guide (Immutable Backup Storage)
-    risk_assessment: Critical for any asset whose backup store's immutability lock can be disabled or shortened by any account, including its own administrators.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Medium, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Critical for any asset whose backup store''s immutability lock can be disabled or shortened by any account, including its own administrators.'
     false_positives: The backup store's immutability lock is confirmed to be in compliance mode (irreversible by any account, including the vault's own owner, for the retention period), verified by a test of the lock itself rather than by policy documentation alone.
     function: operations
     stride: tampering
@@ -1999,7 +1965,7 @@ custom_risk_definitions:
     action: Register backup encryption keys with a documented rotation cadence that accounts for the longest retention period of any backup copy encrypted with them, and retain superseded key versions for the life of backups that depend on them.
     mitigation: Track which key version encrypted each backup generation, and retain (rather than destroy) a superseded key version until every backup encrypted with it has passed its retention period. Where the backup platform supports envelope encryption with a rotating data-encryption key under a stable key-encryption key, prefer that pattern so key rotation does not require re-encrypting or invalidating existing backups.
     references: NIST SP 800-53 SC-12 (Cryptographic Key Establishment and Management); NIST SP 800-57 Part 1 (Key Management — General); NIST SP 800-53 CP-9 (Information System Backup)
-    risk_assessment: High for any asset with a documented key rotation cadence that does not explicitly account for its backup retention period, or no documented cadence at all.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any asset with a documented key rotation cadence that does not explicitly account for its backup retention period, or no documented cadence at all.'
     false_positives: Backup encryption key rotation is documented and confirmed to retain superseded key versions for the life of every backup they encrypted, or the backup platform uses envelope encryption that decouples key rotation from existing backup decryptability.
     function: operations
     stride: information-disclosure
@@ -2018,7 +1984,7 @@ custom_risk_definitions:
     action: Document an RTO and RPO for this asset derived from its business-criticality tier, and validate both figures against the result of an actual restore test.
     mitigation: Assign an RTO and RPO to this asset based on its business-criticality tier (Threagile's business_criticality/availability rating), documented in the COOP plan. Validate both figures against the measured duration and data-loss window of an actual restore test — not an estimate — and revise the documented target if the test result exceeds it, rather than leaving a target on record that the asset has never actually met.
     references: NIST SP 800-53 CP-2 (Contingency Plan); NIST SP 800-53 CP-10 (Information System Recovery and Reconstitution); DoD COOP requirements
-    risk_assessment: Medium, escalating to High for business-critical or mission-critical assets with no validated RTO/RPO.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium, escalating to High for business-critical or mission-critical assets with no validated RTO/RPO.'
     false_positives: An RTO and RPO are documented for this asset and have been validated against the measured result of an actual restore test within the current ATO period.
     function: operations
     stride: denial-of-service
@@ -2037,7 +2003,7 @@ custom_risk_definitions:
     action: Perform a full restoration of this asset from a real stored backup, using only the written restoration procedure, on a recurring schedule.
     mitigation: Conduct a restoration exercise at least annually (more frequently for business-critical/mission-critical assets) in which a person other than the backup job's original author executes the documented restoration procedure against a real stored backup into an isolated environment, and validates the restored system actually functions. Update the written procedure with anything the exercise revealed was missing, undocumented, or dependent on tribal knowledge.
     references: NIST SP 800-53 CP-4 (Contingency Plan Testing); NIST SP 800-53 CP-9 (Information System Backup)
-    risk_assessment: High for any business-critical or mission-critical asset whose restoration procedure has not been exercised, by someone other than its author, within the current ATO period.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any business-critical or mission-critical asset whose restoration procedure has not been exercised, by someone other than its author, within the current ATO period.'
     false_positives: A full restoration exercise using only the written procedure, performed by someone other than the procedure's author, has been completed successfully within the current ATO period.
     function: operations
     stride: denial-of-service
@@ -2056,7 +2022,7 @@ custom_risk_definitions:
     action: Configure a native export mechanism or a purpose-built export job to route this asset's data into enterprise-controlled backup storage on a recurring schedule, independent of the vendor's own in-tenant retention.
     mitigation: Identify whether the vendor/SaaS platform provides a native data-export API or scheduled export feature, and route that export into enterprise-controlled storage under the same immutability and access-isolation controls as other backups. Where no native export exists, build a purpose-written export job against the vendor's API. Do not accept the vendor's own in-tenant retention, recycle bin, or version history as satisfying this control — it remains inside the vendor's control plane and does not survive tenant-level compromise or deletion.
     references: NIST SP 800-53 CP-9 (Information System Backup); NIST SP 800-53 SA-9 (External System Services)
-    risk_assessment: High for any SaaS or vendor-hosted asset with no independent, enterprise-controlled backup export configured.
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at High, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any SaaS or vendor-hosted asset with no independent, enterprise-controlled backup export configured.'
     false_positives: The asset is tagged ops:saas-export-configured confirming a native or purpose-built export job routes its data into enterprise-controlled backup storage on a recurring schedule, independent of the vendor's own in-tenant retention.
     function: operations
     stride: denial-of-service
@@ -2080,7 +2046,7 @@ custom_risk_definitions:
     action: Ensure formal AO risk acceptance is on file.
     mitigation: Compensating controls must include strict network micro-segmentation and IPsec/WireGuard at the host transport layer if possible.
     references: DoD Zero Trust Reference Architecture
-    risk_assessment: Medium risk of internal data interception.
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s confidentiality (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium risk of internal data interception.'
     false_positives: None. This is an explicit policy waiver.
     function: architecture
     stride: information-disclosure
@@ -2099,7 +2065,7 @@ custom_risk_definitions:
     action: Ensure formal AO risk acceptance is on file and a remediation timeline is documented in the POA&M.
     mitigation: 'Establish an immediate upgrade path to a supported version. If upgrade is not immediately feasible, implement compensating controls: network-isolate the EOL component to the minimum required connectivity, deploy WAF/RASP protections in front of it, increase monitoring fidelity for exploitation indicators, and document the risk acceptance with a hard deadline in the POA&M. Remove the component from the ATO boundary via architecture change if upgrade is infeasible within the POA&M window.'
     references: DISA Application Security and Development STIG; NIST SP 800-53 SI-2 (Flaw Remediation); DoD RMF Process Guide
-    risk_assessment: High. Severity escalates to Critical if the EOL component has active CVEs with public exploits and is internet-accessible or handles CUI directly.
+    risk_assessment: 'Likelihood starts at Likely; impact starts at Medium, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High. Severity escalates to Critical if the EOL component has active CVEs with public exploits and is internet-accessible or handles CUI directly.'
     false_positives: None. This is an explicit policy exception. AO risk acceptance must be on file.
     function: operations
     stride: elevation-of-privilege

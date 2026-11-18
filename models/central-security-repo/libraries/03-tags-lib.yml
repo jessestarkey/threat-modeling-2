@@ -127,7 +127,7 @@ tags_available:
   # --- Input Handling and Injection ---
   - feature:dynamic-code-execution  # Asset interprets and runs code, scripts, or complex expressions provided by a user (e.g., template engines, eval(), formula processors)
   - feature:file-upload-processing  # Asset accepts and parses complex file formats uploaded by users (e.g., PDFs, Office documents, ZIP files, images)
-  - feature:deserialization         # Asset deserializes objects from user-supplied or externally-sourced byte streams (e.g., Java serialization, .NET BinaryFormatter, Python Pickle outside AI model context, YAML.load)
+  - feature:deserialization         # Asset deserializes objects from user-supplied or externally-sourced byte streams (e.g., Java serialization, .NET BinaryFormatter, Python Pickle outside AI model context, YAML.load). Marks the feature only: for the risk, set data_formats_accepted: serialization on the asset, which Threagile's built-in untrusted-deserialization reads
   - feature:pdf-generation          # Asset generates PDFs server-side from user-supplied or user-influenced content (e.g., wkhtmltopdf, Puppeteer, WeasyPrint rendering HTML templates with user data)
   - feature:email-sending           # Asset constructs and sends email where any part of the recipient address, subject, or body is derived from user-supplied input
   - feature:webhook-receiver        # Asset receives inbound HTTP callbacks from external systems and acts on the payload (e.g., GitHub webhooks, Stripe events, CI/CD triggers)
@@ -161,7 +161,6 @@ tags_available:
   # docs/risk-methodology.md for the full rationale.
 
   # --- Service Hardening (absence fires risk) ---
-  - ops:waf-enabled                # A WAF with a managed ruleset in Prevention mode is confirmed in the ingress path — suppresses the WAF coverage risk on zone:dmz assets whose own technology isn't already waf (which auto-suppresses); use this tag for a separate upstream WAF asset (e.g. an external CDN-level WAF) not modeled as this asset's own technology
   - net:ids-monitored              # Network-based intrusion detection/traffic-anomaly monitoring observes traffic to and from this asset — suppresses the network-ids-blind-spot risk on internet-reachable/zone:dmz assets
   - ops:requires-backup            # Asset requires backup for DR/COOP — presence triggers backup integrity risk
   - ops:api-abuse-logging-enabled  # Public API logs rate-limit rejections, authorization failures, and object-ID request patterns with caller-identity correlation — suppresses the API abuse/enumeration logging gap risk
@@ -231,7 +230,7 @@ tags_available:
   # requiring formal risk acceptance documentation.
   # =============================================================================
 
-  - exception:runs-as-root       # Container executes as UID 0 or with elevated Linux capabilities — AO waiver required
+  - exception:runs-as-root       # Container executes as UID 0 — AO waiver required (elevated Linux capabilities are the fork's dangerous-container-capabilities rule)
   - exception:cleartext-internal # Asset transmits or receives data in plaintext over the internal network — AO waiver required
   - exception:local-auth-fallback # Asset maintains a local credential store bypassing the Enterprise IdP and mandatory MFA/CAC — AO waiver required
   - exception:eol-component      # Asset includes a software component that has reached End-of-Life and no longer receives security patches — AO waiver required

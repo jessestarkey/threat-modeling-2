@@ -935,6 +935,45 @@ show object-level checks either way, and the per-workload container rules
 The appendix table reflects these changes; the result tables above record the calibration as
 first applied (190 rules).
 
+### Independent reviews of the fork scripts and the custom categories (2026-11-18)
+
+Two independent reviews covered the rules the earlier work had not examined: the 18 non-AI script
+rules that never fire on the Confluence model, and duplication between the non-AI custom categories
+and the fork. They led to these changes:
+
+- **Bugs.** The script `accidental-secret-leak` failed for the whole model whenever any rating was
+  "public" (a dropped zero value hit its `as:` cast), read a tag, and shadowed a built-in covering
+  more technologies; the script is retired and the built-in fires again. Threagile's built-in
+  `missing-network-segmentation` had its gate inverted by an upstream refactor, so it ran only on
+  the assets it should skip; the gate and its tests are corrected. The merged logging rule's
+  findings carried the old title. The cluster audit rule now takes the highest likelihood across
+  its containers and gives its runtime finding a distinct id.
+- **Duplicates retired or narrowed.** Custom `insecure-deserialization` (the built-in
+  `untrusted-deserialization` reads `data_formats_accepted: serialization`); custom
+  `missing-waf-internet-facing` and its `ops:waf-enabled` tag (the built-in `missing-waf` reads a
+  modelled WAF; the custom one ignored it and fired on non-web services); the script
+  `unencrypted-virtual-disk` (the built-in `unencrypted-asset` covers at-rest encryption with the
+  right exclusions). Custom `malicious-file-parsing` is narrowed to archive extraction (zip slip,
+  decompression bombs; CWE-22), which the XXE and file-validation built-ins don't cover. Custom
+  self-managed segmentation leaves containers to the fork's micro-segmentation rule. The
+  root-container waiver covers UID 0 only; capabilities are `dangerous-container-capabilities`.
+- **Classes, STRIDE and CWEs.** `ics-controller-unauthenticated-protocol` is control-not-evidenced
+  (it fires on the technology alone; rating unchanged). `network-ids-blind-spot` is repudiation;
+  `air-vehicle-gps-spoofing` is spoofing. CWEs: vulnerable dependency 1395, CDS guard 693,
+  dependency confusion 427, install scripts 829.
+- **Scope and text.** `vulnerable-outdated-dependency` and `os-command-injection` skip external
+  entities. `trusted-thin-client` no longer counts as a CDS guard. Three control-not-evidenced
+  descriptions are worded as conditions to verify. Every custom `risk_assessment` opens with its
+  calibrated scoring sentence, followed by the guidance for once the condition is confirmed, and
+  `test_calibration.py` checks it.
+
+Deferred for a separate decision: recording policy-exception waivers (cleartext transit, local
+authentication) as `risk_tracking: accepted` on the built-in finding instead of a second finding;
+moving tags that restate native fields (`zone:dmz`, `feature:search-index`, `feature:browser-facing`,
+the WebSocket tag) and the over-broad self-managed-network triggers onto native fields; and the
+built-ins' internet step reading the `net:internet-reachable` tag. The catalogue now counts 184
+rules (35 built-in, 62 extension, 87 organization-specific).
+
 ## Source of truth, by topic
 
 | Topic | Where |
@@ -1026,7 +1065,6 @@ Every catalogued rule, rated on profile T (confidential / critical / important, 
 | Built-in | `unguarded-direct-datastore-access` | W | Likely / Low → Medium | Possible / Low | Possible / Medium → Elevated | W: cross-boundary direct datastore link. Possible: needs a position in the adjacent zone; store's own auth still applies (Meow was internet-exposed). Medium anchor: application tier as guard is defense in depth. |
 | Built-in | `untrusted-deserialization` | G | Likely / High → High | Possible / High | Possible / Very High → High | G: fires on serialization technology/protocols. Weakness Likely (CAPEC-586 Medium, 71 KEV) -> Possible. Very High anchor: RCE. |
 | Built-in | `xml-external-entity` | G | Likely / Medium → Elevated | Possible / Medium | Possible / High → Elevated | G: fires on XML input. Weakness Likely at most (8 KEV) -> Possible. High anchor: local file read / internal service access. |
-| Extension (script) | `accidental-secret-leak` | G | Likely / Medium → Elevated | Likely / Low | Likely / Medium → Elevated | Same as built-in: G, Likely (GitGuardian, commonly absent), Medium anchor (missing scanning control). |
 | Extension (script) | `ai-adversarial-evasion` | G | Likely / Very High → High | Possible / Medium | Possible / High → Elevated | G: fires on every model-serving platform. Weakness Likely (ATLAS 18 case studies) -> Possible. High: evasion lets specific inputs through the control; the downstream fraud/malware is a further step. |
 | Extension (script) | `ai-agent-identity-privilege-abuse` | W | Likely / Very High → High | Likely / Medium | Likely / High → High | W: service-identity link. Likely: agents are steered via prompt injection (one ordinary precondition); LLMjacking, LiteLLM KEV. High anchor: 'an agent's writable tool misused' is the rubric's High example. |
 | Extension (script) | `ai-cascading-agent-failures` | W | Possible / Medium → Elevated | Possible / Medium | Possible / Medium → Elevated | W: agent-to-agent link. Possible: needs a triggering fault plus missing containment; analyst judgment. Medium anchor: recoverable availability loss. |
@@ -1065,7 +1103,7 @@ Every catalogued rule, rated on profile T (confidential / critical / important, 
 | Extension (script) | `dependency-confusion-internal-namespace` | G | Very Likely / Very High → Critical | Likely / High | Likely / Very High → High | G: fires on every build pipeline (unclaimed namespace not shown). Likely: Birsan hit 35+ companies = commonly absent, cap Likely. Very High anchor: attacker code runs in the build. |
 | Extension (script) | `endpoint-security-manager-fleet-compromise` | G | Unlikely / Very High → Elevated | Unlikely / High | Unlikely / Very High → Elevated | G: EDR console. Unlikely: console compromise required (APT32/ePO). Very High: fleet-wide code execution. |
 | Extension (script) | `hardcoded-credentials-secrets-sprawl` | W | Very Likely / Very High → Critical | Likely / Medium | Likely / High → High | W: static secret on a link (the rubric's own W example). Likely, not Very Likely: extraction needs access to code/image/config (one ordinary precondition); CAPEC-37 High. High: immediate authenticated access to the target system. |
-| Extension (script) | `ics-controller-unauthenticated-protocol` | W | Very Likely / Very High → Critical | Likely / High | Likely / Very High → High | W: unauthenticated-by-design protocol. Likely on T (not internet-reachable: needs network reach into the OT segment); FrostyGoop/Unitronics were internet-exposed. Very High: commands change physical processes. |
+| Extension (script) | `ics-controller-unauthenticated-protocol` | G | Very Likely / Very High → Critical | Likely / High | Likely / Very High → High | W: unauthenticated-by-design protocol. Likely on T (not internet-reachable: needs network reach into the OT segment); FrostyGoop/Unitronics were internet-exposed. Very High: commands change physical processes. |
 | Extension (script) | `insecure-session-management` | G | Very Likely / High → High | Likely / Medium | Likely / High → High | G: every front end. Weakness Very Likely (147k token replays) but G-cap = Likely. High: hijacked session = victim's full access. |
 | Extension (script) | `insufficient-audit-logging` | G | Likely / High → High | Possible / Low | Possible / Medium → Elevated | G detection/compliance gap. Possible: no statistic on AU-2 gaps. Medium anchor: detection. |
 | Extension (script) | `key-management-separation-of-duties-violation` | G | Unlikely / High → Medium | Unlikely / Low | Unlikely / Medium → Medium | G governance. Unlikely: needs a malicious/compromised key admin. Medium anchor: governance/detection (misuse can be hidden). |
@@ -1084,7 +1122,6 @@ Every catalogued rule, rated on profile T (confidential / critical / important, 
 | Extension (script) | `security-control-tamper-resistance-gap` | G | Unlikely / Very High → Elevated | Unlikely / Low | Unlikely / Medium → Medium | G. Unlikely: foothold needed (tampering common once inside, Sophos 82%). Medium anchor: tamper-evidence/detection gap; the attack it hides is scored elsewhere. |
 | Extension (script) | `space-ground-station-rogue-uplink` | G | Unlikely / Very High → Elevated | Unlikely / High | Unlikely / Very High → Elevated | G. Unlikely: RF capability and protocol knowledge. Very High: loss of command authority. |
 | Extension (script) | `space-vehicle-bus-segmentation-gap` | G | Unlikely / Very High → Elevated | Unlikely / High | Unlikely / Very High → Elevated | G. Unlikely: ground segment must be defeated first (Viasat). Very High: unrecoverable vehicle loss. |
-| Extension (script) | `unencrypted-virtual-disk` | G | Unlikely / High → Medium | Unlikely / Low | Unlikely / Medium → Medium | G: fires on every VM (match reads only machine, not encryption). Unlikely: needs privileged snapshot/media access. Medium anchor: at-rest encryption is defense in depth (same as built-in unencrypted-asset). |
 | Extension (script) | `unhardened-os-missing-patch-management` | G | Very Likely / Very High → Critical | Likely / Medium | Likely / High → High | G: every VM. Weakness Very Likely (DBIR 20%, Sophos 32%, Mandiant 33%) but G-cap = Likely. High: accumulated flaws = escalation path needing exploitation (one step). |
 | Extension (script) | `unscanned-data-store` | G | Likely / High → High | Possible / Low | Possible / Medium → Elevated | G governance. Possible: under-protection only matters with another failure (shadow data 35%). Medium anchor: governance. |
 | Extension (script) | `untrusted-container-image` | G | Very Likely / Very High → Critical | Likely / Medium | Likely / High → High | G: every container. Likely: 87% of images carry high/critical vulns = commonly absent, cap Likely. High: typical case is a vulnerable image (needs exploitation); malicious images are the worst case. |
@@ -1134,7 +1171,6 @@ Every catalogued rule, rated on profile T (confidential / critical / important, 
 | Organization-specific | `forensic-chain-of-custody-gap` | G | Unlikely / High → Medium | Unlikely / Low | Unlikely / Medium → Medium | G process. Unlikely. Medium anchor: response. |
 | Organization-specific | `graphql-security-gaps` | G | Very Likely / High → High | Likely / Low | Likely / Medium → Elevated | G. Likely: 57% had not disabled introspection = commonly absent. Medium: reconnaissance plus resource exhaustion; field-auth leaks are the worst case. |
 | Organization-specific | `improper-api-inventory-management` | G | Likely / High → High | Possible / Low | Possible / Medium → Elevated | G. Weakness Likely (API9, Optus) -> Possible. Medium anchor: governance (inventory). |
-| Organization-specific | `insecure-deserialization` | G | Likely / Very High → High | Possible / High | Possible / Very High → High | G: feature tag. Weakness Likely (71 KEV) -> Possible. Very High: RCE (same as built-in untrusted-deserialization). |
 | Organization-specific | `insecure-password-reset` | G | Likely / Very High → High | Possible / Medium | Possible / High → Elevated | G: feature tag only. Weakness Likely (Scattered Spider help-desk resets) -> Possible. High: account takeover. |
 | Organization-specific | `malicious-file-parsing` | G | Likely / High → High | Possible / Medium | Possible / High → Elevated | G: feature tag. Weakness Likely (8 KEV) -> Possible. High: local file disclosure/internal requests (same as built-in XXE). |
 | Organization-specific | `media-downgrade-procedure-gap` | G | Unlikely / High → Medium | Unlikely / Medium | Unlikely / High → Medium | G. Unlikely: infrequent governed transfers. High: the procedure is the primary control against a downgrade spill (TSA manual). |
@@ -1142,7 +1178,6 @@ Every catalogued rule, rated on profile T (confidential / critical / important, 
 | Organization-specific | `missing-data-rights-management` | G | Likely / Medium → Elevated | Likely / Low | Likely / Medium → Elevated | G. Likely: loss of control after release near-certain. Medium anchor: governance. |
 | Organization-specific | `missing-privacy-impact-assessment` | G | Likely / High → High | Possible / Low | Possible / Medium → Elevated | G compliance gap. Possible: matters only alongside a privacy failure. Medium anchor: governance. |
 | Organization-specific | `missing-token-binding` | G | Likely / Very High → High | Likely / Medium | Likely / High → High | G: binding not evidenced; Likely as commonly absent (147k replays, infostealer supply), cap Likely. High: session takeover without MFA. |
-| Organization-specific | `missing-waf-internet-facing` | G | Very Likely / High → High | Possible / Low | Possible / Medium → Elevated | G: zone:dmz with no WAF. Enabled weakness Likely (T1190) -> Possible. Medium anchor: missing WAF (same as built-in missing-waf). |
 | Organization-specific | `network-ids-blind-spot` | G | Likely / High → High | Possible / Low | Possible / Medium → Elevated | G detection gap. Possible. Medium anchor: detection (dwell time). |
 | Organization-specific | `oauth-illicit-consent-grant` | G | Likely / Very High → High | Possible / Medium | Possible / High → Elevated | G. Weakness Likely (APT28/29, Midnight Blizzard) -> Possible. High: persistent app access to user data. |
 | Organization-specific | `oauth-oidc-vulnerabilities` | G | Likely / Very High → High | Possible / Medium | Possible / High → Elevated | G: feature tag. Weakness Likely (Storm-0558) -> Possible. High: token theft/forgery for the affected users; any-account forgery is the worst case. |

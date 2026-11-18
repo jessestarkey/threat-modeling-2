@@ -592,7 +592,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # --- 1. SOFTWARE BEHAVIORAL FEATURES ---
         if 'feature:third-party-plugins' in tags: inject("Unauthorized Marketplace Plugin", "Plugin Risk")
         if 'feature:vdi-path' in tags: inject("VDI Clipboard Data Exfiltration", "VDI Risk")
-        if 'feature:file-upload-processing' in tags: inject("Malicious File Parsing and XXE", "File Parsing Risk")
+        if 'feature:file-upload-processing' in tags: inject("Malicious Archive Processing (Zip Slip and Decompression Bombs)", "Archive Processing Risk")
         if 'feature:public-api-endpoint' in tags:
             inject("Public API Abuse and Asymmetric DoS", "API Abuse Risk")
             inject("Improper API Inventory Management", "API Inventory Risk")
@@ -611,7 +611,9 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             inject("Unsafe Consumption of APIs", "Unsafe API Consumption Risk")
         if 'feature:dynamic-code-execution' in tags: inject("Server-Side Template Injection and RCE", "RCE Risk")
         if 'feature:search-index' in tags: inject("Search Index Abuse and Data Exposure", "Search Index Risk")
-        if 'feature:deserialization' in tags: inject("Insecure Deserialization", "Insecure Deserialization Risk")
+        # feature:deserialization no longer injects a category: Threagile's built-in
+        # untrusted-deserialization raises the same risk from the native
+        # data_formats_accepted: serialization (2026-11-18 review). The tag still marks the feature.
         if 'feature:oauth-oidc-provider' in tags:
             inject("OAuth 2.0 and OIDC Implementation Vulnerabilities", "OAuth/OIDC Risk")
             if 'ops:token-binding-enforced' not in tags:
@@ -987,17 +989,9 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'ops:vendor-hosted-service' in tags and 'ops:saas-export-configured' not in tags:
             inject("Unsupported or SaaS Service Backup Gap", "SaaS Backup Gap Risk")
 
-        # Internet-facing assets without confirmed WAF. Auto-suppressed when the asset's own
-        # native `technology:` is already `waf` -- that's Threagile's own technology value for
-        # "this asset IS a web application firewall," a stronger and less error-prone signal
-        # than relying on a human to also remember the ops:waf-enabled tag on top of it (found
-        # via real data: both of confluence's zone:dmz gateway assets already set
-        # technology: waf and additionally carried ops:waf-enabled, which was pure duplication).
-        # ops:waf-enabled stays as an explicit fallback for the case this native check can't
-        # see -- a separate upstream WAF asset (e.g. an external CDN-level WAF) not modeled as
-        # this asset's own technology.
-        if 'zone:dmz' in tags and 'waf' not in asset_techs and 'ops:waf-enabled' not in tags:
-            inject("Missing Web Application Firewall on Internet-Facing Asset", "Missing WAF Risk")
+        # Missing WAF: owned by Threagile's built-in missing-waf, which reads a WAF modelled on the
+        # incoming web link. The custom zone:dmz category and its ops:waf-enabled suppression were
+        # retired on 2026-11-18: they ignored a modelled WAF and fired on non-web services.
 
         # Internet-facing assets without reconciled DNS records
         if 'zone:dmz' in tags and 'ops:dns-record-reconciled' not in tags:
@@ -1128,7 +1122,10 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
 
         # --- 8. NETWORK SEGMENTATION AND PERIMETER (SELF-MANAGED) ---
         if 'mgmt:self-managed-network' in tags and 'mgmt:self-managed-network-hardened' not in tags:
-            inject("No Macro or Micro-Segmentation of Self-Managed Network", "Self-Managed Segmentation Gap Risk")
+            # Containers are left to the fork's missing-network-micro-segmentation, which also
+            # honours a modelled namespace-isolation boundary (2026-11-18 review).
+            if asset_data.get('machine') != 'container':
+                inject("No Macro or Micro-Segmentation of Self-Managed Network", "Self-Managed Segmentation Gap Risk")
             inject("Rogue Access Point and Evil-Twin Credential Harvesting on Self-Managed Wireless", "Rogue AP Risk")
             inject("Missing Route Origin Validation on Self-Managed External Routing", "Missing RPKI Validation Risk")
 

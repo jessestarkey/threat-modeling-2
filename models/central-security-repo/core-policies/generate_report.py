@@ -243,7 +243,6 @@ THREAGILE_FORK_SCRIPT_DOMAIN_MAP = {
     "media-sanitization-procedure-gap": "Data",
     "missing-data-retention-schedule": "Data",
     "multi-tenant-data-isolation": "Data",
-    "unencrypted-virtual-disk": "Data",
     "unscanned-data-store": "Data",
     # Detection
     "data-store-audit-detection-gap": "Detection",
