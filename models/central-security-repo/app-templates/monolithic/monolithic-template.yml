@@ -48,7 +48,7 @@ author:
 management_summary_comment: >
   Just some <b>more</b> custom summary possible here...
 
-business_criticality: important # values: archive, operational, important, critical, mission-critical
+mission_criticality: mission-support # values: administrative, mission-support, mission-essential, mission-critical
 
 
 

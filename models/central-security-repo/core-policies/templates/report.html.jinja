@@ -14,7 +14,7 @@
   <table class="title-meta">
     <tr><th>Date</th><td>{{ date }}</td></tr>
     <tr><th>Author</th><td>{{ author.get('name', '') }}{% if author.get('role') %} ({{ author.role }}){% endif %}</td></tr>
-    <tr><th>Business Criticality</th><td>{{ business_criticality | capitalize }}</td></tr>
+    <tr><th>Mission Criticality</th><td>{{ mission_criticality }}</td></tr>
   </table>
 </section>
 
@@ -72,8 +72,8 @@
   <h2 class="section-heading">Executive Summary</h2>
   <p>What this system does, how it's built, and where its identified risks currently stand.</p>
 
-  <h2>Business Criticality</h2>
-  <p>This model is rated <strong>{{ business_criticality | capitalize }}</strong>.</p>
+  <h2>Mission Criticality</h2>
+  <p>This model is rated <strong>{{ mission_criticality }}</strong>.</p>
   <table class="asset-table">
     <tr><th>Level</th><th>Meaning</th></tr>
     <tr><td>Archive</td><td>Legacy or read-only reference system. Outage causes no operational impact.</td></tr>
@@ -265,9 +265,8 @@
     volume, a technology-type multiplier, and a "pivoting" effect where an asset inherits some
     attractiveness from whatever it can reach). Impact gets a -1, 0, or +1 adjustment from
     the asset's own rating on whichever specific CIA dimension the finding's STRIDE category
-    threatens, rather than a flat maximum across all three. Impact gets an additional plus +1 if the model's overall
-    Business Criticality is Critical or Mission-Critical, but only when the asset's own
-    CIA-driven adjustment hasn't already earned that same +1, to prevent a duplicative impact adjustment.
+    threatens, rather than a flat maximum across all three. The model's overall Mission Criticality does not
+    change any score; at Mission Essential or above it adds the incident-response readiness checks.
     The two scores then combine through the same Fibonacci-weighted product-and-threshold rule as Threagile's own
     built-in path above, shown below -- the two paths are kept independently computed and maintained by design (see
     <code>docs/risk-methodology.md</code>), even where, as here, they currently land on the same matrix shape.

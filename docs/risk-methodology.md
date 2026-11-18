@@ -997,6 +997,21 @@ workload. Kept as a documented exception: the built-ins' internet step reads the
 from the graph produced false positives through shared hops). The catalogue now counts 183
 rules (35 built-in, 62 extension, 86 organization-specific).
 
+### Mission criticality (2026-11-18)
+
+The model-level rating is `mission_criticality`, on its own four-value scale: `administrative`,
+`mission-support`, `mission-essential`, `mission-critical` (shown in reports as "Mission Support"
+and so on). It is separate from the five-value scale that rates each asset's and data asset's
+integrity and availability, which the CIA step above depends on and which is unchanged.
+
+The rating changes no score. At `mission-essential` or above, the custom engine adds the
+incident-response readiness checks (IR plan testing, DFARS breach notification, forensic chain of
+custody, containment disposition). `business_criticality`, the older name, is still accepted, and
+its five values map onto the four: `archive` and `operational` to `administrative`, `important` to
+`mission-support`, `critical` to `mission-essential`, `mission-critical` to `mission-critical`. The
+mapping keeps every existing model's findings the same. A model that sets both keys must give them
+the same value.
+
 ## Source of truth, by topic
 
 | Topic | Where |

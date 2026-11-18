@@ -14,7 +14,7 @@ management_summary_comment: >
   application that supports day-to-day operations and decision-making; a loss of availability or data integrity would
   significantly disrupt productivity and result in the loss of vital intellectual property.
 
-business_criticality: critical
+mission_criticality: mission-essential
 
 business_overview:
   description: >
@@ -184,7 +184,7 @@ questions:
   # Requirement IDs: ASVS V11.1, ASVS V11.2
   "How are cryptographic keys managed? Is there an inventory, and are the algorithms approved?": >
     Azure Key Vault (`storage:vault`) provides hardware-backed HSM key generation. [ANSWER REQUIRED, gap] Confirm, per key/resource, whether
-    CMK vs. PMK tier assignment was actually verified against this model's `critical` business-criticality rating rather than left to the
+    CMK vs. PMK tier assignment was actually verified against this model's `mission-essential` mission-criticality rating rather than left to the
     platform default, and confirm key rotation is automated on a defined schedule (not manual-only) -- neither is currently referenced.
     [ANSWER REQUIRED, gap] Confirm key-operation authority (create/rotate/delete/use) is held by a role distinct from vault-administration/audit
     authority, verified by an access review within the current ATO period, rather than assumed from general Azure RBAC hygiene.
@@ -233,7 +233,7 @@ questions:
 
   # Requirement IDs: IR-4, IR-3, IR-6
   "If this asset gets compromised, what's the plan for containment and credential rotation, and has any of it been tested rather than just written down? What's the reporting timeline?": >
-    This model is rated `business_criticality: critical`, independently warranting this domain's content regardless of tags, and multiple
+    This model is rated `mission_criticality: mission-essential`, independently warranting this domain's content regardless of tags, and multiple
     assets separately trigger it via tags: the Confluence and Keycloak Application Gateways sit in `zone:dmz`, the AKS CSI Driver is
     `sec:secrets-broker`, and Confluence itself carries the `exception:local-auth-fallback` policy waiver. [ANSWER REQUIRED, gap] No documented
     containment disposition (auto-isolation permitted / human approval required / prohibited) for any of these assets, agreed in advance with the

@@ -283,7 +283,7 @@ class Calibration(unittest.TestCase):
     def test_finding_class_reaches_the_injected_model(self):
         model = {
             "title": "harness",
-            "business_criticality": "important",
+            "mission_criticality": "mission-support",
             "data_assets": {},
             "technical_assets": {"Asset probe": {
                 "id": "probe", "type": "process", "usage": "business", "size": "service",

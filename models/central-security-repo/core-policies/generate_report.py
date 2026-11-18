@@ -660,6 +660,17 @@ def load_risks_xlsx(output_dir: str) -> dict:
     return by_id
 
 
+def mission_criticality_title(model: dict) -> str:
+    """The model's mission criticality for display ("Mission Essential"), reading the older
+    business_criticality key and values the same way inject_risks.py does."""
+    legacy = {"archive": "administrative", "operational": "administrative", "important": "mission-support",
+              "critical": "mission-essential", "mission-critical": "mission-critical"}
+    value = str(model.get("mission_criticality") or model.get("business_criticality") or "").strip().lower()
+    value = value if value in ("administrative", "mission-support", "mission-essential", "mission-critical") \
+        else legacy.get(value, value)
+    return value.replace("-", " ").title()
+
+
 def load_risk_categories(output_dir: str) -> dict:
     """Returns {category_id: category_dict} from risk-categories.json, which the jessestarkey/
     threagile fork writes next to risks.json: every category with a finding, from all three
@@ -1316,7 +1327,7 @@ def build_context(model: dict, output_dir: str) -> dict:
         "title": model.get("title", ""),
         "date": model.get("date"),
         "author": model.get("author") or {},
-        "business_criticality": model.get("business_criticality", ""),
+        "mission_criticality": mission_criticality_title(model),
         "management_summary_comment": model.get("management_summary_comment", ""),
         "business_overview": model.get("business_overview") or {},
         "technical_overview": model.get("technical_overview") or {},

@@ -34,7 +34,24 @@ IMPACT_ORDER = ["low", "medium", "high", "very-high"]
 # causing. The right fix for an under-rated asset is rating it correctly
 # at the asset level, which this framework already expects authors to do,
 # not an indirect model-wide correction layered on top.
-CRITICAL_BUSINESS_VALUES = {"critical", "mission-critical"}
+# Model-level mission criticality (2026-11-18): four values, separate from the five-value
+# integrity/availability scale. mission_criticality is the key; business_criticality, its older
+# name, is still read, and the five values it used map onto the four.
+MISSION_CRITICALITY_VALUES = ("administrative", "mission-support", "mission-essential", "mission-critical")
+LEGACY_MISSION_CRITICALITY = {
+    "archive": "administrative", "operational": "administrative", "important": "mission-support",
+    "critical": "mission-essential", "mission-critical": "mission-critical",
+}
+# The incident-response readiness checks below apply to systems the mission can't do without.
+MISSION_ESSENTIAL_OR_ABOVE = {"mission-essential", "mission-critical"}
+
+
+def mission_criticality(model: dict) -> str:
+    """The model's mission criticality on the four-value scale ('' when unset or unknown)."""
+    value = str(model.get('mission_criticality') or model.get('business_criticality') or '').strip().lower()
+    if value in MISSION_CRITICALITY_VALUES:
+        return value
+    return LEGACY_MISSION_CRITICALITY.get(value, '')
 
 # Ordinal rank (0-4, low to high) for Threagile's Confidentiality enum
 # (public/internal/restricted/confidential/strictly-confidential) and its
@@ -436,7 +453,7 @@ def compute_impact(definition: dict, asset_data: dict) -> str:
     the asset's CIA rank on whichever single dimension this finding's
     STRIDE category actually threatens (see STRIDE_TO_CIA_DIMENSION). Purely
     a function of this asset's own rating -- no model-wide Business
-    Criticality bump (removed, see CRITICAL_BUSINESS_VALUES's own comment
+    Criticality bump (removed, see MISSION_ESSENTIAL_OR_ABOVE's preceding comment
     for why)."""
     baseline = IMPACT_ORDER.index(definition["baseline_impact"])
     c, i, a = _asset_cia_ranks(asset_data)
@@ -481,7 +498,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             sys.exit(1)
 
     # 4. Scan Technical Assets for trigger tags
-    model_is_business_critical = model.get('business_criticality') in CRITICAL_BUSINESS_VALUES
+    model_is_mission_essential = mission_criticality(model) in MISSION_ESSENTIAL_OR_ABOVE
     raa_by_id = compute_raa_by_id(model)
 
     tech_assets = model.get('technical_assets', {})
@@ -1121,8 +1138,8 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
 
         # Containment disposition -- fires on internet-reachable, exception-
         # bearing, or CDS-interface assets, and on every tagged asset once
-        # the model itself is business-critical/mission-critical (reuses
-        # model_is_business_critical rather than a separate per-asset
+        # the model itself is mission-essential or mission-critical (reuses
+        # model_is_mission_essential rather than a separate per-asset
         # criticality tag, since Threagile has no such field). Uses the
         # broader net:internet-reachable tag rather than a direct zone:dmz
         # check -- an incident responder needs a containment disposition
@@ -1130,7 +1147,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # usually the application a few hops behind the DMZ edge, not the
         # edge component itself.
         if 'ir:containment-disposition-documented' not in tags and (
-                model_is_business_critical
+                model_is_mission_essential
                 or asset_is_internet_reachable
                 or any(tag.startswith('exception:') for tag in tags)
                 or any(tag.startswith('cds:') for tag in tags)):
@@ -1154,7 +1171,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # half-accepted. Per-asset injection, same as every other check in
         # this loop, is the right shape for that workflow even though it
         # means the same organizational gap is visible once per asset.
-        if model_is_business_critical:
+        if model_is_mission_essential:
             if 'ir:plan-tested' not in tags:
                 inject("Untested Incident Response Plan", "Untested IR Plan Risk")
             if 'ir:breach-notification-procedure-documented' not in tags:

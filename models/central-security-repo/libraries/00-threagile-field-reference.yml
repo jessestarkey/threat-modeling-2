@@ -80,14 +80,25 @@ metadata_fields:
     type: free text
     notes: Appears on page 1 of the PDF report. Intended for the AO/CISO audience.
 
+  mission_criticality:
+    type: enum
+    notes: >
+      The model-level rating (a separate scale from asset integrity/availability, which keep their
+      five values). At mission-essential or above, the custom engine adds the incident-response
+      readiness checks. It does not change any finding's score.
+    values:
+      administrative:    Supports administrative or back-office functions. The mission continues without it.
+      mission-support:   Supports the mission. Loss degrades it, but workarounds exist.
+      mission-essential: Needed to accomplish the mission. Loss stops a mission function.
+      mission-critical:  Warfighting or core operational system. Loss causes immediate mission failure.
+
   business_criticality:
     type: enum
-    values:
-      archive:          Legacy or read-only reference system. Outage causes no operational impact.
-      operational:      Administrative or back-office tool. Outage is a minor inconvenience.
-      important:        Required for specific project execution. Outage degrades a specific group.
-      critical:         Essential daily enterprise tool. Outage causes widespread productivity disruption.
-      mission-critical: Warfighting or core operational system. Outage causes immediate mission failure.
+    notes: >
+      Deprecated: the older name for mission_criticality, still accepted. Its five older values map
+      onto the four: archive and operational to administrative, important to mission-support,
+      critical to mission-essential, mission-critical to mission-critical. Set mission_criticality
+      in new models; a model that sets both must give them the same value.
 
   business_overview:
     fields:

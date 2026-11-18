@@ -1683,7 +1683,7 @@ categories:
   # RESPONSE
   # Triggers: zone:dmz, sec:secrets-broker
   # Also relevant to any exception-bearing asset, or any asset in a model
-  # with business_criticality critical/mission-critical.
+  # with mission_criticality mission-essential/mission-critical.
   # Source: NIST SP 800-53 Rev 5 (IR family)
   # ============================================================================
   - name: "Response"

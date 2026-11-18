@@ -1,6 +1,6 @@
 # ==============================================================================
 # Metadata INVENTORY: threagile_version, title, date, author,
-# management_summary_comment, business_criticality, business_overview,
+# management_summary_comment, mission_criticality, business_overview,
 # technical_overview, questions
 # Maintainer: Application Development Team
 # ==============================================================================
@@ -39,24 +39,24 @@ management_summary_comment: >
   [ENTER YOUR EXECUTIVE SUMMARY HERE. Follow the guidance above.]
 
 # ------------------------------------------------------------------------------
-# MISSION PRIORITY: business_criticality
+# MISSION PRIORITY: mission_criticality
 # ------------------------------------------------------------------------------
-# PURPOSE: 
-# Defines the overall sensitivity and importance of this application relative to the broader organization. This value directly influences the "Severity" 
-# calculations in the Risk Report.
+# PURPOSE:
+# How much the mission depends on this application. It does not change any
+# finding's score; at mission-essential or above it adds the incident-response
+# readiness checks (IR plan testing, breach notification, forensics) to the report.
 #
 # ALLOWED VALUES (Choose one):
-# - mission-critical: (Warfighting) System is essential for kinetic/operational 
-#                     success. Outage = Immediate mission failure.
-# - critical:         (Enterprise Core) Essential daily tool. Outage = Widespread 
-#                     disruption of organizational productivity (e.g., Confluence).
-# - important:        (Project Specific) Required for specific project execution. 
-#                     Outage = Delays/degradation for a specific group.
-# - operational:      (Administrative) Supporting/back-office tasks. Outage = 
-#                     Minor inconvenience, easily substituted with manual work.
-# - archive:          (Legacy/Reference) Read-only data for historical lookup.
+# - mission-critical:  (Warfighting) Essential for kinetic/operational success.
+#                      Loss = immediate mission failure.
+# - mission-essential: Needed to accomplish the mission. Loss stops a mission
+#                      function (e.g., Confluence as the program's system of record).
+# - mission-support:   Supports the mission. Loss degrades it, but workarounds exist.
+# - administrative:    Administrative or back-office functions. The mission
+#                      continues without it.
+# (business_criticality, the older name, is still accepted.)
 # ------------------------------------------------------------------------------
-business_criticality: important # values: archive, operational, important, critical, mission-critical
+mission_criticality: mission-support # values: administrative, mission-support, mission-essential, mission-critical
 
 
 # ------------------------------------------------------------------------------

@@ -82,7 +82,7 @@ def probe_asset(tags, **fields):
     return asset
 
 
-def run_engine(*assets, business_criticality="important", trust_boundaries=None):
+def run_engine(*assets, mission_criticality="mission-support", trust_boundaries=None, criticality_key="mission_criticality"):
     """Run inject_risks on a model of the given assets.
 
     Returns {category title: {risk name: risk entry}}, i.e. every finding keyed by its category
@@ -90,7 +90,7 @@ def run_engine(*assets, business_criticality="important", trust_boundaries=None)
     """
     model = {
         "title": "harness",
-        "business_criticality": business_criticality,
+        criticality_key: mission_criticality,
         "data_assets": {},
         "technical_assets": {f"Asset {asset['id']}": asset for asset in assets},
     }
@@ -190,7 +190,7 @@ class TagBehaviour(unittest.TestCase):
                               communication_links={"Use": link("probe")})
 
         def run(tags):
-            return findings(run_engine(probe_asset(tags, internet=True), browser, business_criticality=critical))
+            return findings(run_engine(probe_asset(tags, internet=True), browser, mission_criticality=critical))
 
         everything = run(TRIGGER_TAGS)
         self.assertTrue(everything)
@@ -425,6 +425,19 @@ class ReviewRegressions(unittest.TestCase):
                                         internet_admin()), "lower-value VM: the built-in's rating gate skips it")
         self.assertIn(title, run_engine(probe_asset(tags)), "admin path not modeled as a link")
         self.assertIn(title, run_engine(probe_asset(tags), internet_admin(vpn=True)), "the built-in skips VPN links")
+
+    def test_incident_response_checks_apply_at_mission_essential_and_above(self):
+        # 2026-11-18: model-level mission criticality on its own four-value scale.
+        title = "Untested Incident Response Plan"
+        for value, applies in (("administrative", False), ("mission-support", False),
+                               ("mission-essential", True), ("mission-critical", True)):
+            with self.subTest(value=value):
+                result = run_engine(probe_asset([]), mission_criticality=value)
+                self.assertEqual(title in result, applies)
+        for value, applies in (("important", False), ("critical", True), ("mission-critical", True)):
+            with self.subTest(older=value):
+                result = run_engine(probe_asset([]), mission_criticality=value, criticality_key="business_criticality")
+                self.assertEqual(title in result, applies, "the older key and values still work through the mapping")
 
     def test_wireless_and_routing_findings_land_once_per_network(self):
         # 2026-11-18 review: rogue AP and RPKI are properties of the network, not of each workload.

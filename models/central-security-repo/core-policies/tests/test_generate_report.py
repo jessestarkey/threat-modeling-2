@@ -47,6 +47,11 @@ class FindingClasses(unittest.TestCase):
         self.assertEqual(enriched["risk_assessment_if_missing"], "from the library")
         self.assertEqual(plain["risk_assessment_if_missing"], "from the rule")
 
+    def test_mission_criticality_title_reads_both_keys(self):
+        self.assertEqual(report.mission_criticality_title({"mission_criticality": "mission-essential"}), "Mission Essential")
+        self.assertEqual(report.mission_criticality_title({"business_criticality": "critical"}), "Mission Essential")
+        self.assertEqual(report.mission_criticality_title({"business_criticality": "operational"}), "Administrative")
+
     def test_split_keeps_every_category_exactly_once(self):
         cats = [category("w", "weakness-shown"), category("c", "control-not-evidenced"), category("u", None)]
         report.annotate_finding_classes(cats, {})

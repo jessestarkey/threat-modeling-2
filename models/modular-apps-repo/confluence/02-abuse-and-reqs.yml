@@ -55,8 +55,8 @@
 #     machine:container (widely) fire.
 #   RESPONSE: zone:dmz and sec:secrets-broker both fire, and this app
 #     carries an independent third reason per 02-abuse-and-reqs-lib.yml's
-#     own Response domain header: this model's business_criticality is
-#     Critical, and Confluence itself carries a policy exception
+#     own Response domain header: this model's mission_criticality is
+#     mission-essential, and Confluence itself carries a policy exception
 #     (exception:local-auth-fallback) -- either fact alone would pull in
 #     this domain even without the tag matches.
 #   RECOVERY: ops:requires-backup fires widely (Keycloak, Keycloak
