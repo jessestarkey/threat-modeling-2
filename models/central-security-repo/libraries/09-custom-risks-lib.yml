@@ -279,14 +279,14 @@ custom_risk_definitions:
     baseline_likelihood: possible
     baseline_impact: high
     finding_class: control-not-evidenced
-    description: 'The asset exposes an administrative interface reachable with standard application authentication alone, with no additional access control such as IP restriction, a separate factor, or server-side enforcement of role checks.'
+    description: 'The asset exposes an administrative interface reachable with standard application authentication alone, with no additional network or authentication barrier such as IP restriction or a separate, elevated factor. Server-side role checks on admin functions are the broken-function-level-authorization rule.'
     impact: 'If this risk remains unmitigated, compromise of an admin session yields control over all application data, user accounts, and configuration.'
     asvs: V4 - Access Control
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
     action: Restrict admin interface access to an IP-allowlisted management network segment and require a separate, elevated authentication factor.
-    mitigation: Restrict admin interface access to an approved IP range (management VNET, Bastion subnet, or privileged access workstation range) enforced at the NSG or Ingress layer — not just application-layer RBAC. Require a separate, elevated authentication step (e.g., step-up MFA, PIV re-authentication) for admin access even for users already authenticated to the application. Serve the admin interface on a separate subdomain or port to enable distinct WAF policy and access logging. Ensure all admin server-side endpoints enforce the same role checks as the UI — never rely on UI hiding as an authorization control. Audit all admin panel access events to a tamper-evident SIEM.
+    mitigation: Restrict admin interface access to an approved IP range (management VNET, Bastion subnet, or privileged access workstation range) enforced at the NSG or Ingress layer — not just application-layer RBAC. Require a separate, elevated authentication step (e.g., step-up MFA, PIV re-authentication) for admin access even for users already authenticated to the application. Serve the admin interface on a separate subdomain or port to enable distinct WAF policy and access logging. Audit all admin panel access events to a tamper-evident SIEM.
     references: NIST SP 800-53 AC-6 (Least Privilege); NIST SP 800-53 AC-17 (Remote Access); DISA Application Security STIG
-    risk_assessment: 'Likelihood starts at Possible; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for admin panels accessible on the same domain as the user-facing application without IP restriction. Critical if admin functionality is accessible to any authenticated user without an explicit admin role check.'
+    risk_assessment: 'Likelihood starts at Possible; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for admin panels accessible on the same domain as the user-facing application without IP restriction. Critical if the admin interface is reachable from the internet with single-factor authentication.'
     false_positives: Admin interface is served on a separate internal-only domain with NSG-enforced IP restriction to a privileged access workstation range and requires a separate MFA step-up authentication — confirmed in the network architecture documentation.
     function: architecture
     stride: elevation-of-privilege
@@ -448,7 +448,7 @@ custom_risk_definitions:
     mitigation: Compensating controls must include strict Network Security Group (NSG) source-IP allowlisting scoped to a known management range (never 0.0.0.0/0), mandatory MFA on the remote-management credential, and a break-glass credential rotation schedule. A just-in-time access broker or bastion host remains the preferred fix over this waiver where feasible.
     references: NIST SP 800-53 AC-17 (Remote Access); DISA OS STIGs; DoD Cloud Computing SRG
     risk_assessment: 'Likelihood starts at Likely; impact starts at High, stepping on the highest of the asset''s confidentiality, integrity and availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High risk of unauthorized administrative access.'
-    false_positives: None. This is an explicit policy waiver.
+    false_positives: 'None. This is an explicit policy waiver. Raised only where the built-in unguarded-access-from-internet does not already raise the exposure (a non-VPN link from an internet-facing source to a confidential or critical asset); there, record the waiver as status: accepted on the built-in finding.'
     function: architecture
     stride: elevation-of-privilege
     cwe: 668

@@ -75,6 +75,9 @@
 # exception:local-auth-fallback and exception:runs-as-root waivers keep their
 # own findings, because no built-in raises the identity-provider bypass or a
 # root container; record their acceptance on those findings the same way.
+# exception:direct-admin-access raises its own finding only where the built-in
+# unguarded-access-from-internet does not cover the asset; where it does,
+# accept that built-in finding instead.
 # ==============================================================================
 
 # NOTE:

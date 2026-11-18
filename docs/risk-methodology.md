@@ -982,7 +982,14 @@ retired; the WebSocket finding fires on an incoming `ws`/`wss`
 link; search-index abuse lands on the modeled search engine, or on an app tagged
 `feature:search-index` whose search is built in. `zone:dmz`, `feature:search-index` and
 `feature:websocket` stay as tags, since libraries 01 and 02 use them to select requirements and
-abuse cases. Since done: the rogue access point
+abuse cases.
+
+Partial overlaps closed the same day: the direct-admin-access waiver raises its own finding only
+where the built-in `unguarded-access-from-internet` does not (a lower-value VM, or an admin path not
+drawn as a link), and is otherwise recorded as accepted on the built-in finding;
+`exposed-admin-panel` covers network exposure and step-up authentication, leaving server-side role
+checks to `broken-function-level-authorization`; `air-vehicle-gps-spoofing` states that its single
+finding covers navigation spoofing and the capture it can lead to, rated on the hijack. Since done: the rogue access point
 and route origin validation findings are raised once per network trust boundary, on its edge
 asset where one is modeled, instead of on every self-managed workload; segmentation stays per
 workload. Kept as a documented exception: the built-ins' internet step reads the

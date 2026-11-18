@@ -954,7 +954,20 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # --- 3. POLICY EXCEPTIONS (Explicit Bad) ---
         if 'exception:runs-as-root' in tags: inject("Container Runs as Root (Policy Exception)", "Root Waiver")
         if 'exception:eol-component' in tags: inject("EOL Component in ATO Boundary", "EOL Component Waiver")
-        if 'exception:direct-admin-access' in tags: inject("Policy Exception: Direct Admin Access", "Admin Access Waiver")
+        # Direct admin access waiver. Where Threagile's built-in unguarded-access-from-internet
+        # already raises the exposure -- a non-VPN link from an internet-facing source to an asset
+        # rated confidential or critical (its own gate, mirrored here) -- the waiver is recorded as
+        # status: accepted on that finding instead of a second one (2026-11-18 review). It still
+        # fires where the built-in stays silent: a lower-value VM, or an admin path the model
+        # doesn't draw as a link.
+        if 'exception:direct-admin-access' in tags:
+            built_in_covers = (
+                (CIA_RANK.get(str(asset_data.get('confidentiality', '')).strip(), 0) >= 3
+                 or CIA_RANK.get(str(asset_data.get('integrity', '')).strip(), 0) >= 3)
+                and any((assets_by_id.get(source) or {}).get('internet') and not link.get('vpn')
+                        for source, link in incoming))
+            if not built_in_covers:
+                inject("Policy Exception: Direct Admin Access", "Admin Access Waiver")
         # Cleartext internal transit is Threagile's built-in unencrypted-communication finding; an AO
         # waiver is recorded as status: accepted on that finding (08-risk-tracking-lib.yml), not as
         # a second finding from an exception tag (2026-11-18).

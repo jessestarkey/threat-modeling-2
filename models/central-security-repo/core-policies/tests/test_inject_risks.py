@@ -409,6 +409,23 @@ class ReviewRegressions(unittest.TestCase):
                          "the modeled search engine carries it, not also every app that queries it")
         self.assertIn(search, run_engine(probe_asset(["feature:search-index"])), "search built into the app")
 
+    def test_direct_admin_waiver_defers_to_the_built_in_where_it_fires(self):
+        # 2026-11-18: no second finding where the built-in unguarded-access-from-internet already
+        # raises the exposure; still raised where the built-in stays silent.
+        title = "Policy Exception: Direct Admin Access"
+        tags = ["exception:direct-admin-access"]
+
+        def internet_admin(vpn=False):
+            return probe_asset([], id="admin", internet=True,
+                               communication_links={"SSH": {"target": "probe", "vpn": vpn}})
+
+        self.assertNotIn(title, run_engine(probe_asset(tags), internet_admin()),
+                         "confidential VM reached from an internet-facing source: the built-in covers it")
+        self.assertIn(title, run_engine(probe_asset(tags, confidentiality="internal", integrity="operational"),
+                                        internet_admin()), "lower-value VM: the built-in's rating gate skips it")
+        self.assertIn(title, run_engine(probe_asset(tags)), "admin path not modeled as a link")
+        self.assertIn(title, run_engine(probe_asset(tags), internet_admin(vpn=True)), "the built-in skips VPN links")
+
     def test_wireless_and_routing_findings_land_once_per_network(self):
         # 2026-11-18 review: rogue AP and RPKI are properties of the network, not of each workload.
         tags = ["mgmt:self-managed-network"]
