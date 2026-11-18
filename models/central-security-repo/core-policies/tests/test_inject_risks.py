@@ -53,7 +53,7 @@ INJECTED_KEYS = set(re.findall(r'inject\(\s*"([^"]+)"', ENGINE_SOURCE))
 REQUIRED_FIELDS = (
     "id", "baseline_likelihood", "baseline_impact", "description", "impact", "asvs",
     "cheat_sheet", "action", "mitigation", "references", "risk_assessment", "false_positives",
-    "function", "stride", "cwe",
+    "function", "stride", "cwe", "finding_class",
 )
 FUNCTIONS = {"business-side", "architecture", "development", "operations"}
 STRIDE = {

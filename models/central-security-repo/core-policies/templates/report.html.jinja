@@ -290,9 +290,63 @@
   <h2 class="section-heading">Severity Analysis of {{ remaining_finding_count }} Open Risks in {{ remaining_categories | length }} Categories</h2>
   <p>This section covers Open risk items, which are marked unchecked, in-progress, or in-discussion.
   These are risks that have been neither mitigated nor accepted.</p>
+  <p>Open risks are split by what the threat model itself can show.
+  <strong>Weaknesses shown in the model</strong> ({{ remaining_weakness_finding_count }}) are
+  findings the model's own facts demonstrate, such as data sent over a plain-HTTP link or a
+  static secret used to authenticate. <strong>Controls to verify</strong>
+  ({{ remaining_control_finding_count }}) are findings raised because an interface or capability
+  exists, where the model can't show whether the control is in place: a reviewer confirms each
+  one, and the assessment shown with it is the severity to assign if the control turns out to be
+  missing.</p>
 
-  {% for group in remaining_domain_groups %}
-  <h2 class="domain-heading">{{ group.domain }}</h2>
+  <h2 class="domain-heading">Weaknesses Shown in the Model ({{ remaining_weakness_finding_count }})</h2>
+  {% for group in remaining_weakness_domain_groups %}
+  <h3 class="domain-heading">{{ group.domain }}</h3>
+  {% for cat in group.categories %}
+  <h3 class="category-heading"><a href="#cat-{{ cat.slug }}">{{ cat.title }}</a></h3>
+  <table class="compact-risk-table">
+    <tr><th>Severity</th><th>Asset</th><th>Communication Link</th><th>Status</th></tr>
+    {% for f in cat.findings %}
+    <tr>
+      <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
+      <td>{{ f.most_relevant_technical_asset or '—' }}</td>
+      <td>{{ f.communication_link or '—' }}</td>
+      <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endfor %}
+  {% else %}
+  <p>No open weaknesses shown in the model.</p>
+  {% endfor %}
+
+  <h2 class="domain-heading">Controls to Verify ({{ remaining_control_finding_count }})</h2>
+  {% for group in remaining_control_domain_groups %}
+  <h3 class="domain-heading">{{ group.domain }}</h3>
+  {% for cat in group.categories %}
+  <h3 class="category-heading"><a href="#cat-{{ cat.slug }}">{{ cat.title }}</a></h3>
+  {% if cat.risk_assessment_if_missing %}<p><strong>If the control is confirmed missing:</strong> {{ cat.risk_assessment_if_missing }}</p>{% endif %}
+  <table class="compact-risk-table">
+    <tr><th>Severity</th><th>Asset</th><th>Communication Link</th><th>Status</th></tr>
+    {% for f in cat.findings %}
+    <tr>
+      <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
+      <td>{{ f.most_relevant_technical_asset or '—' }}</td>
+      <td>{{ f.communication_link or '—' }}</td>
+      <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endfor %}
+  {% else %}
+  <p>No open controls to verify.</p>
+  {% endfor %}
+
+  {% if remaining_unclassified_finding_count %}
+  <h2 class="domain-heading">Other Open Risks ({{ remaining_unclassified_finding_count }})</h2>
+  <p>Findings from rules that carry no finding class.</p>
+  {% for group in remaining_unclassified_domain_groups %}
+  <h3 class="domain-heading">{{ group.domain }}</h3>
   {% for cat in group.categories %}
   <h3 class="category-heading"><a href="#cat-{{ cat.slug }}">{{ cat.title }}</a></h3>
   <table class="compact-risk-table">
@@ -308,6 +362,7 @@
   </table>
   {% endfor %}
   {% endfor %}
+  {% endif %}
 </section>
 
 <section id="accepted-risks" style="page: content;">
@@ -402,6 +457,7 @@
           <td><strong>STRIDE:</strong> {{ cat.shared.stride }}</td>
           <td><strong>Function:</strong> {{ cat.shared.function }}</td>
           <td><strong>CWE:</strong> {{ cat.shared.cwe }}</td>
+          {% if cat.finding_class_label %}<td><strong>Finding class:</strong> {{ cat.finding_class_label }}</td>{% endif %}
         </tr>
       </table>
       <table class="compact-risk-table">

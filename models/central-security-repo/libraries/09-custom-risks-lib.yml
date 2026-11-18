@@ -83,6 +83,7 @@ custom_risk_definitions:
     id: policy-exception-local-auth
     baseline_likelihood: likely
     baseline_impact: medium
+    finding_class: weakness-shown
     description: 'This application maintains a local credential store that bypasses the enterprise identity provider and mandatory MFA enforcement.'
     impact: 'If this risk remains unmitigated, the local store becomes a backdoor that can be brute-forced or credential-stuffed independent of enterprise conditional access policies.'
     asvs: V2 - Authentication
@@ -101,6 +102,7 @@ custom_risk_definitions:
     id: insecure-password-reset
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The asset''s self-service password reset flow uses predictable or reusable reset tokens, excessive token lifetimes, or responses that reveal whether an email address is registered.'
     impact: 'If this risk remains unmitigated, an attacker can take over accounts without knowing the current password, or enumerate valid accounts to target with further attacks.'
     asvs: V2 - Authentication
@@ -120,6 +122,7 @@ custom_risk_definitions:
     id: oauth-oidc-vulnerabilities
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The asset issues or validates OAuth 2.0/OIDC tokens with implementation weaknesses such as unvalidated redirect URIs, a missing or unchecked state parameter, or improper JWT signature algorithm handling.'
     impact: 'If this risk remains unmitigated, an attacker can intercept authorization codes, replay tokens, or forge arbitrary tokens to gain authenticated access as another user.'
     asvs: V3 - Session Management / V2 - Authentication
@@ -139,6 +142,7 @@ custom_risk_definitions:
     id: saml-assertion-vulnerabilities
     baseline_likelihood: unlikely
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'The asset processes SAML assertions from an external identity provider with XML-parsing weaknesses that can allow a submitted assertion to be altered, replayed, or misattributed to a different user.'
     impact: 'If this risk remains unmitigated, an attacker can forge or replay a SAML assertion to authenticate as any user, including administrators, without valid credentials.'
     asvs: V2 - Authentication
@@ -165,6 +169,7 @@ custom_risk_definitions:
     id: missing-token-binding
     baseline_likelihood: likely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'This asset issues session or refresh tokens as bearer artifacts, usable by whoever holds them, rather than binding them to the client that obtained them via proof-of-possession.'
     impact: 'If this risk remains unmitigated, a captured token can be replayed from any host with no further credential needed, defeating even phishing-resistant authentication performed before the token was stolen.'
     asvs: V3 - Session Management
@@ -183,6 +188,7 @@ custom_risk_definitions:
     id: oauth-illicit-consent-grant
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'This asset''s OAuth authorization server allows a user to grant a third-party application delegated API access with no admin-consent gate or scope review.'
     impact: 'If this risk remains unmitigated, an attacker can register a malicious application and phish a user into granting it persistent API access that survives a password reset.'
     asvs: V2 - Authentication
@@ -201,6 +207,7 @@ custom_risk_definitions:
     id: self-managed-directory-tier0-compromise
     baseline_likelihood: possible
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'This asset relies on a self-managed directory service that does not inherit the enterprise identity team''s Tier-0 hardening, leaving it exposed to attacks such as unconstrained delegation, AdminSDHolder tampering, or an unrotated krbtgt credential.'
     impact: 'If this risk remains unmitigated, compromise of the directory''s Tier-0 infrastructure lets an attacker forge authentication for any identity it manages, with persistence that survives ordinary password resets.'
     asvs: V2 - Authentication
@@ -219,6 +226,7 @@ custom_risk_definitions:
     id: self-managed-ca-template-escalation
     baseline_likelihood: likely
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'This asset relies on a self-managed certificate authority with an enrollment template that lets a low-privileged requester supply its own subject name.'
     impact: 'If this risk remains unmitigated, a low-privileged requester can obtain a certificate asserting a privileged identity, bypassing authentication for every system that trusts this CA.'
     asvs: V2 - Authentication
@@ -237,6 +245,7 @@ custom_risk_definitions:
     id: self-managed-hybrid-sync-compromise
     baseline_likelihood: possible
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'This asset runs a self-managed hybrid identity synchronization server that holds working credentials for both the on-premises directory and the cloud identity tenant it bridges.'
     impact: 'If this risk remains unmitigated, compromise of the sync server lets an attacker pivot between the on-premises directory and the cloud tenant, bypassing tier separation designed around each side individually.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -263,6 +272,7 @@ custom_risk_definitions:
     id: exposed-admin-panel
     baseline_likelihood: possible
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'The asset exposes an administrative interface reachable with standard application authentication alone, with no additional access control such as IP restriction, a separate factor, or server-side enforcement of role checks.'
     impact: 'If this risk remains unmitigated, compromise of an admin session yields control over all application data, user accounts, and configuration.'
     asvs: V4 - Access Control
@@ -282,6 +292,7 @@ custom_risk_definitions:
     id: vendor-remote-support-access-gap
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'This asset grants a third-party vendor''s support engineer remote access that is not scoped to a specific support case and does not deactivate automatically when the case closes.'
     impact: 'If this risk remains unmitigated, vendor access can remain active long after the support engagement ends, as a standing external access path an attacker who compromises the vendor could reuse.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -300,6 +311,7 @@ custom_risk_definitions:
     id: standing-privileged-access-no-tiering
     baseline_likelihood: likely
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'Privileged roles on this self-managed asset are held continuously rather than activated just-in-time, with no administrative-tiering separation preventing a high-privilege credential from authenticating out of a general-purpose workstation.'
     impact: 'If this risk remains unmitigated, compromise of any ordinary endpoint an administrator uses is sufficient to capture a standing high-privilege credential.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -318,6 +330,7 @@ custom_risk_definitions:
     id: privileged-session-credential-disclosure
     baseline_likelihood: likely
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'Shared administrative credentials for this self-managed asset are disclosed directly to administrators rather than checked out from a vault and brokered through a session that never reveals the secret.'
     impact: 'If this risk remains unmitigated, a disclosed shared credential can be retained or reused outside any brokered session, and rotating it after personnel turnover requires identifying every system it was ever used against.'
     asvs: V2 - Authentication
@@ -336,6 +349,7 @@ custom_risk_definitions:
     id: break-glass-circular-dependency-untested
     baseline_likelihood: unlikely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'Break-glass emergency access for this self-managed asset either depends on the primary identity platform it is meant to provide emergency access around, or has never actually been exercised.'
     impact: 'If this risk remains unmitigated, the break-glass procedure can fail during the exact primary-platform outage or compromise scenario it was designed for.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -354,6 +368,7 @@ custom_risk_definitions:
     id: overprivileged-workload-identity
     baseline_likelihood: likely
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'This asset''s managed identity, service principal, or Kubernetes service account holds role assignments wider than its function needs -- subscription- or resource-group-scoped Contributor/Owner, or wildcard data-plane roles -- or its credential/token is reachable through the cloud instance metadata service or an automounted service-account token from code an attacker could influence.'
     impact: 'If this risk remains unmitigated, compromising the workload turns directly into cloud control-plane access: creating credentials, assigning roles, or reading every vault and store the identity''s own role assignment can reach, independent of whether the application itself was the actual target.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -388,6 +403,7 @@ custom_risk_definitions:
     id: container-runs-as-root
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: weakness-shown
     description: 'This container executes as the root user or with elevated Linux capabilities rather than the least privilege its function requires.'
     impact: 'If this risk remains unmitigated, an attacker who compromises the container has a substantially easier path to escalate privileges on the underlying node.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -417,6 +433,7 @@ custom_risk_definitions:
     id: policy-exception-direct-admin-access
     baseline_likelihood: likely
     baseline_impact: high
+    finding_class: weakness-shown
     description: 'The virtual machine has direct administrative ports exposed rather than routed through a bastion host or just-in-time access.'
     impact: 'If this risk remains unmitigated, the VM is continuously exposed to brute-force, credential-stuffing, and exploitation attempts against its remote management service.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -436,6 +453,7 @@ custom_risk_definitions:
     id: self-managed-bmc-compromise
     baseline_likelihood: possible
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'This self-managed physical host''s out-of-band management controller (BMC/iDRAC/iLO/IPMI) has not been confirmed hardened, and runs its own processor and network stack independent of the host OS.'
     impact: 'If this risk remains unmitigated, a default or weak BMC credential grants an attacker remote, OS-invisible control of the host, including the ability to remotely reimage it.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -454,6 +472,7 @@ custom_risk_definitions:
     id: self-managed-firmware-persistence-gap
     baseline_likelihood: unlikely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'This self-managed physical host''s patch management covers only the operating system, leaving UEFI/BIOS, TPM, and other below-OS firmware unpatched.'
     impact: 'If this risk remains unmitigated, a firmware-level implant persists across a full OS reimage and is invisible to any OS-level integrity check.'
     asvs: V14 - Configuration
@@ -472,6 +491,7 @@ custom_risk_definitions:
     id: self-managed-boot-integrity-bypass
     baseline_likelihood: unlikely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'This self-managed physical host has no secure boot or measured-boot attestation confirmed, so its boot-chain integrity is unverifiable.'
     impact: 'If this risk remains unmitigated, a tampered bootloader or bootkit survives indefinitely and produces no signal to any control that only runs after the OS has loaded.'
     asvs: V14 - Configuration
@@ -503,6 +523,7 @@ custom_risk_definitions:
     id: self-managed-network-no-segmentation
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This asset''s self-managed network permits workload-to-workload traffic by default rather than restricting it to an explicit, allow-listed baseline.'
     impact: 'If this risk remains unmitigated, compromise of a single host on the network gives an attacker unrestricted reachability to every other host on it.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -521,6 +542,7 @@ custom_risk_definitions:
     id: self-managed-rogue-ap-credential-harvesting
     baseline_likelihood: unlikely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'This asset''s self-managed wireless network has no confirmed detection for a rogue access point impersonating its own SSID.'
     impact: 'If this risk remains unmitigated, a nearby evil-twin access point can harvest client credentials directly over the air, bypassing every wired-side control.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -539,6 +561,7 @@ custom_risk_definitions:
     id: self-managed-missing-rpki-route-validation
     baseline_likelihood: unlikely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This asset''s self-managed external routing has no route origin authorization or RPKI validation confirmed.'
     impact: 'If this risk remains unmitigated, an accepted bogus route announcement can redirect this asset''s traffic onto an attacker-influenced path with no firewall rule ever triggered.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -562,6 +585,7 @@ custom_risk_definitions:
     id: cds-marking-validation-bypass
     baseline_likelihood: likely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The application validates that classification markings exist before submitting content to the CDS for low-to-high transfer, but cannot verify that those markings are correct.'
     impact: 'If this risk remains unmitigated, incorrectly classified content can reach the CDS and result in a formal data spill.'
     asvs: V5 - Validation, Sanitization and Encoding
@@ -581,6 +605,7 @@ custom_risk_definitions:
     id: cds-misclassification-audit-gap
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'Classification correctness on the low-to-high transfer path is a human judgment the application cannot technically enforce, so its main contribution to spillage prevention is the completeness of the audit trail it produces.'
     impact: 'If this risk remains unmitigated, an incomplete or tampered audit trail prevents a spillage event from being reconstructed or attributed after the fact.'
     asvs: V7 - Error Handling and Logging
@@ -601,6 +626,7 @@ custom_risk_definitions:
     id: cds-unsafe-inbound-content
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The receiving application processes CDS-approved content from the high side with less rigorous validation than it would apply to directly user-supplied data, even though CDS approval reflects releasability, not safety for parsing.'
     impact: 'If this risk remains unmitigated, an approved document can still exploit a parser vulnerability or poison the receiving application''s data store.'
     asvs: V5 - Validation, Sanitization and Encoding
@@ -621,6 +647,7 @@ custom_risk_definitions:
     id: cds-broker-queue-injection
     baseline_likelihood: unlikely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The message broker staging content between the application and the CDS interface is a critical security boundary; direct write access to it bypasses the application''s own classification marking validation.'
     impact: 'If this risk remains unmitigated, injected content reaches the CDS or the receiving application with no application audit record of it.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -641,6 +668,7 @@ custom_risk_definitions:
     id: cds-above-releasable-content-inclusion
     baseline_likelihood: likely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'Content proposed for downward release via the CDS relies primarily on human review, which can miss above-releasable material embedded in file metadata, revision history, or embedded objects.'
     impact: 'If this risk remains unmitigated, above-releasable content that passes the CDS filter constitutes a formal downward spill requiring incident response.'
     asvs: V5 - Validation, Sanitization and Encoding
@@ -660,6 +688,7 @@ custom_risk_definitions:
     id: cds-release-authority-bypass
     baseline_likelihood: unlikely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The high-side submission workflow requires release authority approval before content is queued for downward transfer, and this approval gate can potentially be bypassed through workflow logic flaws, direct broker writes, or privilege escalation.'
     impact: 'If this risk remains unmitigated, unreviewed content can reach the CDS without ever passing the mandatory human release-authority judgment.'
     asvs: V4 - Access Control / V11 - Business Logic
@@ -679,6 +708,7 @@ custom_risk_definitions:
     id: cds-malicious-insider-release-abuse
     baseline_likelihood: unlikely
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'A cleared individual who legitimately holds submitter access or release authority can knowingly use that access to move content they know is not authorized for release, with no technical control bypassed.'
     impact: 'If this risk remains unmitigated, an authorized insider can cause an unauthorized disclosure identical in consequence to any other downward spill, with no compensating technical control available afterward.'
     asvs: V7 - Error Handling and Logging
@@ -699,6 +729,7 @@ custom_risk_definitions:
     id: cds-low-to-high-influence
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The high-side receiver processes content from the low side that the CDS validates as authorized for ingestion but does not validate for accuracy, so a compromised low-side system could send subtly manipulated data that appears legitimate.'
     impact: 'If this risk remains unmitigated, corrupted data ingested into the high-side environment can compromise the integrity of analysis or decisions that depend on it, without triggering any content-inspection alert.'
     asvs: V8 - Data Protection
@@ -719,6 +750,7 @@ custom_risk_definitions:
     id: cds-high-side-broker-tampering
     baseline_likelihood: unlikely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The high-side message broker staging content for the CDS interface is a critical security boundary; unauthorized write access to its outbound queue bypasses the release authority and sanitization gates.'
     impact: 'If this risk remains unmitigated, injected content can reach the CDS for downward release without ever passing through the controls meant to review it.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -739,6 +771,7 @@ custom_risk_definitions:
     id: cds-transfer-interface-covert-channel
     baseline_likelihood: unlikely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'A covert channel -- timing, storage, or feedback-based -- can carry information across a CDS transfer interface without passing through the CDS content filter or being authorized by transfer policy.'
     impact: 'If this risk remains unmitigated, a low-bandwidth but persistent exfiltration or signaling path exists that content inspection alone cannot detect.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -763,6 +796,7 @@ custom_risk_definitions:
     id: dynamic-code-rce
     baseline_likelihood: likely
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'The application executes dynamic code, expressions, or templates built from user-supplied input, creating a server-side template injection vector.'
     impact: 'If this risk remains unmitigated, an attacker can achieve remote code execution and full compromise of the container running the application.'
     asvs: V5 - Validation, Sanitization and Encoding
@@ -782,6 +816,7 @@ custom_risk_definitions:
     id: malicious-file-parsing
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The application parses complex user-uploaded files such as XML, PDF, or ZIP archives, which can carry XXE, path traversal, or decompression-bomb payloads.'
     impact: 'If this risk remains unmitigated, a crafted file can cause server-side request forgery, unauthorized file reads, or denial of service.'
     asvs: V12 - File and Resources
@@ -801,6 +836,7 @@ custom_risk_definitions:
     id: insecure-deserialization
     baseline_likelihood: possible
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'The asset deserializes objects from user-supplied or externally sourced data using a mechanism capable of instantiating arbitrary objects, such as Java native serialization or Python pickle.'
     impact: 'If this risk remains unmitigated, a crafted serialized payload can execute a gadget chain achieving remote code execution with the application''s own privileges.'
     asvs: V5 - Validation, Sanitization and Encoding
@@ -820,6 +856,7 @@ custom_risk_definitions:
     id: pdf-generation-injection
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The asset generates PDFs server-side by rendering HTML templates with a headless browser or HTML-to-PDF library, which can resolve attacker-supplied URLs or file paths during rendering.'
     impact: 'If this risk remains unmitigated, injected HTML or CSS can be used to read local files or reach the cloud metadata endpoint from the rendering process.'
     asvs: V5 - Validation, Sanitization and Encoding
@@ -839,6 +876,7 @@ custom_risk_definitions:
     id: email-header-injection
     baseline_likelihood: unlikely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'The asset constructs outbound email from user-supplied input without sanitizing recipient or header fields, allowing CRLF-based header injection.'
     impact: 'If this risk remains unmitigated, an attacker can redirect mail to unintended recipients or turn the application into an open relay for spam and phishing.'
     asvs: V5 - Validation, Sanitization and Encoding
@@ -858,6 +896,7 @@ custom_risk_definitions:
     id: webhook-signature-bypass
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'The asset receives inbound webhook callbacks and acts on their payload without verifying a cryptographic signature on the request.'
     impact: 'If this risk remains unmitigated, anyone who knows the endpoint URL can send a fabricated payload and trigger business logic with attacker-controlled data.'
     asvs: V13 - API and Web Service
@@ -877,6 +916,7 @@ custom_risk_definitions:
     id: bulk-import-export-abuse
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The asset supports bulk data import or export without per-record authorization checks or bounded scope, exposing it to formula injection, mass overwrite, and unbounded data exposure.'
     impact: 'If this risk remains unmitigated, a low-privilege user can export an entire dataset beyond what individual record access would allow, or overwrite authoritative records at scale.'
     asvs: V5 - Validation, Sanitization and Encoding / V4 - Access Control
@@ -896,6 +936,7 @@ custom_risk_definitions:
     id: graphql-security-gaps
     baseline_likelihood: likely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'The asset exposes a GraphQL API with production introspection enabled, no query-depth limiting, and authorization checks that may not extend to individual fields or mutations.'
     impact: 'If this risk remains unmitigated, introspection reveals the full schema to accelerate further attacks, and a single deeply nested query can exhaust backend resources.'
     asvs: V4 - Access Control / V11 - Business Logic
@@ -916,6 +957,7 @@ custom_risk_definitions:
     id: search-index-abuse
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The application relies on a search index such as Elasticsearch or Solr for query functionality, and index-level authorization may not be strictly enforced.'
     impact: 'If this risk remains unmitigated, an attacker can craft queries that bypass application-layer access controls to scrape data or exhaust backend resources.'
     asvs: V11 - Business Logic
@@ -935,6 +977,7 @@ custom_risk_definitions:
     id: websocket-security-gaps
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'The asset uses persistent WebSocket connections without validating the Origin header on the upgrade handshake or revalidating session state on individual messages.'
     impact: 'If this risk remains unmitigated, a malicious page on another origin can hijack an authenticated WebSocket connection and read or send messages as the victim.'
     asvs: V13 - API and Web Service
@@ -954,6 +997,7 @@ custom_risk_definitions:
     id: permissive-cors-framing-policy
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This browser-facing asset either reflects arbitrary origins in its CORS policy with credentials allowed, or lacks a restrictive Content-Security-Policy frame-ancestors (or X-Frame-Options) directive on its rendered pages.'
     impact: 'If this risk remains unmitigated, a hostile site can read this asset''s authenticated API responses cross-origin, or overlay its UI to capture clicks on privileged actions (clickjacking/UI redressing), without the victim''s awareness.'
     asvs: V14 - Configuration
@@ -973,6 +1017,7 @@ custom_risk_definitions:
     id: background-job-security
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'The asset processes background jobs whose parameters originate from earlier user input, without re-validating the user''s authorization at execution time.'
     impact: 'If this risk remains unmitigated, a job can execute with permissions the user no longer holds, or with parameters altered by anyone with access to the queue.'
     asvs: V4 - Access Control / V11 - Business Logic
@@ -992,6 +1037,7 @@ custom_risk_definitions:
     id: cache-poisoning-data-persistence
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The asset uses an application-level cache to serve responses, with cache keys that may not incorporate every parameter affecting the response, or a cache server reachable without authentication.'
     impact: 'If this risk remains unmitigated, one user''s cached response -- including sensitive data -- can be served to a different user, or a cache server can be read or written directly by anyone on the internal network.'
     asvs: V8 - Data Protection / V13 - API
@@ -1011,6 +1057,7 @@ custom_risk_definitions:
     id: unauthorized-marketplace-plugin
     baseline_likelihood: likely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The application allows installation of third-party marketplace plugins that execute code directly within the application''s core process.'
     impact: 'If this risk remains unmitigated, a malicious or supply-chain-compromised plugin runs with the full privilege of the application, enabling complete compromise.'
     asvs: V10 - Malicious Code
@@ -1030,6 +1077,7 @@ custom_risk_definitions:
     id: vdi-clipboard-data-exfiltration
     baseline_likelihood: unlikely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This asset''s VDI session allows clipboard redirection between the remote session and the local endpoint, a channel most network-layer DLP controls do not inspect.'
     impact: 'If this risk remains unmitigated, a malicious insider can exfiltrate data through the clipboard without generating any network-layer alert.'
     asvs: V8 - Data Protection
@@ -1055,6 +1103,7 @@ custom_risk_definitions:
     id: public-api-abuse
     baseline_likelihood: likely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The application exposes an internet-facing API without rate limiting, pagination, or computational throttling.'
     impact: 'If this risk remains unmitigated, an attacker can degrade service, exhaust database resources, or drive up cloud consumption costs.'
     asvs: V11 - Business Logic
@@ -1074,6 +1123,7 @@ custom_risk_definitions:
     id: improper-api-inventory-management
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'The API surface includes undocumented, deprecated, or non-production (beta/staging/debug) endpoints or versions that remain reachable but fall outside the organization''s current inventory, documentation, and patch/monitoring scope.'
     impact: 'If this risk remains unmitigated, an old API version retains the vulnerabilities and weaker controls of whatever state it was frozen in, while receiving none of the monitoring, patching, or rate-limiting applied to the current version -- and because it isn''t inventoried, nobody notices it''s still reachable.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1093,6 +1143,7 @@ custom_risk_definitions:
     id: business-flow-abuse
     baseline_likelihood: likely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'This asset implements a multi-step business process valuable enough to be worth automating or abusing at scale -- bulk account creation, ticket or inventory scalping, loan or claim application submission, bulk coupon redemption -- without a control distinguishing legitimate human usage from automated abuse of the flow itself. Distinct from Public API Abuse and Asymmetric DoS, which is about raw request volume/compute exhaustion regardless of what the request does; this is about the business value of the specific flow being automated at scale even at ordinary request rates.'
     impact: 'If this risk remains unmitigated, an adversary can automate a legitimate business process at a volume and speed no human user could achieve, extracting business value (inventory, credentials, approved applications) the flow was never designed to yield at scale.'
     asvs: V11 - Business Logic
@@ -1112,6 +1163,7 @@ custom_risk_definitions:
     id: unsafe-api-consumption
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'This asset sends requests to an external, third-party API and trusts the response content and schema without validation, treating "came from a legitimate external API" as equivalent to "safe to consume." Distinct from Server-Side Request Forgery, which is about this asset''s own request being hijacked to reach an unintended target; this is about the response from an intended, legitimate target being trusted without verification.'
     impact: 'If this risk remains unmitigated, a compromised, misconfigured, or simply buggy upstream API can inject unexpected data shapes, oversized payloads, or malicious content directly into this asset''s own processing logic, since no boundary exists between "external API response" and "trusted internal data."'
     asvs: V13 - API and Web Service
@@ -1131,6 +1183,7 @@ custom_risk_definitions:
     id: missing-waf-internet-facing
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This internet-facing asset has no Web Application Firewall with a managed ruleset in its ingress path.'
     impact: 'If this risk remains unmitigated, the application relies entirely on its own application-layer controls, with no network-layer blocking of common injection and protocol-level attacks.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1150,6 +1203,7 @@ custom_risk_definitions:
     id: dangling-dns-subdomain-takeover
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This internet-facing asset''s DNS record points at a cloud resource that is not reconciled against that resource''s actual live state.'
     impact: 'If this risk remains unmitigated, a deprovisioned resource''s name becomes reclaimable, letting an attacker stand up content or a certificate under the organization''s own trusted subdomain.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1189,6 +1243,7 @@ custom_risk_definitions:
     id: ai-direct-prompt-injection
     baseline_likelihood: very-likely
     baseline_impact: medium
+    finding_class: weakness-shown
     description: 'The asset accepts free-form natural language input from users and forwards it to an LLM, which an adversary can use to override the system prompt or bypass safety guardrails through roleplay, encoding tricks, or adversarial prompt crafting.'
     impact: 'If this risk remains unmitigated, an adversary can extract system prompt secrets, bypass content guardrails, and coerce the model into unauthorized actions if it has tool access.'
     asvs: V5 - Validation, Sanitization and Encoding
@@ -1208,6 +1263,7 @@ custom_risk_definitions:
     id: ai-indirect-prompt-injection
     baseline_likelihood: very-likely
     baseline_impact: medium
+    finding_class: weakness-shown
     description: 'The asset retrieves or processes third-party or user-controlled content that an LLM subsequently interprets, letting an adversary embed instructions in that content to hijack the model''s behavior.'
     impact: 'If this risk remains unmitigated, an adversary can exfiltrate session data or user context, pivot to connected tool actions, or persist an attack across future sessions, all without the user''s awareness.'
     asvs: V5 - Validation, Sanitization and Encoding
@@ -1250,6 +1306,7 @@ custom_risk_definitions:
     id: ai-agent-memory-poisoning
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The AI agent maintains persistent memory or session state across turns, which an adversary can poison or silently alter to change the model''s conversational context.'
     impact: 'If this risk remains unmitigated, an adversary can maintain influence over agent behavior indefinitely and establish persistence that survives an agent restart.'
     asvs: V8 - Data Protection
@@ -1337,6 +1394,7 @@ custom_risk_definitions:
     id: ai-ot-actuation-boundary-gap
     baseline_likelihood: possible
     baseline_impact: high
+    finding_class: weakness-shown
     description: 'This AI system''s output has a path to an operational technology actuator or safety-critical process with no technical, AI-unbypassable human authorization gate in between.'
     impact: 'If this risk remains unmitigated, a model failure -- hallucination, prompt injection, or adversarial manipulation -- can directly trigger a physical-world safety incident with no human decision point to catch it.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1370,6 +1428,7 @@ custom_risk_definitions:
     id: air-gapped-model-package-integrity-gap
     baseline_likelihood: unlikely
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'A model destined for a disconnected enclave is not verified as a single signed package at every load, only at the point of initial transfer.'
     impact: 'If this risk remains unmitigated, a substituted or tampered model artifact sitting inside the enclave has no external signal to catch it and no way to be detected short of per-load cryptographic verification.'
     asvs: V14 - Configuration
@@ -1404,6 +1463,7 @@ custom_risk_definitions:
     id: ungoverned-third-party-model-api
     baseline_likelihood: likely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This asset sends requests to a vendor-hosted foundation model API with no restriction on which data classifications may be transmitted, no confirmed training-use opt-out, and no recurring review of the vendor''s security posture.'
     impact: 'If this risk remains unmitigated, sending CUI to the vendor API can constitute a data disclosure to a third party the organization does not control.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1422,6 +1482,7 @@ custom_risk_definitions:
     id: ai-overreliance-trust-exploitation
     baseline_likelihood: likely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This asset presents AI-generated output to a human as input to a consequential decision, with no confidence indicator, citation/provenance, or mandatory verification step to help the human catch a confidently wrong (hallucinated) answer.'
     impact: 'If this risk remains unmitigated, a human decision-maker can act on a fluent, confident, but factually wrong AI output -- misclassifying data, misreporting status, or authorizing an action based on a fabricated summary of CUI -- with no built-in signal distinguishing a well-grounded answer from a hallucinated one.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1441,6 +1502,7 @@ custom_risk_definitions:
     id: ai-unexpected-code-execution
     baseline_likelihood: likely
     baseline_impact: high
+    finding_class: weakness-shown
     description: This AI agent or tool server runs code -- code the model writes, code a tool returns, or commands built from model output -- on the host it runs on, so whatever steers the model can choose what executes.
     impact: If this risk remains unmitigated, a prompt injection or poisoned input becomes arbitrary code execution with the asset's own privileges and network reach, including any credentials available to it.
     asvs: V15 - Secure Coding and Architecture
@@ -1459,6 +1521,7 @@ custom_risk_definitions:
     id: ai-unvetted-agent-skills
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: This agent loads skills -- packaged instructions, manifests and scripts that tell it how to orchestrate its tools -- from sources that are not vetted, pinned or scanned, so a malicious, tampered or drifted skill becomes part of how the agent behaves.
     impact: If this risk remains unmitigated, a malicious skill can direct the agent to exfiltrate data, misuse its tools or follow attacker instructions, with the agent's own permissions, across every deployment that loads the skill.
     asvs: V15 - Secure Coding and Architecture
@@ -1477,6 +1540,7 @@ custom_risk_definitions:
     id: ai-labeler-overexposure
     baseline_likelihood: unlikely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: People outside the system's normal access -- data labelers, annotation contractors, red-teamers or human-in-the-loop reviewers -- see raw training data, prompts or outputs from this asset, often through third-party platforms and without the clearance, need-to-know or handling controls the data requires.
     impact: If this risk remains unmitigated, sensitive records, CUI or personal data are viewed, copied or leaked by a workforce the system's owners do not control, outside the boundary the data was confined to.
     asvs: V14 - Data Protection
@@ -1495,6 +1559,7 @@ custom_risk_definitions:
     id: ai-endpoint-assistant-overreach
     baseline_likelihood: unlikely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: An AI assistant runs on user endpoints or in the browser -- a desktop copilot, browser extension or AI-enabled IDE -- with broad access to local files, open pages, the clipboard or the screen, and sends what it sees to a model service.
     impact: If this risk remains unmitigated, data on the endpoint that was never meant for an AI service -- documents, credentials, other applications' screens -- is read and sent outside the boundary, and a malicious page or file can steer the assistant into acting on the user's behalf.
     asvs: V14 - Data Protection
@@ -1525,6 +1590,7 @@ custom_risk_definitions:
     id: missing-privacy-impact-assessment
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This asset processes or stores PII on individuals, but no current Privacy Impact Assessment documents what is collected, why, and how it is protected, as required by Section 208 of the E-Government Act of 2002.'
     impact: 'If this risk remains unmitigated, privacy risks in the system''s actual design go unreviewed until an incident, audit, or FOIA request forces the question, at which point remediation is far more disruptive than a documented assessment would have been.'
     asvs: V8 - Data Protection
@@ -1543,6 +1609,7 @@ custom_risk_definitions:
     id: missing-data-provenance-chain
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'Data ingested from an external or upstream source has no origin register or append-only provenance record checked at the point of consumption.'
     impact: 'If this risk remains unmitigated, a substituted or tampered source is indistinguishable from a legitimate one, since there is nothing to compare it against.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1561,6 +1628,7 @@ custom_risk_definitions:
     id: dlp-egress-blind-spot
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'One or more of this asset''s data egress paths -- bulk export, attachment, or file transfer -- is not inspected against data classification labels before content leaves.'
     impact: 'If this risk remains unmitigated, a malicious insider or compromised account can move CUI out through a legitimate export feature without triggering any control.'
     asvs: V8 - Data Protection
@@ -1585,6 +1653,7 @@ custom_risk_definitions:
     id: media-downgrade-procedure-gap
     baseline_likelihood: unlikely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'Media moved from a higher-classification enclave to a lower one is handled under a generic sanitization procedure rather than a distinct, verified downgrading process.'
     impact: 'If this risk remains unmitigated, residual higher-classification content surviving an incomplete downgrade is disclosed directly into a lower-classification environment.'
     asvs: V8 - Data Protection
@@ -1603,6 +1672,7 @@ custom_risk_definitions:
     id: dataset-reidentification-risk
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'A dataset slated for release has been de-identified but never tested against a motivated-intruder re-identification attempt using auxiliary data an adversary could reasonably access.'
     impact: 'If this risk remains unmitigated, a dataset believed to be anonymized can be re-identified after release, constituting a privacy disclosure.'
     asvs: V8 - Data Protection
@@ -1621,6 +1691,7 @@ custom_risk_definitions:
     id: missing-data-rights-management
     baseline_likelihood: likely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'A file released beyond its originating boundary carries no persistent rights binding that travels with the copy.'
     impact: 'If this risk remains unmitigated, the releasing organization has no technical means to restrict, expire, or revoke access to a released copy after the fact.'
     asvs: V8 - Data Protection
@@ -1647,6 +1718,7 @@ custom_risk_definitions:
     id: fips-non-compliant-cryptography
     baseline_likelihood: unlikely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This asset performs cryptographic operations without confirmed use of a FIPS-validated module.'
     impact: 'If this risk remains unmitigated, the finding independently blocks IL5 authorization regardless of the underlying algorithm''s strength.'
     asvs: V6 - Cryptography
@@ -1666,6 +1738,7 @@ custom_risk_definitions:
     id: deprecated-tls-weak-ciphers
     baseline_likelihood: unlikely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This TLS termination asset supports deprecated protocol versions or weak cipher suites exploitable via known attacks such as POODLE or SWEET32.'
     impact: 'If this risk remains unmitigated, a network-positioned adversary can decrypt protected traffic or perform a protocol downgrade attack.'
     asvs: V9 - Communications
@@ -1704,6 +1777,7 @@ custom_risk_definitions:
     id: api-abuse-enumeration-logging-gap
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This public API endpoint does not log the request patterns that indicate enumeration or abuse, such as sequential object-ID probing or repeated authorization failures from one caller.'
     impact: 'If this risk remains unmitigated, an attacker pacing requests below the rate limit produces no throttling event and remains invisible to the SOC.'
     asvs: V7 - Error Handling and Logging
@@ -1728,6 +1802,7 @@ custom_risk_definitions:
     id: network-ids-blind-spot
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This internet-reachable asset has no network-based intrusion detection or traffic-anomaly monitoring observing traffic crossing its trust boundary.'
     impact: 'If this risk remains unmitigated, an attacker''s network-layer reconnaissance, exploitation attempts, and command-and-control traffic pass without generating any alert for the SOC to act on.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1758,6 +1833,7 @@ custom_risk_definitions:
     id: undocumented-containment-disposition
     baseline_likelihood: unlikely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'A business-critical or mission-critical asset has no documented answer to whether it may be automatically isolated during a suspected compromise or requires human approval first.'
     impact: 'If this risk remains unmitigated, response to an active incident is delayed by an ad hoc approval decision, or the asset is isolated in a way that causes unintended operational impact.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1776,6 +1852,7 @@ custom_risk_definitions:
     id: undocumented-credential-blast-radius
     baseline_likelihood: unlikely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'If this asset''s credentials were compromised, there is no inventory sufficient to identify and rotate every consumer of them without an improvised discovery effort during the response itself.'
     impact: 'If this risk remains unmitigated, a credential missed during rotation because it was never inventoried gives an adversary a return path after an incident is declared contained.'
     asvs: V2 - Authentication
@@ -1794,6 +1871,7 @@ custom_risk_definitions:
     id: untested-incident-response-plan
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'This business-critical or mission-critical asset falls under an incident response plan that has never been exercised through a tabletop or live-fire drill, only documented.'
     impact: 'If this risk remains unmitigated, roles, escalation paths, and technical procedures assumed to work during an actual incident are tested for the first time under real pressure, when gaps are most costly to discover.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1812,6 +1890,7 @@ custom_risk_definitions:
     id: dfars-breach-notification-gap
     baseline_likelihood: unlikely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'This business-critical or mission-critical asset has no documented procedure identifying the contract-mandated cyber incident reporting timeline or the party responsible for executing it.'
     impact: 'If this risk remains unmitigated, a genuine incident is discovered without a clear owner or timeline for DoD-mandated reporting, risking a missed 72-hour reporting window and the contractual and legal consequences that follow.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1830,6 +1909,7 @@ custom_risk_definitions:
     id: forensic-chain-of-custody-gap
     baseline_likelihood: unlikely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This business-critical or mission-critical asset has no documented procedure for acquiring, logging, and transferring forensic evidence during an incident affecting it.'
     impact: 'If this risk remains unmitigated, evidence collected during an incident cannot be shown to be unaltered or continuously accounted for, undermining its use in legal proceedings, contract disputes, or a defensible after-action record.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1853,6 +1933,7 @@ custom_risk_definitions:
     id: backup-integrity-recovery-gap
     baseline_likelihood: possible
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'The asset is flagged as requiring backup for DR/COOP, but backup integrity, encryption, access control, or recovery testing has not been verified.'
     impact: 'If this risk remains unmitigated, a ransomware attack or infrastructure failure can result in permanent data loss because the backup''s actual recoverability was never confirmed.'
     asvs: V9 - Communications / V8 - Data Protection
@@ -1872,6 +1953,7 @@ custom_risk_definitions:
     id: backup-admin-privilege-separation-gap
     baseline_likelihood: likely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'Backup platform administrators share identity with production administrators, or destructive backup operations are not protected by dual authorization.'
     impact: 'If this risk remains unmitigated, a single compromised production admin account can delete the backups meant to recover from that same compromise.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1890,6 +1972,7 @@ custom_risk_definitions:
     id: backup-immutability-not-enforced
     baseline_likelihood: likely
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'The backup store uses a retention lock a sufficiently privileged account can shorten or remove, rather than a compliance-mode lock no account can alter before the retention period expires.'
     impact: 'If this risk remains unmitigated, a privileged account -- including one obtained by an attacker -- can delete backups within the stated retention window.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1908,6 +1991,7 @@ custom_risk_definitions:
     id: backup-key-rotation-retention-mismatch
     baseline_likelihood: unlikely
     baseline_impact: low
+    finding_class: control-not-evidenced
     description: 'This asset''s backup encryption keys have no documented rotation cadence tied to the longest retention period any backup copy carries.'
     impact: 'If this risk remains unmitigated, a key rotated without regard to retention leaves older backups permanently undecryptable, invisible until a restore from them is attempted.'
     asvs: V6 - Cryptography
@@ -1926,6 +2010,7 @@ custom_risk_definitions:
     id: recovery-objective-definition-gap
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'This asset has no documented RTO/RPO derived from its criticality tier, or its declared figures have never been validated against an actual restore test.'
     impact: 'If this risk remains unmitigated, an actual incident reveals the asset''s true recovery time and data-loss window for the first time, when the gap can no longer be closed quietly.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1944,6 +2029,7 @@ custom_risk_definitions:
     id: untested-restoration-procedure
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: control-not-evidenced
     description: 'Backups for this asset pass integrity checks, but no restoration has actually been performed using only the written procedure rather than institutional knowledge.'
     impact: 'If this risk remains unmitigated, an incomplete or outdated restoration procedure is discovered during an actual incident, at the worst possible time to discover it.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1962,6 +2048,7 @@ custom_risk_definitions:
     id: unsupported-saas-backup-gap
     baseline_likelihood: unlikely
     baseline_impact: high
+    finding_class: control-not-evidenced
     description: 'This asset is a SaaS tenant or vendor-hosted service the enterprise backup platform cannot enroll, with no export job routing its data into enterprise-controlled storage.'
     impact: 'If this risk remains unmitigated, the asset has no recovery path at all if the vendor tenant is deleted, compromised, or becomes unavailable.'
     asvs: V1 - Architecture, Design and Threat Modeling
@@ -1985,6 +2072,7 @@ custom_risk_definitions:
     id: policy-exception-cleartext-internal
     baseline_likelihood: possible
     baseline_impact: medium
+    finding_class: weakness-shown
     description: 'This component transmits data in plaintext over the internal network.'
     impact: 'If this risk remains unmitigated, an attacker who breaches the internal network can sniff sensitive data or credentials in transit.'
     asvs: V9 - Communications
@@ -2003,6 +2091,7 @@ custom_risk_definitions:
     id: eol-component-ato-boundary
     baseline_likelihood: likely
     baseline_impact: medium
+    finding_class: weakness-shown
     description: 'A software component within the ATO boundary has reached end-of-life and no longer receives security patches from its vendor.'
     impact: 'If this risk remains unmitigated, the component accumulates unpatched CVEs indefinitely, and any newly discovered vulnerability in it is effectively a zero-day for as long as it remains in the boundary.'
     asvs: V14 - Configuration

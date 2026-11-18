@@ -844,6 +844,39 @@ Fixes applied with it:
 On the Confluence fixture model, findings went from 384 to 383 (the dropped one is a
 virtual-disk false positive on an encrypted host) and Critical from 64 to 11.
 
+### Finding class in the output and the report
+
+Every rule carries its approved class (the *Class* column of the appendix table), as
+`finding_class`: `weakness-shown` or `control-not-evidenced`.
+
+- **Where it is set:** in each built-in rule's category and each script rule's YAML in the fork,
+  and on each entry of `09-custom-risks-lib.yml`, which the engine passes through to the model.
+- **Where it appears:** on every finding in `risks.json`, and on every category in
+  `risk-categories.json`, which the fork writes next to `risks.json` with each category's
+  metadata (including `risk_assessment`) from all three layers.
+- **In the report:** open risks are split into *Weaknesses shown in the model* and *Controls to
+  verify*. Each control to verify shows its risk assessment as the severity to assign if the
+  control is confirmed missing; every category's details show its class. A self-check fails the
+  run if the split doesn't add up to the open-risk total. Tracking status already appears next
+  to severity in every findings table.
+
+On the Confluence fixture model, the 383 open findings split into 29 weaknesses shown and 354
+controls to verify.
+
+### Drift checks
+
+A rating or class that moves away from the appendix table fails a test:
+
+| Layer | Check |
+|---|---|
+| Script rules | `pkg/risks/scripts/calibration_test.go`: every rule on profile T |
+| Built-in rules | `pkg/risks/scripts/builtin_calibration_test.go`: the 13 built-ins that fire on the profile-T kitchen-sink model, each named (the rest are covered by their unit tests) |
+| Both fork layers | `pkg/risks/scripts/finding_class_test.go`: every rule's class |
+| Custom engine | `core-policies/tests/test_calibration.py`: every category on profile T, its class, and the class reaching the injected model |
+
+Changing a baseline, a step or a class therefore means changing the rule and this table
+together, deliberately.
+
 ## Source of truth, by topic
 
 | Topic | Where |

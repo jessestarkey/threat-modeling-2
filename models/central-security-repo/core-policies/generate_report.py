@@ -663,6 +663,43 @@ def load_risks_xlsx(output_dir: str) -> dict:
     return by_id
 
 
+def load_risk_categories(output_dir: str) -> dict:
+    """Returns {category_id: category_dict} from risk-categories.json, which the jessestarkey/
+    threagile fork writes next to risks.json: every category with a finding, from all three
+    rule layers, with its finding_class and risk_assessment. Empty when the file is absent (an
+    older image), in which case finding classes come from risks.json alone."""
+    path = os.path.join(output_dir, "risk-categories.json")
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        return {c["id"]: c for c in json.load(f) if c.get("id")}
+
+
+# What each finding class means for the reader; the class itself is set per rule in the fork
+# (built-in and script rules) and in 09-custom-risks-lib.yml (custom categories). See
+# docs/risk-methodology.md, "Risk calibration".
+FINDING_CLASS_WEAKNESS = "weakness-shown"
+FINDING_CLASS_CONTROL = "control-not-evidenced"
+FINDING_CLASS_LABELS = {
+    FINDING_CLASS_WEAKNESS: "Weakness shown in the model",
+    FINDING_CLASS_CONTROL: "Control to verify",
+}
+
+
+def annotate_finding_classes(categories: list, category_meta: dict) -> None:
+    """Adds finding_class / finding_class_label / risk_assessment_if_missing to each category
+    from group_by_category(), in place. The class comes from the category's own findings
+    (risks.json carries it per finding), falling back to risk-categories.json. The risk
+    assessment is the 09/10 library enrichment where one exists, else the rule's own text."""
+    for c in categories:
+        meta = category_meta.get(c["slug"], {})
+        classes = {f.get("finding_class") for f in c["findings"] if f.get("finding_class")}
+        c["finding_class"] = classes.pop() if len(classes) == 1 else meta.get("finding_class", "")
+        c["finding_class_label"] = FINDING_CLASS_LABELS.get(c["finding_class"], "")
+        c["risk_assessment_if_missing"] = ((c.get("enrichment") or {}).get("risk_assessment")
+                                           or meta.get("risk_assessment", ""))
+
+
 def load_custom_risk_defs() -> dict:
     """Returns {category_id: definition_dict} for our own custom risks, keyed
     by the same id used in synthetic_id/category (not the human title the
@@ -1205,6 +1242,16 @@ def build_context(model: dict, output_dir: str) -> dict:
     closed_categories = group_by_category(closed_findings, custom_defs, custom_domains)
     model_failure_categories = group_by_category(model_failure_findings, custom_defs, custom_domains)
 
+    category_meta = load_risk_categories(output_dir)
+    for group in (all_categories, remaining_categories, accepted_categories, closed_categories):
+        annotate_finding_classes(group, category_meta)
+    # Open risks split by what the model can show: weaknesses its own facts show, and controls
+    # it can't evidence (the rule fires because an interface exists; a reviewer confirms it).
+    remaining_weakness_categories = [c for c in remaining_categories if c["finding_class"] == FINDING_CLASS_WEAKNESS]
+    remaining_control_categories = [c for c in remaining_categories if c["finding_class"] == FINDING_CLASS_CONTROL]
+    remaining_unclassified_categories = [c for c in remaining_categories
+                                         if c["finding_class"] not in FINDING_CLASS_LABELS]
+
     # Domain-organized presentation, additive alongside the flat lists above
     # (see group_by_domain()'s docstring) -- not built for model failures,
     # which are model-authoring problems, not security domains.
@@ -1283,6 +1330,12 @@ def build_context(model: dict, output_dir: str) -> dict:
         "model_failure_categories": model_failure_categories,
         "all_domain_groups": all_domain_groups,
         "remaining_domain_groups": remaining_domain_groups,
+        "remaining_weakness_domain_groups": group_by_domain(remaining_weakness_categories),
+        "remaining_control_domain_groups": group_by_domain(remaining_control_categories),
+        "remaining_unclassified_domain_groups": group_by_domain(remaining_unclassified_categories),
+        "remaining_weakness_finding_count": sum(len(c["findings"]) for c in remaining_weakness_categories),
+        "remaining_control_finding_count": sum(len(c["findings"]) for c in remaining_control_categories),
+        "remaining_unclassified_finding_count": sum(len(c["findings"]) for c in remaining_unclassified_categories),
         "accepted_domain_groups": accepted_domain_groups,
         "closed_domain_groups": closed_domain_groups,
         # File order, not sorted() -- ASVS/AISVS-sourced titles are numeric
@@ -1363,6 +1416,13 @@ def run_self_checks(context: dict, risks_json_count: int) -> bool:
         print(f"ERROR: open ({context['remaining_finding_count']}) + accepted "
               f"({context['accepted_finding_count']}) + closed ({context['closed_finding_count']}) = "
               f"{split_total}, but total_finding_count is {context['total_finding_count']}")
+        ok = False
+
+    class_total = (context["remaining_weakness_finding_count"] + context["remaining_control_finding_count"]
+                   + context["remaining_unclassified_finding_count"])
+    if class_total != context["remaining_finding_count"]:
+        print(f"ERROR: open findings split by class add up to {class_total}, "
+              f"but there are {context['remaining_finding_count']} open findings")
         ok = False
 
     return ok
