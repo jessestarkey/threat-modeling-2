@@ -371,6 +371,28 @@ class ReviewRegressions(unittest.TestCase):
         self.assertIn(title, run_engine(probe_asset(tags, machine="virtual")))
         self.assertNotIn(title, run_engine(probe_asset(tags, machine="container")))
 
+    def test_wireless_and_routing_findings_land_once_per_network(self):
+        # 2026-11-18 review: rogue AP and RPKI are properties of the network, not of each workload.
+        tags = ["mgmt:self-managed-network"]
+        boundaries = {"Core": {"id": "core", "type": "network-on-prem", "technical_assets_inside": ["app", "db", "proxy"]},
+                      "Branch": {"id": "branch", "type": "network-on-prem", "technical_assets_inside": ["b-app", "b-svc", "b-hard"]}}
+        result = run_engine(
+            probe_asset(tags, id="app"), probe_asset(tags, id="db"),
+            probe_asset(tags, id="proxy", technology="reverse-proxy"),
+            probe_asset(tags, id="b-svc"), probe_asset(tags, id="b-app"),
+            probe_asset(tags + ["mgmt:self-managed-network-hardened"], id="b-hard"),
+            trust_boundaries=boundaries)
+        for title in ("Rogue Access Point and Evil-Twin Credential Harvesting on Self-Managed Wireless",
+                      "Missing Route Origin Validation on Self-Managed External Routing"):
+            with self.subTest(title=title):
+                self.assertEqual(sorted(result[title]), sorted([
+                    next(name for name in result[title] if name.endswith("at Asset proxy")),
+                    next(name for name in result[title] if name.endswith("at Asset b-app")),
+                ]), "core: on its edge asset (the reverse proxy); branch: no edge asset, so the first tagged asset by id")
+                self.assertEqual(len(result[title]), 2)
+        self.assertEqual(len(result["No Macro or Micro-Segmentation of Self-Managed Network"]), 5,
+                         "segmentation stays per workload (every unhardened, non-container asset)")
+
     def test_agent_indirect_injection_needs_a_content_source(self):
         # 2026-11-18 noise review: an agent inherits indirect injection only when it reads content
         # (retrieval, tool results, other agents, anything external), not unconditionally.

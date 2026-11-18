@@ -969,9 +969,13 @@ and the fork. They led to these changes:
 
 Deferred for a separate decision: recording policy-exception waivers (cleartext transit, local
 authentication) as `risk_tracking: accepted` on the built-in finding instead of a second finding;
-moving tags that restate native fields (`zone:dmz`, `feature:search-index`, `feature:browser-facing`,
-the WebSocket tag) and the over-broad self-managed-network triggers onto native fields; and the
-built-ins' internet step reading the `net:internet-reachable` tag. The catalogue now counts 184
+and moving tags that restate native fields (`zone:dmz`, `feature:search-index`,
+`feature:browser-facing`, the WebSocket tag) onto native fields. Since done: the rogue access point
+and route origin validation findings are raised once per network trust boundary, on its edge
+asset where one is modeled, instead of on every self-managed workload; segmentation stays per
+workload. Kept as a documented exception: the built-ins' internet step reads the
+`net:internet-reachable` tag, which marks a backend behind a gateway as reachable (computing that
+from the graph produced false positives through shared hops). The catalogue now counts 184
 rules (35 built-in, 62 extension, 87 organization-specific).
 
 ## Source of truth, by topic

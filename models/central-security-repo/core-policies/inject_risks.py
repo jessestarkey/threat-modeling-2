@@ -117,6 +117,8 @@ RAG_PIPELINE_TECHNOLOGIES = {"ai-rag-pipeline"}
 AGENT_ORCHESTRATOR_TECHNOLOGIES = {"ai-agent-orchestrator"}
 MULTI_AGENT_GATEWAY_TECHNOLOGIES = {"ai-multi-agent-gateway"}
 DATASET_STORE_TECHNOLOGIES = {"ai-dataset-store"}
+# Network edge devices, preferred as the holder of findings about a whole self-managed network.
+NETWORK_EDGE_TECHNOLOGIES = {"gateway", "load-balancer", "reverse-proxy", "waf", "network-encryptor", "ids", "ips"}
 # Assets whose content reaches an agent's model as context: retrieved documents, tool results,
 # other agents' messages. A link to one of these is what makes an agent an indirect-injection target.
 CONTENT_SOURCE_TECHNOLOGIES = {"ai-vector-store", "ai-rag-pipeline", "ai-feature-store",
@@ -529,6 +531,20 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
     for source in tech_assets.values():
         for link in (source.get('communication_links') or {}).values():
             incoming_by_target.setdefault(link.get('target'), []).append((source.get('id'), link))
+
+    # Rogue access points and missing route origin validation are properties of a self-managed
+    # network, not of each workload on it: raise them once per network trust boundary that holds
+    # unhardened self-managed assets, on its edge asset where one is modeled (2026-11-18 review).
+    def self_managed_unhardened(asset):
+        tags = set(asset.get('tags') or [])
+        return (not asset.get('out_of_scope') and 'mgmt:self-managed-network' in tags
+                and 'mgmt:self-managed-network-hardened' not in tags)
+
+    network_edge_holder = {}
+    for asset in sorted(tech_assets.values(),
+                        key=lambda a: (not (asset_technologies(a) & NETWORK_EDGE_TECHNOLOGIES), a.get('id') or '')):
+        if self_managed_unhardened(asset):
+            network_edge_holder.setdefault(network_boundary(asset.get('id')), asset.get('id'))
 
     for asset_name, asset_data in tech_assets.items():
         # Out-of-scope assets (external entities the app team doesn't
@@ -1126,8 +1142,9 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             # honours a modelled namespace-isolation boundary (2026-11-18 review).
             if asset_data.get('machine') != 'container':
                 inject("No Macro or Micro-Segmentation of Self-Managed Network", "Self-Managed Segmentation Gap Risk")
-            inject("Rogue Access Point and Evil-Twin Credential Harvesting on Self-Managed Wireless", "Rogue AP Risk")
-            inject("Missing Route Origin Validation on Self-Managed External Routing", "Missing RPKI Validation Risk")
+            if network_edge_holder.get(network_boundary(asset_data.get('id'))) == asset_data.get('id'):
+                inject("Rogue Access Point and Evil-Twin Credential Harvesting on Self-Managed Wireless", "Rogue AP Risk")
+                inject("Missing Route Origin Validation on Self-Managed External Routing", "Missing RPKI Validation Risk")
 
     # 5. Convert to this engine's custom_risk_categories schema: a list of
     # category objects with an explicit 'title' field, not a dict keyed by
