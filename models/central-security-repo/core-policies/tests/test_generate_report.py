@@ -68,7 +68,7 @@ class FindingClasses(unittest.TestCase):
         report.annotate_finding_classes([from_findings, from_export, mixed, unknown], meta)
 
         self.assertEqual(from_findings["finding_class"], "weakness-shown")
-        self.assertEqual(from_findings["finding_class_label"], "Weakness shown in the model")
+        self.assertEqual(from_findings["finding_class_label"], "Model Weakness")
         self.assertEqual(from_export["finding_class"], "control-not-evidenced")
         self.assertEqual(mixed["finding_class"], "control-not-evidenced",
                          "findings that disagree fall back to the category's own class")

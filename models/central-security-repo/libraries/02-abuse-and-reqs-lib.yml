@@ -1768,7 +1768,7 @@ categories:
 
       "CP-4: Tested Restoration Procedure": |
         1 | Documented RTO/RPO values MUST be validated against the measured result of an actual restore test. | 2
-        2 | A full restoration exercise, using only the written procedure and performed by someone other than its author, MUST be completed at least annually for business-critical/mission-critical assets. | 3
+        2 | A full restoration exercise, using only the written procedure and performed by someone other than its author, MUST be completed at least annually for mission-essential/mission-critical assets. | 3
 
       "SA-9: Independent Export for SaaS and Vendor-Hosted Services": |
         1 | Any SaaS tenant or vendor-hosted service the enterprise backup platform cannot directly enroll MUST have a native or purpose-built export job routing its data into enterprise-controlled backup storage on a recurring schedule. | 2

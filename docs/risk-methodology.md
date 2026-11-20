@@ -854,14 +854,14 @@ Every rule carries its approved class (the *Class* column of the appendix table)
 - **Where it appears:** on every finding in `risks.json`, and on every category in
   `risk-categories.json`, which the fork writes next to `risks.json` with each category's
   metadata (including `risk_assessment`) from all three layers.
-- **In the report:** open risks are split into *Weaknesses shown in the model* and *Controls to
-  verify*. Each control to verify shows its risk assessment as the severity to assign if the
+- **In the report:** open risks are split into *Model Weaknesses* and *Control
+  Verifications*. Each control verification shows its risk assessment as the severity to assign if the
   control is confirmed missing; every category's details show its class. A self-check fails the
   run if the split doesn't add up to the open-risk total. Tracking status already appears next
   to severity in every findings table.
 
-On the Confluence fixture model, the 383 open findings split into 29 weaknesses shown and 354
-controls to verify.
+On the Confluence fixture model, the 383 open findings split into 29 model weaknesses and 354
+control verifications.
 
 ### Drift checks
 

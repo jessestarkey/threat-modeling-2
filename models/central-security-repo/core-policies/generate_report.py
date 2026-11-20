@@ -689,8 +689,8 @@ def load_risk_categories(output_dir: str) -> dict:
 FINDING_CLASS_WEAKNESS = "weakness-shown"
 FINDING_CLASS_CONTROL = "control-not-evidenced"
 FINDING_CLASS_LABELS = {
-    FINDING_CLASS_WEAKNESS: "Weakness shown in the model",
-    FINDING_CLASS_CONTROL: "Control to verify",
+    FINDING_CLASS_WEAKNESS: "Model Weakness",
+    FINDING_CLASS_CONTROL: "Control Verification",
 }
 
 

@@ -1800,14 +1800,14 @@ custom_risk_definitions:
     baseline_likelihood: unlikely
     baseline_impact: medium
     finding_class: control-not-evidenced
-    description: 'A business-critical or mission-critical asset has no documented answer to whether it may be automatically isolated during a suspected compromise or requires human approval first.'
+    description: 'An asset in a mission-essential or mission-critical system has no documented answer to whether it may be automatically isolated during a suspected compromise or requires human approval first.'
     impact: 'If this risk remains unmitigated, response to an active incident is delayed by an ad hoc approval decision, or the asset is isolated in a way that causes unintended operational impact.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
     action: Document, for this asset, whether automated containment/isolation is permitted, requires human approval, or is prohibited, and record that disposition where the incident response team can find it during an active incident.
-    mitigation: For every asset tagged business-critical or mission-critical, record a containment disposition (auto-isolation permitted / human approval required / auto-isolation prohibited) in the asset's own documentation or the incident response runbook, decided in advance by the asset owner together with the response team — not improvised during an incident. Where auto-isolation is prohibited (e.g., a safety-relevant or highly available system), document the manual containment procedure to use instead.
+    mitigation: For every asset in a model rated mission-essential or mission-critical (and every internet-reachable, policy-exception or cross-domain asset), record a containment disposition (auto-isolation permitted / human approval required / auto-isolation prohibited) in the asset's own documentation or the incident response runbook, decided in advance by the asset owner together with the response team — not improvised during an incident. Where auto-isolation is prohibited (e.g., a safety-relevant or highly available system), document the manual containment procedure to use instead.
     references: NIST SP 800-53 IR-4 (Incident Handling); NIST SP 800-61r2 (Computer Security Incident Handling Guide)
-    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any business-critical or mission-critical asset with no documented containment disposition.'
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any asset in a mission-essential or mission-critical system with no documented containment disposition.'
     false_positives: A containment disposition for this asset is documented in the incident response runbook and was agreed by both the asset owner and the response team.
     function: operations
     stride: denial-of-service
@@ -1838,14 +1838,14 @@ custom_risk_definitions:
     baseline_likelihood: possible
     baseline_impact: medium
     finding_class: control-not-evidenced
-    description: 'This business-critical or mission-critical asset falls under an incident response plan that has never been exercised through a tabletop or live-fire drill, only documented.'
+    description: 'This asset, in a mission-essential or mission-critical system, falls under an incident response plan that has never been exercised through a tabletop or live-fire drill, only documented.'
     impact: 'If this risk remains unmitigated, roles, escalation paths, and technical procedures assumed to work during an actual incident are tested for the first time under real pressure, when gaps are most costly to discover.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
     action: Conduct a tabletop or live-fire incident response exercise covering this asset's likely compromise scenarios on a recurring schedule, and update the plan with anything the exercise reveals is missing or outdated.
     mitigation: Schedule a recurring incident response exercise (tabletop at minimum, live-fire where feasible) that walks through a realistic compromise scenario for this asset — detection, containment, eradication, recovery, and stakeholder notification — using only the documented plan rather than institutional knowledge. Involve every role the plan assigns responsibilities to, not just the security team. Record findings and update the plan before the next ATO renewal.
     references: NIST SP 800-53 IR-3 (Incident Response Testing); NIST SP 800-61r2 (Computer Security Incident Handling Guide)
-    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any business-critical or mission-critical asset whose incident response plan has not been exercised within the current ATO period.'
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any asset in a mission-essential or mission-critical system whose incident response plan has not been exercised within the current ATO period.'
     false_positives: The asset is tagged ir:plan-tested confirming a tabletop or live-fire incident response exercise covering this asset has been conducted within the current ATO period.
     function: operations
     stride: denial-of-service
@@ -1857,14 +1857,14 @@ custom_risk_definitions:
     baseline_likelihood: unlikely
     baseline_impact: medium
     finding_class: control-not-evidenced
-    description: 'This business-critical or mission-critical asset has no documented procedure identifying the contract-mandated cyber incident reporting timeline or the party responsible for executing it.'
+    description: 'This asset, in a mission-essential or mission-critical system, has no documented procedure identifying the contract-mandated cyber incident reporting timeline or the party responsible for executing it.'
     impact: 'If this risk remains unmitigated, a genuine incident is discovered without a clear owner or timeline for DoD-mandated reporting, risking a missed 72-hour reporting window and the contractual and legal consequences that follow.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
     action: Document the cyber incident reporting procedure required by this system's contract (e.g., DFARS 252.204-7012's 72-hour DIBNet reporting requirement for a covered contractor information system), naming the party responsible for executing it.
     mitigation: Identify which contracts covering this asset carry DFARS 252.204-7012 (or an equivalent DoD cyber incident reporting clause), and document the exact reporting timeline, the DIBNet submission process, and the specific role responsible for initiating it once an incident affecting covered defense information is confirmed. Rehearse the reporting step itself (not just detection/containment) during incident response exercises so the 72-hour clock is a practiced procedure, not a first-time scramble.
     references: DFARS 252.204-7012 (Safeguarding Covered Defense Information and Cyber Incident Reporting); NIST SP 800-53 IR-6 (Incident Reporting); NIST SP 800-171
-    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any business-critical or mission-critical asset covered by a DFARS 252.204-7012 clause with no documented reporting procedure or owner.'
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any asset in a mission-essential or mission-critical system covered by a DFARS 252.204-7012 clause with no documented reporting procedure or owner.'
     false_positives: The asset is tagged ir:breach-notification-procedure-documented confirming a documented reporting procedure identifies the contract-mandated timeline and the responsible party, and the procedure has been rehearsed.
     function: operations
     stride: denial-of-service
@@ -1876,14 +1876,14 @@ custom_risk_definitions:
     baseline_likelihood: unlikely
     baseline_impact: low
     finding_class: control-not-evidenced
-    description: 'This business-critical or mission-critical asset has no documented procedure for acquiring, logging, and transferring forensic evidence during an incident affecting it.'
+    description: 'This asset, in a mission-essential or mission-critical system, has no documented procedure for acquiring, logging, and transferring forensic evidence during an incident affecting it.'
     impact: 'If this risk remains unmitigated, evidence collected during an incident cannot be shown to be unaltered or continuously accounted for, undermining its use in legal proceedings, contract disputes, or a defensible after-action record.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
     action: Document a forensic evidence-handling procedure for this asset covering acquisition, custody logging, storage, and transfer, and assign ownership of executing it during an incident.
     mitigation: Establish a documented forensic evidence-handling procedure covering how evidence relevant to this asset (disk/memory images, logs, network captures) is acquired, hashed at acquisition time, logged in a continuous custody record (who held it, when, why), stored, and transferred — modeled on standard forensic chain-of-custody practice. Assign a named role responsible for executing this procedure during an incident, distinct from whoever performs containment, so evidence handling isn't improvised under pressure.
     references: NIST SP 800-53 IR-4 (Incident Handling); NIST SP 800-86 (Guide to Integrating Forensic Techniques into Incident Response)
-    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any business-critical or mission-critical asset with no documented forensic evidence-handling procedure.'
+    risk_assessment: 'Likelihood starts at Unlikely; impact starts at Low, stepping on the asset''s integrity (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any asset in a mission-essential or mission-critical system with no documented forensic evidence-handling procedure.'
     false_positives: The asset is tagged ir:evidence-handling-documented confirming a documented forensic evidence-handling procedure (acquisition, custody log, storage, transfer) exists and names a responsible role.
     function: operations
     stride: repudiation
@@ -1984,7 +1984,7 @@ custom_risk_definitions:
     action: Document an RTO and RPO for this asset derived from its criticality tier, and validate both figures against the result of an actual restore test.
     mitigation: Assign an RTO and RPO to this asset based on its criticality tier (the model's mission_criticality and the asset's own availability rating), documented in the COOP plan. Validate both figures against the measured duration and data-loss window of an actual restore test — not an estimate — and revise the documented target if the test result exceeds it, rather than leaving a target on record that the asset has never actually met.
     references: NIST SP 800-53 CP-2 (Contingency Plan); NIST SP 800-53 CP-10 (Information System Recovery and Reconstitution); DoD COOP requirements
-    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium, escalating to High for business-critical or mission-critical assets with no validated RTO/RPO.'
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: Medium, escalating to High for assets in a mission-essential or mission-critical system with no validated RTO/RPO.'
     false_positives: An RTO and RPO are documented for this asset and have been validated against the measured result of an actual restore test within the current ATO period.
     function: operations
     stride: denial-of-service
@@ -2001,9 +2001,9 @@ custom_risk_definitions:
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://www.cisa.gov/stopransomware/ransomware-guide
     action: Perform a full restoration of this asset from a real stored backup, using only the written restoration procedure, on a recurring schedule.
-    mitigation: Conduct a restoration exercise at least annually (more frequently for business-critical/mission-critical assets) in which a person other than the backup job's original author executes the documented restoration procedure against a real stored backup into an isolated environment, and validates the restored system actually functions. Update the written procedure with anything the exercise revealed was missing, undocumented, or dependent on tribal knowledge.
+    mitigation: Conduct a restoration exercise at least annually (more frequently in mission-essential and mission-critical systems) in which a person other than the backup job's original author executes the documented restoration procedure against a real stored backup into an isolated environment, and validates the restored system actually functions. Update the written procedure with anything the exercise revealed was missing, undocumented, or dependent on tribal knowledge.
     references: NIST SP 800-53 CP-4 (Contingency Plan Testing); NIST SP 800-53 CP-9 (Information System Backup)
-    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any business-critical or mission-critical asset whose restoration procedure has not been exercised, by someone other than its author, within the current ATO period.'
+    risk_assessment: 'Likelihood starts at Possible; impact starts at Medium, stepping on the asset''s availability (one level up at Confidential/Critical or above, down at Internal/Operational or below; likelihood also moves with the asset''s attractiveness and internet reachability). Once the condition is confirmed: High for any asset in a mission-essential or mission-critical system whose restoration procedure has not been exercised, by someone other than its author, within the current ATO period.'
     false_positives: A full restoration exercise using only the written procedure, performed by someone other than the procedure's author, has been completed successfully within the current ATO period.
     function: operations
     stride: denial-of-service

@@ -21,7 +21,7 @@ SEVERITY_ORDER = ["low", "medium", "elevated", "high", "critical"]
 LIKELIHOOD_ORDER = ["unlikely", "possible", "likely", "very-likely"]
 IMPACT_ORDER = ["low", "medium", "high", "very-high"]
 
-# Business criticality values (see 00-threagile-field-reference.yml) that
+# Mission criticality values (see 00-threagile-field-reference.yml) that
 # gate a handful of incident-response-readiness triggers further below
 # (unrelated to severity). This used to also bump compute_impact() as a
 # system-level consequence signal, distinct from any single asset's own

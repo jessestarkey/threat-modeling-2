@@ -305,15 +305,15 @@
   <p>This section covers Open risk items, which are marked unchecked, in-progress, or in-discussion.
   These are risks that have been neither mitigated nor accepted.</p>
   <p>Open risks are split by what the threat model itself can show.
-  <strong>Weaknesses shown in the model</strong> ({{ remaining_weakness_finding_count }}) are
+  <strong>Model Weaknesses</strong> ({{ remaining_weakness_finding_count }}) are
   findings the model's own facts demonstrate, such as data sent over a plain-HTTP link or a
-  static secret used to authenticate. <strong>Controls to verify</strong>
+  static secret used to authenticate. <strong>Control Verifications</strong>
   ({{ remaining_control_finding_count }}) are findings raised because an interface or capability
   exists, where the model can't show whether the control is in place: a reviewer confirms each
   one, and the assessment shown with it is the severity to assign if the control turns out to be
   missing.</p>
 
-  <h2 class="domain-heading">Weaknesses Shown in the Model ({{ remaining_weakness_finding_count }})</h2>
+  <h2 class="domain-heading">Model Weaknesses ({{ remaining_weakness_finding_count }})</h2>
   {% for group in remaining_weakness_domain_groups %}
   <h3 class="domain-heading">{{ group.domain }}</h3>
   {% for cat in group.categories %}
@@ -331,10 +331,10 @@
   </table>
   {% endfor %}
   {% else %}
-  <p>No open weaknesses shown in the model.</p>
+  <p>No open model weaknesses.</p>
   {% endfor %}
 
-  <h2 class="domain-heading">Controls to Verify ({{ remaining_control_finding_count }})</h2>
+  <h2 class="domain-heading">Control Verifications ({{ remaining_control_finding_count }})</h2>
   {% for group in remaining_control_domain_groups %}
   <h3 class="domain-heading">{{ group.domain }}</h3>
   {% for cat in group.categories %}
@@ -353,7 +353,7 @@
   </table>
   {% endfor %}
   {% else %}
-  <p>No open controls to verify.</p>
+  <p>No open control verifications.</p>
   {% endfor %}
 
   {% if remaining_unclassified_finding_count %}
