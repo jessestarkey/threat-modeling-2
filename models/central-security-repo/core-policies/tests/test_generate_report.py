@@ -57,6 +57,14 @@ class AbuseCasePairing(unittest.TestCase):
                 self.assertEqual([t for t, _ in unmapped], [])
 
 
+class LinkLabels(unittest.TestCase):
+    def test_link_shows_its_source_unless_the_source_is_the_row_asset(self):
+        titles = {"gw": "App Gateway", "fw": "Azure Firewall", "law": "Log Workspace"}
+        self.assertEqual(report.link_label("gw>log-forwarding", "Log Forwarding", "law", titles),
+                         "App Gateway → Log Forwarding")
+        self.assertEqual(report.link_label("fw>log-forwarding", "Log Forwarding", "fw", titles), "Log Forwarding")
+        self.assertEqual(report.link_label("", "", "law", titles), "")
+
 class FindingClasses(unittest.TestCase):
     def test_class_comes_from_the_findings_then_the_category_export(self):
         from_findings = category("a", "weakness-shown", "weakness-shown")

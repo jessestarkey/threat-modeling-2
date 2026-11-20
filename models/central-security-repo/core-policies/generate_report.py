@@ -847,8 +847,24 @@ def merge_findings(risks_json: list, xlsx_by_id: dict, assets_by_id: dict,
             **extra,
             "title": extra.get("title") or r["title"],
             "most_relevant_technical_asset": subject,
+            "communication_link": link_label(r.get("most_relevant_communication_link") or "",
+                                             extra.get("communication_link") or "", asset_id, assets_by_id),
         })
     return merged
+
+
+def link_label(link_id: str, link_title: str, asset_id: str, assets_by_id: dict) -> str:
+    """The Communication Link column: the link's title, prefixed with its source
+    when the source isn't the row's own asset. Link titles are only unique per
+    source, so several sources reaching one target (three components each
+    forwarding logs to one workspace) would otherwise print identical rows.
+    link_id is risks.json's "<source-id>><link-slug>"."""
+    if not link_title:
+        return ""
+    source_id = link_id.split(">", 1)[0] if ">" in link_id else ""
+    if not source_id or source_id == asset_id:
+        return link_title
+    return f"{assets_by_id.get(source_id, source_id)} → {link_title}"
 
 
 # Fields checked for cross-finding uniformity within a category (see

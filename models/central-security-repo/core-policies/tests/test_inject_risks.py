@@ -415,12 +415,14 @@ class ReviewRegressions(unittest.TestCase):
         title = "Policy Exception: Direct Admin Access"
         tags = ["exception:direct-admin-access"]
 
-        def internet_admin(vpn=False):
-            return probe_asset([], id="admin", internet=True,
+        def internet_admin(vpn=False, type="external-entity"):
+            return probe_asset([], id="admin", internet=True, type=type,
                                communication_links={"SSH": {"target": "probe", "vpn": vpn}})
 
         self.assertNotIn(title, run_engine(probe_asset(tags), internet_admin()),
-                         "confidential VM reached from an internet-facing source: the built-in covers it")
+                         "confidential VM reached from an internet-side caller: the built-in covers it")
+        self.assertIn(title, run_engine(probe_asset(tags), internet_admin(type="process")),
+                      "an in-scope internet-facing component calling inward: the built-in skips it (2026-11-20)")
         self.assertIn(title, run_engine(probe_asset(tags, confidentiality="internal", integrity="operational"),
                                         internet_admin()), "lower-value VM: the built-in's rating gate skips it")
         self.assertIn(title, run_engine(probe_asset(tags)), "admin path not modeled as a link")

@@ -46,6 +46,15 @@ LEGACY_MISSION_CRITICALITY = {
 MISSION_ESSENTIAL_OR_ABOVE = {"mission-essential", "mission-critical"}
 
 
+def is_internet_side_caller(asset: dict) -> bool:
+    """An asset on the internet side of the system: internet-facing, and either an external
+    entity or out of scope. Mirrors the fork's unguarded-access-from-internet gate, where an
+    in-scope internet-facing component (an application gateway, a firewall) calling inward is the
+    guarded path rather than internet access."""
+    return bool(asset.get('internet')) and (
+        bool(asset.get('out_of_scope')) or str(asset.get('type', '')).strip() == 'external-entity')
+
+
 def mission_criticality(model: dict) -> str:
     """The model's mission criticality on the four-value scale ('' when unset or unknown)."""
     value = str(model.get('mission_criticality') or model.get('business_criticality') or '').strip().lower()
@@ -972,8 +981,9 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if 'exception:runs-as-root' in tags: inject("Container Runs as Root (Policy Exception)", "Root Waiver")
         if 'exception:eol-component' in tags: inject("EOL Component in ATO Boundary", "EOL Component Waiver")
         # Direct admin access waiver. Where Threagile's built-in unguarded-access-from-internet
-        # already raises the exposure -- a non-VPN link from an internet-facing source to an asset
-        # rated confidential or critical (its own gate, mirrored here) -- the waiver is recorded as
+        # already raises the exposure -- a non-VPN link from an internet-side caller (an
+        # internet-facing external entity or out-of-scope asset) to an asset rated confidential or
+        # critical (its own gate, mirrored here; narrowed 2026-11-20) -- the waiver is recorded as
         # status: accepted on that finding instead of a second one (2026-11-18 review). It still
         # fires where the built-in stays silent: a lower-value VM, or an admin path the model
         # doesn't draw as a link.
@@ -981,7 +991,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             built_in_covers = (
                 (CIA_RANK.get(str(asset_data.get('confidentiality', '')).strip(), 0) >= 3
                  or CIA_RANK.get(str(asset_data.get('integrity', '')).strip(), 0) >= 3)
-                and any((assets_by_id.get(source) or {}).get('internet') and not link.get('vpn')
+                and any(is_internet_side_caller(assets_by_id.get(source) or {}) and not link.get('vpn')
                         for source, link in incoming))
             if not built_in_covers:
                 inject("Policy Exception: Direct Admin Access", "Admin Access Waiver")

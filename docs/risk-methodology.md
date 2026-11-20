@@ -1012,6 +1012,18 @@ its five values map onto the four: `archive` and `operational` to `administrativ
 mapping keeps every existing model's findings the same. A model that sets both keys must give them
 the same value.
 
+### Unguarded access from internet narrowed (2026-11-20)
+
+The built-in `unguarded-access-from-internet` counted a link as internet access whenever its source
+was marked `internet: true`. In-scope internet-facing components carry that flag too, so everything
+an application gateway or firewall talked to was raised: on Confluence, the gateways' traffic
+through the firewall and the gateways' and firewall's log forwarding to Log Analytics, five of its
+seven findings. The rule now needs an internet-side caller, meaning an internet-facing external
+entity or out-of-scope asset. An in-scope gateway calling inward is the guarded path the rule asks
+for. The custom engine's direct-admin waiver, which defers to this rule where it fires, mirrors the
+same gate. The report's Communication Link column also names the link's source when it isn't the
+row's asset, since link titles repeat across sources.
+
 ## Source of truth, by topic
 
 | Topic | Where |
