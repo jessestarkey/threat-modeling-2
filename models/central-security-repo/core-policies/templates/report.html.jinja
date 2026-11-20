@@ -26,8 +26,7 @@
     <li class="toc-l1"><a href="#executive-summary">Executive Summary</a><span class="toc-fill"></span><a class="toc-page" href="#executive-summary"></a></li>
     <li class="toc-l1"><a href="#data-flow-diagram">Data-Flow Diagram</a><span class="toc-fill"></span><a class="toc-page" href="#data-flow-diagram"></a></li>
     <li class="toc-l1"><a href="#data-asset-diagram">Data Asset Diagram</a><span class="toc-fill"></span><a class="toc-page" href="#data-asset-diagram"></a></li>
-    <li class="toc-l1"><a href="#security-requirements">Security Requirements</a><span class="toc-fill"></span><a class="toc-page" href="#security-requirements"></a></li>
-    <li class="toc-l1"><a href="#abuse-cases">Abuse Cases</a><span class="toc-fill"></span><a class="toc-page" href="#abuse-cases"></a></li>
+    <li class="toc-l1"><a href="#security-requirements">Security Requirements and Abuse Cases</a><span class="toc-fill"></span><a class="toc-page" href="#security-requirements"></a></li>
     <li class="toc-l1"><a href="#open-questions">Open Questions</a><span class="toc-fill"></span><a class="toc-page" href="#open-questions"></a></li>
     <li class="toc-l1"><a href="#model-failures">Potential Model Failures</a><span class="toc-fill"></span><a class="toc-page" href="#model-failures"></a></li>
 
@@ -73,14 +72,23 @@
   <p>What this system does, how it's built, and where its identified risks currently stand.</p>
 
   <h2>Mission Criticality</h2>
-  <p>This model is rated <strong>{{ mission_criticality }}</strong>.</p>
+  <p>This model is rated <strong>{{ mission_criticality }}</strong>. The rating changes no finding's score; at
+  Mission Essential or above, the incident-response readiness checks (IR plan testing, breach notification,
+  forensic chain of custody, containment disposition) apply to the model's assets.</p>
   <table class="asset-table">
     <tr><th>Level</th><th>Meaning</th></tr>
-    <tr><td>Archive</td><td>Legacy or read-only reference system. Outage causes no operational impact.</td></tr>
-    <tr><td>Operational</td><td>Administrative or back-office tool. Outage is a minor inconvenience.</td></tr>
-    <tr><td>Important</td><td>Required for specific project execution. Outage degrades a specific group.</td></tr>
-    <tr><td>Critical</td><td>Essential daily enterprise tool. Outage causes widespread productivity disruption.</td></tr>
-    <tr><td>Mission-Critical</td><td>Warfighting or core operational system. Outage causes immediate mission failure.</td></tr>
+    {% for level, meaning in [
+      ("Administrative", "Supports administrative or back-office functions. The mission continues without it."),
+      ("Mission Support", "Supports the mission. Loss degrades it, but workarounds exist."),
+      ("Mission Essential", "Needed to accomplish the mission. Loss stops a mission function."),
+      ("Mission Critical", "Warfighting or core operational system. Loss causes immediate mission failure."),
+    ] %}
+    {% if level == mission_criticality %}
+    <tr><td><strong>{{ level }} (this model)</strong></td><td><strong>{{ meaning }}</strong></td></tr>
+    {% else %}
+    <tr><td>{{ level }}</td><td>{{ meaning }}</td></tr>
+    {% endif %}
+    {% endfor %}
   </table>
 
   <h2>Application Overview</h2>
@@ -139,13 +147,23 @@
 </section>
 
 <section id="security-requirements" style="page: content;">
-  <h2 class="section-heading">Security Requirements</h2>
-  <p>This section covers the mandatory controls and constraints for the application model. Entries are sourced from
-  OWASP ASVS/AISVS or NIST SP 800-53, categorized by security domain, and rendered as tables.</p>
-  {% for group in security_requirement_domain_groups %}
+  <h2 class="section-heading">Security Requirements and Abuse Cases</h2>
+  <p>This section covers the mandatory controls and constraints for the application model, sourced from OWASP
+  ASVS/AISVS or NIST SP 800-53 and categorized by security domain. Where an abuse case describes a concrete
+  attacker goal those controls are designed against, it appears above the requirement table that answers it.
+  Abuse cases no requirement in this model answers are listed at the end of their domain.
+  Any tailored entries not recognized under a domain fall under Uncategorized.</p>
+  {% for group in requirement_abuse_groups %}
   <h2 class="domain-heading">{{ group.domain }}</h2>
   {% for req in group.entries %}
   <h3 class="category-heading">{{ req.title }}</h3>
+  {% for ac_title, ac_text in req.abuse_cases %}
+  <div class="abuse-callout">
+    <div class="ac-label">Abuse case</div>
+    <div class="ac-title">{{ ac_title.split(':', 1)[-1].strip() }}</div>
+    <p>{{ ac_text }}</p>
+  </div>
+  {% endfor %}
   {% if req.rows %}
   <table class="svs-table">
     <thead><tr><th class="svs-num">#</th><th>Description</th><th class="svs-level">Level</th></tr></thead>
@@ -159,21 +177,18 @@
   <p>{{ req.text }}</p>
   {% endif %}
   {% endfor %}
-  {% endfor %}
-</section>
-
-<section id="abuse-cases" style="page: content;">
-  <h2 class="section-heading">Abuse Cases</h2>
-  <p>This section describes misuse scenarios in the application model, which includes concrete attacker
-  goals the architecture and its stated Security Requirements were designed against. Entries are categorized
-  by the same domain outlined in the previous section.
-  Any tailored entries not recognized under a domain fall under Uncategorized.</p>
-  {% for group in abuse_case_domain_groups %}
-  <h2 class="domain-heading">{{ group.domain }}</h2>
-  {% for ac_title, ac_text in group.entries %}
-  <h3 class="category-heading">{{ ac_title }}</h3>
-  <p>{{ ac_text }}</p>
-  {% endfor %}
+  {% if group.unmapped %}
+  <div class="abuse-unmapped">
+    <h3 class="category-heading">Abuse cases without a mapped requirement</h3>
+    <p class="abuse-unmapped-note">No requirement section in this model answers these attacker goals.</p>
+    {% for ac_title, ac_text in group.unmapped %}
+    <div class="abuse-callout gap">
+      <div class="ac-title">{{ ac_title }}</div>
+      <p>{{ ac_text }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
   {% endfor %}
 </section>
 

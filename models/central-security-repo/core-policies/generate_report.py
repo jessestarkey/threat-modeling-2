@@ -369,6 +369,7 @@ SVS_REQUIREMENT_DOMAIN_MAP = {
     "ASVS V4.2: Webhook and Callback Spoofing": "Application",
     "ASVS V5.2: Malicious Payload Distribution via File Upload": "Application",
     "ASVS V13.3: Hardcoded Secret Discovered in Build Artifact or Config": "Application",
+    "ASVS V13.3: Software-Only Key Theft via Host Compromise": "Application",
     "ASVS V15.2: Known-Vulnerable Dependency Exploited for RCE": "Application",
     "ASVS V17.1: Unauthenticated TURN Relay Abused for Amplification": "Application",
     "ASVS V1.1: Encoding and Sanitization Architecture": "Application",
@@ -465,7 +466,6 @@ SVS_REQUIREMENT_DOMAIN_MAP = {
     # Data
     "ASVS V11.1: Self-Authorized Key Misuse and Trace Removal": "Data",
     "ASVS V11.2: Custom Cryptography Exploitation": "Data",
-    "ASVS V11.7: Software-Only Key Theft via Host Compromise": "Data",
     "ASVS V14.1: Exfiltration from an Unclassified Data Store": "Data",
     "ASVS V14.2: Substituted Content in an Unverified External Feed": "Data",
     "ASVS V14.2: Bulk Exfiltration via an Uninspected Export Path": "Data",
@@ -1109,6 +1109,63 @@ def render_diagram_svg(gv_path: str, title: str, confidentiality_by_label: dict 
     return svg_for_pdf
 
 
+def control_ids(title: str) -> list:
+    """The control IDs an abuse-case or requirement title is keyed on:
+    'CP-9 / AC-5: Backups' -> ['CP-9', 'AC-5'], 'ASVS V6.3: ...' -> ['ASVS V6.3']."""
+    return [part.strip() for part in title.split(":", 1)[0].split("/") if part.strip()]
+
+
+def _base_control(control_id: str) -> str:
+    """A NIST control enhancement's base control: 'AC-6(1)' -> 'AC-6'. ASVS/AISVS
+    subsection IDs have no enhancements and are returned unchanged."""
+    return re.sub(r"\(\d+\)$", "", control_id)
+
+
+def pair_abuse_cases(security_requirements: list, abuse_cases: list) -> tuple:
+    """Attach each abuse case to the requirement section whose controls answer it,
+    matched on the control ID both titles are keyed on. An exact ID match wins;
+    failing that, a NIST enhancement pairs with its base control or a sibling
+    enhancement ('AC-6(1)' with 'AC-6', 'SC-7' with 'SC-7(21)'). ASVS subsections
+    never pair across numbers -- V11.7 is not V11.1.
+
+    Returns ({requirement index: [(title, text), ...]}, [(title, text), ...] unmapped)."""
+    req_ids = [control_ids(r["title"]) for r in security_requirements]
+    attached = {i: [] for i in range(len(security_requirements))}
+    unmapped = []
+    for title, text in abuse_cases:
+        ids = control_ids(title)
+        aid = ids[0] if ids else ""
+        match = next((i for i, rids in enumerate(req_ids) if aid in rids), None)
+        if match is None and aid and not aid.upper().startswith(("ASVS", "AISVS")):
+            match = next((i for i, rids in enumerate(req_ids)
+                          if _base_control(aid) in {_base_control(r) for r in rids}), None)
+        if match is None:
+            unmapped.append((title, text))
+        else:
+            attached[match].append((title, text))
+    return attached, unmapped
+
+
+def group_requirements_with_abuse_cases(security_requirements: list, abuse_cases: list) -> list:
+    """The Security Requirements and Abuse Cases section: requirement sections by
+    domain, each carrying the abuse cases it answers, and any abuse case no
+    requirement section answers listed at the end of its own domain."""
+    attached, unmapped = pair_abuse_cases(security_requirements, abuse_cases)
+    entries = [dict(req, abuse_cases=attached[i]) for i, req in enumerate(security_requirements)]
+    groups = group_svs_entries_by_domain(entries, title_key="title")
+    by_domain = {g["domain"]: g for g in groups}
+    for g in groups:
+        g["unmapped"] = []
+    for ug in group_svs_entries_by_domain(unmapped):
+        if ug["domain"] in by_domain:
+            by_domain[ug["domain"]]["unmapped"] = ug["entries"]
+        else:
+            groups.append({"domain": ug["domain"], "entries": [], "unmapped": ug["entries"]})
+    order_index = {name: i for i, name in enumerate(DOMAIN_ORDER)}
+    groups.sort(key=lambda g: order_index.get(g["domain"], len(DOMAIN_ORDER)))
+    return groups
+
+
 def parse_svs_rows(text: str) -> list | None:
     """security_requirements sourced from ASVS/AISVS (02-abuse-and-reqs-lib.yml)
     store each subsection's numbered requirements as `<# > | <description> |
@@ -1362,7 +1419,7 @@ def build_context(model: dict, output_dir: str) -> dict:
         "security_requirement_domain_groups": group_svs_entries_by_domain(
             security_requirements, title_key="title"),
         "abuse_cases": abuse_cases,
-        "abuse_case_domain_groups": group_svs_entries_by_domain(abuse_cases),
+        "requirement_abuse_groups": group_requirements_with_abuse_cases(security_requirements, abuse_cases),
         "questions": sorted((model.get("questions") or {}).items()),
         "question_domain_groups": group_svs_entries_by_domain(
             sorted((model.get("questions") or {}).items()),
@@ -1432,6 +1489,13 @@ def run_self_checks(context: dict, risks_json_count: int) -> bool:
               f"({context['accepted_finding_count']}) + closed ({context['closed_finding_count']}) = "
               f"{split_total}, but total_finding_count is {context['total_finding_count']}")
         ok = False
+
+    # Not fatal: an abuse case no requirement section answers still renders (at the
+    # end of its domain), but it is usually a mis-keyed control ID, so say so.
+    for group in context.get("requirement_abuse_groups", []):
+        for title, _ in group["unmapped"]:
+            print(f"WARNING: abuse case '{title}' pairs with no security requirement section "
+                  f"(control ID {control_ids(title)[:1]}); add the section or fix the ID")
 
     return ok
 

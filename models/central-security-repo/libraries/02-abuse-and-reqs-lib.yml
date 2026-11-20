@@ -84,6 +84,15 @@
 #   every subsection has a paired abuse case, and a few subsections pair
 #   with more than one.
 #
+#   The report pairs them on that key: each abuse case is shown above the
+#   requirement table whose control ID it shares (a NIST enhancement such
+#   as AC-6(1) pairs with AC-6 when no AC-6(1) section exists). Key an
+#   abuse case to the control that ANSWERS the scenario, and keep that
+#   requirement section in the same domain block, so a model that copies
+#   the block gets both. An abuse case no section answers renders at the
+#   end of its domain as a gap and warns when the report is generated;
+#   test_generate_report.py fails if this library has one.
+#
 # DOMAIN QUICK-REFERENCE:
 #   IDENTITY                   ASVS V6, V7, V8, V9, V10, NIST SP 800-53 (AC-2(6), AC-2(7))
 #     Triggers: feature:oauth-oidc-provider, feature:saml-sp, feature:password-reset, multi_tenant:true,
@@ -816,6 +825,11 @@ categories:
         source or configuration so that I can authenticate as the application
         itself without ever compromising a running instance.
 
+      "ASVS V13.3: Software-Only Key Theft via Host Compromise": >
+        As an attacker who has compromised a host holding software-only key
+        material, I want to read the key directly from process or host
+        memory so that I obtain it with no hardware boundary to cross.
+
       "ASVS V15.2: Known-Vulnerable Dependency Exploited for RCE": >
         As an attacker, I want to fingerprint a specific outdated library
         version the application depends on and use a public exploit for its
@@ -1491,11 +1505,6 @@ categories:
         outdated cipher mode) so that I can forge tokens, recover plaintext,
         or bypass an integrity check that a vetted, standard algorithm would
         have resisted.
-
-      "ASVS V11.7: Software-Only Key Theft via Host Compromise": >
-        As an attacker who has compromised a host holding software-only key
-        material, I want to read the key directly from process or host
-        memory so that I obtain it with no hardware boundary to cross.
 
       "ASVS V14.1: Exfiltration from an Unclassified Data Store": >
         As an attacker, I want to reach a data store that has never been

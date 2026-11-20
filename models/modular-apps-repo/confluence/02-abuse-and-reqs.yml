@@ -253,6 +253,11 @@ abuse_cases:
     subsequently download them or trigger server-side parsing
     vulnerabilities.
 
+  "ASVS V13.3: Software-Only Key Theft via Host Compromise": >
+    As an attacker who has compromised a host holding software-only key
+    material, I want to read the key directly from process or host
+    memory so that I obtain it with no hardware boundary to cross.
+
   # ----------------------------------------------------------------------------
   # DATA
   # ----------------------------------------------------------------------------
@@ -269,11 +274,6 @@ abuse_cases:
     outdated cipher mode) so that I can forge tokens, recover plaintext,
     or bypass an integrity check that a vetted, standard algorithm would
     have resisted.
-
-  "ASVS V11.7: Software-Only Key Theft via Host Compromise": >
-    As an attacker who has compromised a host holding software-only key
-    material, I want to read the key directly from process or host
-    memory so that I obtain it with no hardware boundary to cross.
 
   "ASVS V14.1: Exfiltration from an Unclassified Data Store": >
     As an attacker, I want to reach a data store that has never been
@@ -627,6 +627,12 @@ security_requirements:
   "ASVS V5.4: File Download": |
     5.4.1 | Verify that the application validates or ignores user-submitted filenames and specifies a filename in the Content-Disposition header field in the response. | 2
     5.4.3 | Verify that files obtained from untrusted sources are scanned by antivirus scanners to prevent serving of known malicious content. | 2
+
+  "ASVS V13.3: Secret Management": |
+    13.3.1 | Verify that a secrets management solution, such as a key vault, is used to securely create, store, control access to, and destroy backend secrets. These could include passwords, key material, integrations with databases and third-party systems, keys and seeds for time-based tokens, other internal secrets, and API keys. Secrets must not be included in application source code or included in build artifacts. For an L3 application, this must involve a hardware-backed solution such as an HSM. | 2
+    13.3.2 | Verify that access to secret assets adheres to the principle of least privilege. | 2
+    13.3.3 | Verify that all cryptographic operations are performed using an isolated security module (such as a vault or hardware security module) to securely manage and protect key material from exposure outside of the security module. | 3
+    13.3.4 | Verify that secrets are configured to expire and be rotated based on the application's documentation. | 3
 
   # ----------------------------------------------------------------------------
   # DATA

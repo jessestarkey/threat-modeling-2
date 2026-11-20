@@ -147,6 +147,15 @@ th { background: #eef2f6; }
    subsections run well past a page); only the individual row is kept
    intact via tr { break-inside: avoid }. */
 .svs-table { margin-bottom: 16px; }
+
+/* Abuse cases, shown above the requirement table that answers them */
+.abuse-callout { border-left: 4px solid #b03a2e; background: #fbf1ef; padding: 6px 10px; margin: 4px 0 10px; break-inside: avoid; }
+.abuse-callout p { margin: 3px 0 0; font-size: 9pt; }
+.abuse-callout.gap { border-left-color: #8a6d00; background: #fff8e1; }
+.abuse-callout .ac-label { font-size: 7pt; text-transform: uppercase; letter-spacing: .06em; color: #b03a2e; font-weight: 700; }
+.abuse-callout .ac-title { font-weight: 700; font-size: 9.5pt; }
+.abuse-unmapped { border-top: 1px dashed #c9b26b; margin-top: 12px; }
+.abuse-unmapped-note { font-size: 8.5pt; color: #555; }
 .svs-table th, .svs-table td { font-size: 8.5pt; }
 .svs-table tr { break-inside: avoid; }
 .svs-table .svs-num { width: 42px; white-space: nowrap; }
