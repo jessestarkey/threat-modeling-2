@@ -126,6 +126,8 @@ technical_overview:
 # below.
 #
 # FEATURE CHECKLIST:
+#   The checklist is the intake for a new model, so answer every item in every
+#   focus area, including the ones that do not apply (answer them None or No).
 #   Each focus area in the library has a short feature checklist, and each item has
 #   a fixed list of options. Copy each item below as "Feature: <item>", and
 #   answer it with the options that apply, separated by commas, for example
@@ -135,6 +137,11 @@ technical_overview:
 #   implies. Then, place each implied tag on the asset that has the feature.
 #   The report prints the checklist as a table that marks each selected option
 #   and lists the implied tags, so that a reviewer can check them.
+#
+# WHICH QUESTIONS TO ANSWER:
+#   Each library question has an asked_when list. Answer every question marked
+#   "always", and every question whose listed checklist selections include one
+#   you made. The report shows the others as not asked, with the reason.
 #
 # ANSWER FORMAT:
 #   For each question, explain how the capability is implemented, which tool

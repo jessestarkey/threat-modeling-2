@@ -1043,7 +1043,10 @@ checks them automatically. Tags that record evidence of a control, topology, or 
 outside the checklist. Each item has a fixed list of options, and the author answers by
 selecting the ones that apply. Each item also names the sections it affects and how its selections
 can rule them out, and the report prints the checklist as a table with the selected options marked. The 31 questions that follow are short,
-since the precise criteria live in the requirement rows. An author tailors a section out
+since the precise criteria live in the requirement rows, and the checklist also decides which of them
+are asked. Each question has an asked_when list, either "always" or the checklist selections that make
+it apply. The report shows a question that the checklist rules out as not asked, one that depends on an
+unanswered item as pending, and warns about one that applies but has no answer. An author tailors a section out
 by replacing its rows with "Not applicable: <reason>" in the model, rather than deleting it, and the
 report then shows the section as not applicable with that reason. As a result, a reviewer can see
 what was tailored out and why. The OWASP and NIST rows themselves are never edited, only replaced by

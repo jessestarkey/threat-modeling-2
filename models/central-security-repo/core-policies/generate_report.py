@@ -513,14 +513,19 @@ SVS_REQUIREMENT_DOMAIN_MAP = {
 }
 
 def load_question_library() -> tuple:
-    """({question: domain}, {feature: {"domain", "affects"}}) from 01-metadata-lib.yml, which
-    the report reads directly so that the questions and feature checklist stay in one place. A
-    question or feature an author writes themselves falls back to FALLBACK_DOMAIN."""
+    """({question: focus area}, {feature: details}, {question: asked_when}) from
+    01-metadata-lib.yml, which the report reads directly so that the questions and the feature
+    checklist stay in one place. A question or feature an author writes themselves falls back to
+    FALLBACK_DOMAIN. asked_when is None for a question that is always asked, and otherwise a list
+    of (feature, option) pairs, any one of which makes the question apply."""
     data = yaml.safe_load((LIBRARIES_DIR / "01-metadata-lib.yml").read_text(encoding="utf-8")) or {}
-    questions, features = {}, {}
+    questions, features, asked_when = {}, {}, {}
     for block in data.get("categories") or []:
-        for question in block.get("questions") or {}:
-            questions[question] = block["name"]
+        for entry in block.get("questions") or []:
+            questions[entry["question"]] = block["name"]
+            when = entry.get("asked_when", "always")
+            asked_when[entry["question"]] = None if when == "always" else [
+                tuple(part.strip() for part in condition.split(":", 1)) for condition in when]
         for item in block.get("features") or []:
             options = [o if isinstance(o, str) else o["option"] for o in item.get("options") or []]
             option_tags = {(o if isinstance(o, str) else o["option"]): ([] if isinstance(o, str) else list(o.get("tags") or []))
@@ -528,14 +533,60 @@ def load_question_library() -> tuple:
             features[item["feature"]] = {"domain": block["name"], "affects": item.get("affects", ""),
                                          "options": options, "option_tags": option_tags,
                                          "multiple": item.get("select", "multiple") == "multiple"}
-    return questions, features
+    return questions, features, asked_when
 
 
-QUESTION_DOMAIN_MAP, FEATURE_INDEX = load_question_library()
+QUESTION_DOMAIN_MAP, FEATURE_INDEX, QUESTION_ASKED_WHEN = load_question_library()
 FEATURE_PREFIX = "Feature: "
 
 
 ANSWER_REQUIRED = "[ANSWER REQUIRED]"
+
+
+def question_status(questions: dict, checklist: list) -> dict:
+    """{focus area: [entry]} for the library questions a model does not answer, in every focus
+    area the model covers (one where it answers a question or a checklist item). Each entry has a
+    status: "not asked" when none of the question's selections are made, "pending" when it depends
+    on a checklist item that is not answered yet, and "missing" when it applies but the model does
+    not ask it."""
+    selected = {(row["feature"], o["label"]) for row in checklist for o in row["options"] if o["selected"]}
+    answered = {row["feature"] for row in checklist if row["answered"]}
+    # A focus area applies when the model answers one of its questions or makes any selection in
+    # it other than None or No. It is ruled out when its checklist items are answered but every
+    # answer is None or No, for example an application that uses no AI.
+    covered = {QUESTION_DOMAIN_MAP[q] for q in questions if q in QUESTION_DOMAIN_MAP}
+    covered |= {row["domain"] for row in checklist
+                if any(o["selected"] and o["label"] not in ("None", "No") for o in row["options"])}
+    ruled_out = {row["domain"] for row in checklist if row["answered"]} - covered
+    out = {}
+    for question, area in QUESTION_DOMAIN_MAP.items():
+        if question in questions:
+            continue
+        if area in ruled_out:
+            out.setdefault(area, []).append({"question": question, "status": "not asked",
+                                             "reason": f"every checklist item in the {area} focus area is answered None or No"})
+            continue
+        if area not in covered:
+            continue
+        when = QUESTION_ASKED_WHEN.get(question)
+        if when is None or any(pair in selected for pair in when):
+            entry = {"question": question, "status": "missing", "reason": ""}
+        else:
+            features = list(dict.fromkeys(feature for feature, _ in when))
+            open_items = [f for f in features if f not in answered]
+            outside = sorted({FEATURE_INDEX[f]["domain"] for f in features if f in FEATURE_INDEX} - covered)
+            if outside and all(FEATURE_INDEX.get(f, {}).get("domain") not in covered for f in features):
+                entry = {"question": question, "status": "not asked",
+                         "reason": f"the {', '.join(outside)} focus area does not apply to this model"}
+            elif open_items:
+                entry = {"question": question, "status": "pending",
+                         "reason": "depends on the unanswered checklist item " + ", ".join(open_items)}
+            else:
+                options = ", ".join(option for _, option in when)
+                entry = {"question": question, "status": "not asked",
+                         "reason": f"none of these is selected: {options}"}
+        out.setdefault(area, []).append(entry)
+    return out
 
 
 def feature_checklist(questions: dict) -> list:
@@ -1126,6 +1177,23 @@ def render_diagram_svg(gv_path: str, title: str, confidentiality_by_label: dict 
     return svg_for_pdf
 
 
+def question_groups(questions: dict, checklist: list) -> list:
+    """The answered questions grouped by focus area, each group also carrying the library
+    questions in that focus area that the model does not answer (see question_status)."""
+    answered = sorted((k, v) for k, v in questions.items() if not k.startswith(FEATURE_PREFIX))
+    groups = group_svs_entries_by_domain(answered, domain_map=QUESTION_DOMAIN_MAP)
+    absent = question_status(questions, checklist)
+    by_area = {g["domain"]: g for g in groups}
+    for g in groups:
+        g["absent"] = absent.get(g["domain"], [])
+    for area, entries in absent.items():
+        if area not in by_area:
+            groups.append({"domain": area, "entries": [], "absent": entries})
+    order = {name: i for i, name in enumerate(DOMAIN_ORDER)}
+    groups.sort(key=lambda g: order.get(g["domain"], len(DOMAIN_ORDER)))
+    return groups
+
+
 def not_applicable_reason(text: str) -> str:
     """The reason a requirement section was tailored out, or "" when it applies. An author
     tailors a section out by replacing its rows with "Not applicable: <reason>" (see
@@ -1399,6 +1467,7 @@ def build_context(model: dict, output_dir: str) -> dict:
     with open(os.path.join(output_dir, "stats.json"), encoding="utf-8") as f:
         stats = json.load(f)
 
+    checklist = feature_checklist(model.get("questions") or {})
     security_requirements = [
         {"title": title, "text": text, "rows": parse_svs_rows(text), "not_applicable": not_applicable_reason(text)}
         for title, text in (model.get("security_requirements") or {}).items()
@@ -1447,10 +1516,8 @@ def build_context(model: dict, output_dir: str) -> dict:
         "requirement_abuse_groups": group_requirements_with_abuse_cases(security_requirements, abuse_cases),
         "not_applicable_requirement_count": sum(1 for r in security_requirements if r["not_applicable"]),
         "questions": sorted((model.get("questions") or {}).items()),
-        "feature_checklist": feature_checklist(model.get("questions") or {}),
-        "question_domain_groups": group_svs_entries_by_domain(
-            sorted((k, v) for k, v in (model.get("questions") or {}).items() if not k.startswith(FEATURE_PREFIX)),
-            domain_map=QUESTION_DOMAIN_MAP),
+        "feature_checklist": checklist,
+        "question_domain_groups": question_groups(model.get("questions") or {}, checklist),
         "tags": tags,
         "trust_boundary_tree": build_trust_boundary_tree(model.get("trust_boundaries") or {}, assets_by_id),
         "shared_runtimes": build_shared_runtimes(model.get("shared_runtimes") or {}, assets_by_id),
@@ -1523,6 +1590,12 @@ def run_self_checks(context: dict, risks_json_count: int) -> bool:
         for title, _ in group["unmapped"]:
             print(f"WARNING: abuse case '{title}' pairs with no security requirement section "
                   f"(control ID {control_ids(title)[:1]}); add the section or fix the ID")
+    # Also not fatal: a library question that the checklist says applies, but that the model
+    # does not ask, leaves part of the focus area unexamined.
+    for group in context.get("question_domain_groups", []):
+        for entry in group.get("absent", []):
+            if entry["status"] == "missing":
+                print(f"WARNING: question '{entry['question']}' applies to this model but is not answered")
     # Also not fatal: a checklist selection outside the item's options, or several
     # selections on a single-choice item, is almost always a typo in the model.
     for row in context.get("feature_checklist", []):

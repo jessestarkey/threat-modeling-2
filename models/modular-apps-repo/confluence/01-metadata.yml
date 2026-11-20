@@ -64,6 +64,10 @@ questions:
   "Feature: Content handling": "File uploads, Bulk import or export, Server-side PDF generation, Rendering one user's content to others [ANSWER REQUIRED]"
   "Feature: Platform features": "Third-party plugins [ANSWER REQUIRED]"
   "Feature: User-facing flows that could be automated at scale": "[ANSWER REQUIRED]"
+  "Feature: AI use and model sourcing": "None"
+  "Feature: AI deployment": "None"
+  "Feature: Agent capabilities": "None"
+  "Feature: AI inputs and outputs": "None"
   "Feature: In-use and client-side data": "Sensitive data reaches a client [ANSWER REQUIRED]"
   "Feature: Sensitive data handled": "Credentials or keys, Credentials brokered for other services [ANSWER REQUIRED]"
   "Feature: Incident reporting requirement": "[ANSWER REQUIRED]"
@@ -184,6 +188,24 @@ questions:
     [ANSWER REQUIRED] Name the malware scan applied to attachment uploads (for example, Defender for
     Storage). Additionally, describe how the server-side PDF export renderer is sandboxed, with
     JavaScript and external resource loading disabled.
+
+  "How are cookies, security headers, CSRF, and origin separation configured for the browser?": >
+    Confluence is rendered in a browser and sets session cookies.
+
+    [ANSWER REQUIRED] Describe the session cookies' Secure, HttpOnly, and SameSite settings, the
+    security headers set (Content-Security-Policy, X-Frame-Options or frame-ancestors, and HSTS), how
+    CSRF is prevented, and whether pages load external resources with integrity checks.
+
+  "How is configuration managed, how do backend services authenticate, and where do secrets live?": >
+    Backend secrets reach Confluence through the AKS CSI Driver from Azure Key Vault.
+
+    [ANSWER REQUIRED] Describe how configuration is managed and reviewed, how Confluence authenticates
+    to Postgres, the file store, and Keycloak, and confirm that no secrets live in images, manifests,
+    or environment variables.
+
+  "How is third-party dependency risk tracked, and which defensive coding practices are enforced?": >
+    [ANSWER REQUIRED] Describe how Confluence's vendor patches and its third-party plugins are tracked
+    against known vulnerabilities, and how plugin updates are reviewed before they are installed.
 
   # ----------------------------------------------------------------------------
   # DATA

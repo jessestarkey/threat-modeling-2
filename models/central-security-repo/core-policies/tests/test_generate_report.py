@@ -75,10 +75,11 @@ class Scoping(unittest.TestCase):
         import yaml
         library = Path(__file__).resolve().parents[2] / "libraries" / "01-metadata-lib.yml"
         blocks = yaml.safe_load(library.read_text(encoding="utf-8"))["categories"]
-        questions = [q for block in blocks for q in (block.get("questions") or {})]
+        questions = [q["question"] for block in blocks for q in (block.get("questions") or [])]
         features = [f for block in blocks for f in (block.get("features") or [])]
         self.assertEqual(len(questions), 31)
         self.assertEqual(len(features), 25)
+        self.assertTrue(all("asked_when" in q for block in blocks for q in block["questions"]))
         self.assertEqual(sorted(report.QUESTION_DOMAIN_MAP), sorted(questions))
         for item in features:
             with self.subTest(feature=item["feature"][:60]):
@@ -97,6 +98,35 @@ class Scoping(unittest.TestCase):
                     self.assertIn(question[len(report.FEATURE_PREFIX):], report.FEATURE_INDEX)
                 else:
                     self.assertIn(question, report.QUESTION_DOMAIN_MAP)
+
+    def test_questions_follow_the_checklist(self):
+        model = {
+            "Feature: Self-managed identity infrastructure": "None",
+            "Feature: OAuth, OIDC, and SAML roles": "",
+            "How is each authentication mechanism implemented, enforced, and documented?": "Via Entra ID.",
+        }
+        rows = report.feature_checklist(model)
+        status = {e["question"]: e for e in report.question_status(model, rows)["Identity"]}
+        self.assertEqual(status["How is the self-managed identity infrastructure hardened, and who governs "
+                                "privileged access to it?"]["status"], "not asked")
+        self.assertEqual(status["For each OAuth or OIDC role the asset plays, how are tokens validated and scoped, "
+                                "and how are the flows secured?"]["status"], "pending")
+        self.assertEqual(status["How are sessions created, timed out, ended, and re-authenticated?"]["status"],
+                         "missing", "an always-asked question the model leaves out")
+        self.assertNotIn("How is each authentication mechanism implemented, enforced, and documented?", status)
+        detection = {e["question"]: e for e in report.question_status({"What is logged, where do the logs go, and what "
+                                                                        "do error messages reveal?": "SIEM."}, [])["Detection"]}
+        monitoring = detection["How is the model monitored for anomalies, abuse, and drift, and is its lifecycle audited?"]
+        self.assertEqual(monitoring["status"], "not asked", "its checklist item is in a focus area the model does not cover")
+        no_ai = {"Feature: AI use and model sourcing": "None", "Feature: Agent capabilities": "None"}
+        ai = report.question_status(no_ai, report.feature_checklist(no_ai))["Artificial Intelligence"]
+        self.assertTrue(ai and all(e["status"] == "not asked" for e in ai), "an application that uses no AI")
+
+    def test_every_asked_when_names_a_real_checklist_option(self):
+        for question, when in report.QUESTION_ASKED_WHEN.items():
+            for feature, option in (when or []):
+                with self.subTest(question=question[:50]):
+                    self.assertIn(option, report.FEATURE_INDEX[feature]["options"])
 
     def test_feature_checklist_marks_the_selected_options(self):
         rows = report.feature_checklist({

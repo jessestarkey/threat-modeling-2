@@ -154,7 +154,8 @@
   along with the requirement sections each item affects and the tags its selections imply. The reviewer checks
   that each implied tag appears on the asset that has the feature. Where an answer rules out a section, that section appears in the next section as not
   applicable, with the reason. Second, the questions explain how each capability the application has is
-  implemented and verified. Both are grouped by the same focus areas as the requirements, and any entry
+  implemented and verified. A question that the checklist rules out appears as not asked, with the reason, and
+  one that depends on an unanswered checklist item appears as pending. Both are grouped by the same focus areas as the requirements, and any entry
   not associated with a focus area falls under Uncategorized.</p>
   {% if feature_checklist %}
   <h2 class="domain-heading">Feature Checklist</h2>
@@ -180,6 +181,12 @@
   {% for q_title, q_text in group.entries %}
   <h3 class="category-heading">{{ q_title }}</h3>
   {% for para in (q_text or '').split('\n') if para.strip() %}<p>{{ para.strip() }}</p>{% endfor %}
+  {% endfor %}
+  {% for entry in group.absent %}
+  <h3 class="category-heading question-absent">{{ entry.question }}</h3>
+  {% if entry.status == 'not asked' %}<p class="question-note">Not asked: {{ entry.reason }}.</p>
+  {% elif entry.status == 'pending' %}<p class="question-note">Pending: {{ entry.reason }}.</p>
+  {% else %}<p class="question-note missing">Not answered: this question applies to the model but has no answer.</p>{% endif %}
   {% endfor %}
   {% endfor %}
 </section>

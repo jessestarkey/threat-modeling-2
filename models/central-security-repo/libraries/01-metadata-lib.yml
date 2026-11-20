@@ -9,14 +9,19 @@
 #   2. For each focus area with a matching trigger tag, copy the entire block
 #      under `questions:` into the `questions:` section of your
 #      01-metadata.yml file.
-#   3. Answer the focus area's feature checklist first. Copy each item into the
-#      same `questions:` section as "Feature: <item>", and answer it with
+#   3. Answer the whole feature checklist first, for every focus area, since it
+#      is the intake for a new model and decides which focus areas apply.
+#      Copy each item into the same `questions:` section as "Feature: <item>",
+#      and answer it with
 #      the options that apply, separated by commas, for example
 #      "Enterprise IdP, Local accounts (including break-glass)". Append
 #      [ANSWER REQUIRED] to a selection that still needs confirming.
-#   4. Then, answer each question for the features the application has,
-#      explaining how the capability is implemented, which tool or control
-#      enforces it, and how it is verified.
+#   4. Then, answer the questions the checklist calls for. Each question has
+#      an asked_when list: either "always", or the checklist selections that
+#      make it apply (any one is enough). Copy each applicable question's text
+#      into the `questions:` section as a key, and explain how the capability
+#      is implemented, which tool or control enforces it, and how it is
+#      verified.
 #   5. Use the checklist to tailor your 02-abuse-and-reqs.yml. Each item's
 #      `scoping` names the requirement sections that its answer can rule out.
 #      Replace a ruled-out section's rows with the text
@@ -57,8 +62,12 @@
 #   The questions are short on purpose, since the precise criteria live in
 #   the requirement rows rather than in the question. Each question is
 #   grouped by capability rather than by ASVS, AISVS, or NIST ID, and its
-#   comment lists the requirement IDs whose numbered criteria to consult
-#   before answering.
+#   requirement_ids name the numbered criteria to consult before answering.
+#   The report lists every question in a focus area the model covers. A
+#   question whose selections are absent appears as "Not asked" with the
+#   reason, one that depends on an unanswered checklist item appears as
+#   "Pending", and one that applies but is missing from the model raises a
+#   warning.
 #
 # FOCUS AREA QUICK-REFERENCE (see 02-abuse-and-reqs-lib.yml for full sourcing
 # detail per focus area):
@@ -176,20 +185,36 @@ categories:
 
     questions:
 
-      # Requirement IDs: ASVS V6.1-ASVS V6.8
-      "How is each authentication mechanism implemented, enforced, and documented?": ""
+      - question: "How is each authentication mechanism implemented, enforced, and documented?"
+        requirement_ids: "ASVS V6.1-ASVS V6.8"
+        asked_when: always
 
-      # Requirement IDs: ASVS V7.1-ASVS V7.6
-      "How are sessions created, timed out, ended, and re-authenticated?": ""
+      - question: "How are sessions created, timed out, ended, and re-authenticated?"
+        requirement_ids: "ASVS V7.1-ASVS V7.6"
+        asked_when: always
 
-      # Requirement IDs: ASVS V8.1-ASVS V8.4
-      "How is authorization enforced at the function, data, and field level, and what protects the admin interface?": ""
+      - question: "How is authorization enforced at the function, data, and field level, and what protects the admin interface?"
+        requirement_ids: "ASVS V8.1-ASVS V8.4"
+        asked_when: always
 
-      # Requirement IDs: ASVS V9.1-ASVS V9.2, ASVS V10.1-ASVS V10.7
-      "For each OAuth or OIDC role the asset plays, how are tokens validated and scoped, and how are the flows secured?": ""
+      - question: "For each OAuth or OIDC role the asset plays, how are tokens validated and scoped, and how are the flows secured?"
+        requirement_ids: "ASVS V9.1-ASVS V9.2, ASVS V10.1-ASVS V10.7"
+        asked_when:
+          - "OAuth, OIDC, and SAML roles: OAuth client"
+          - "OAuth, OIDC, and SAML roles: OAuth resource server"
+          - "OAuth, OIDC, and SAML roles: OAuth authorization server"
+          - "OAuth, OIDC, and SAML roles: OIDC client"
+          - "OAuth, OIDC, and SAML roles: OpenID provider"
+          - "OAuth, OIDC, and SAML roles: SAML service provider"
+          - "OAuth, OIDC, and SAML roles: Consent management"
 
-      # Requirement IDs: AC-2(7), AC-2(6)
-      "How is the self-managed identity infrastructure hardened, and who governs privileged access to it?": ""
+      - question: "How is the self-managed identity infrastructure hardened, and who governs privileged access to it?"
+        requirement_ids: "AC-2(7), AC-2(6)"
+        asked_when:
+          - "Self-managed identity infrastructure: Directory"
+          - "Self-managed identity infrastructure: Certificate authority"
+          - "Self-managed identity infrastructure: Hybrid sync"
+          - "Self-managed identity infrastructure: PAM"
 
   - name: "Device and Infrastructure"
     triggers:
@@ -227,11 +252,14 @@ categories:
 
     questions:
 
-      # Requirement IDs: CM-14, CM-7, SC-7(21), SC-5, AC-6, CM-6, SI-2, SI-4, AC-17, SC-28
-      "How are the containers and VMs hardened, patched, monitored, and administered?": ""
+      - question: "How are the containers and VMs hardened, patched, monitored, and administered?"
+        requirement_ids: "CM-14, CM-7, SC-7(21), SC-5, AC-6, CM-6, SI-2, SI-4, AC-17, SC-28"
+        asked_when: always
 
-      # Requirement IDs: PE-3 / SI-7
-      "How is the self-managed hardware hardened, including its BMC credentials, firmware patching, and secure boot?": ""
+      - question: "How is the self-managed hardware hardened, including its BMC credentials, firmware patching, and secure boot?"
+        requirement_ids: "PE-3 / SI-7"
+        asked_when:
+          - "Self-managed hosts and workload identity: Physical hosts the team administers"
 
   - name: "Network and Environment"
     triggers:
@@ -298,17 +326,32 @@ categories:
 
     questions:
 
-      # Requirement IDs: ASVS V12.1-ASVS V12.3
-      "How is TLS implemented for external traffic and for service-to-service calls?": ""
+      - question: "How is TLS implemented for external traffic and for service-to-service calls?"
+        requirement_ids: "ASVS V12.1-ASVS V12.3"
+        asked_when: always
 
-      # Requirement IDs: SC-7, AC-18
-      "How is the self-managed network segmented, and how is wireless access controlled?": ""
+      - question: "How is the self-managed network segmented, and how is wireless access controlled?"
+        requirement_ids: "SC-7, AC-18"
+        asked_when:
+          - "Self-managed network: Self-managed segmentation"
+          - "Self-managed network: Self-managed wireless"
+          - "Self-managed network: Self-managed external routing"
 
-      # Requirement IDs: AC-4(19), AC-4(8) / SI-3, AC-4(25) / AC-4(9), SI-7
-      "How are classification markings checked, content inspected and sanitized, and releases approved at the cross-domain solution?": ""
+      - question: "How are classification markings checked, content inspected and sanitized, and releases approved at the cross-domain solution?"
+        requirement_ids: "AC-4(19), AC-4(8) / SI-3, AC-4(25) / AC-4(9), SI-7"
+        asked_when:
+          - "Cross-domain solution roles: Low-side submitter"
+          - "Cross-domain solution roles: Low-side receiver"
+          - "Cross-domain solution roles: Low-side broker"
+          - "Cross-domain solution roles: High-side submitter"
+          - "Cross-domain solution roles: High-side receiver"
+          - "Cross-domain solution roles: High-side broker"
 
-      # Requirement IDs: AU-9, AC-3, SC-31, MP-8, CA-3
-      "How is each transfer across the authorization boundary governed and audited?": ""
+      - question: "How is each transfer across the authorization boundary governed and audited?"
+        requirement_ids: "AU-9, AC-3, SC-31, MP-8, CA-3"
+        asked_when:
+          - "Authorization boundary crossings: Data crosses the authorization boundary"
+          - "Authorization boundary crossings: Media or datasets downgraded to a lower classification"
 
   - name: "Application"
     triggers:
@@ -377,11 +420,13 @@ categories:
             tags: [feature:webhook-receiver]
           - option: "Search over an index"
             tags: [feature:search-index]
+          - "WebRTC"
           - "None"
-        affects: "ASVS V4.3, V4.4, and the Application block"
+        affects: "ASVS V4.3, V4.4, V17, and the Application focus area"
         scoping: >
           V4.3 applies only if GraphQL is selected, and V4.4 only if WebSockets is selected.
-          Place each tag on the asset that exposes the interface.
+          Place each tag on the asset that exposes the interface. Additionally, ASVS V17 applies
+          only if WebRTC is selected.
 
       - feature: "Content handling"
         select: multiple
@@ -429,29 +474,42 @@ categories:
 
     questions:
 
-      # Requirement IDs: ASVS V1.1-ASVS V1.5
-      "What prevents injection and unsafe deserialization?": ""
+      - question: "What prevents injection and unsafe deserialization?"
+        requirement_ids: "ASVS V1.1-ASVS V1.5"
+        asked_when: always
 
-      # Requirement IDs: ASVS V2.1-ASVS V2.4
-      "What stops users from skipping business-logic steps or automating abuse?": ""
+      - question: "What stops users from skipping business-logic steps or automating abuse?"
+        requirement_ids: "ASVS V2.1-ASVS V2.4"
+        asked_when: always
 
-      # Requirement IDs: ASVS V3.1-ASVS V3.7
-      "How are cookies, security headers, CSRF, and origin separation configured for the browser?": ""
+      - question: "How are cookies, security headers, CSRF, and origin separation configured for the browser?"
+        requirement_ids: "ASVS V3.1-ASVS V3.7"
+        asked_when:
+          - "Browser and VDI access: Rendered in a browser"
 
-      # Requirement IDs: ASVS V4.1-ASVS V4.4
-      "How are the HTTP, GraphQL, and WebSocket interfaces secured?": ""
+      - question: "How are the HTTP, GraphQL, and WebSocket interfaces secured?"
+        requirement_ids: "ASVS V4.1-ASVS V4.4"
+        asked_when: always
 
-      # Requirement IDs: ASVS V5.1-ASVS V5.4
-      "How are uploaded files validated, stored, and served?": ""
+      - question: "How are uploaded files validated, stored, and served?"
+        requirement_ids: "ASVS V5.1-ASVS V5.4"
+        asked_when:
+          - "Content handling: File uploads"
+          - "Content handling: Bulk import or export"
+          - "Content handling: Server-side PDF generation"
 
-      # Requirement IDs: ASVS V13.1-ASVS V13.4
-      "How is configuration managed, how do backend services authenticate, and where do secrets live?": ""
+      - question: "How is configuration managed, how do backend services authenticate, and where do secrets live?"
+        requirement_ids: "ASVS V13.1-ASVS V13.4"
+        asked_when: always
 
-      # Requirement IDs: ASVS V15.1-ASVS V15.4
-      "How is third-party dependency risk tracked, and which defensive coding practices are enforced?": ""
+      - question: "How is third-party dependency risk tracked, and which defensive coding practices are enforced?"
+        requirement_ids: "ASVS V15.1-ASVS V15.4"
+        asked_when: always
 
-      # Requirement IDs: ASVS V17.1-ASVS V17.3
-      "How are the WebRTC TURN relay, media, and signaling secured?": ""
+      - question: "How are the WebRTC TURN relay, media, and signaling secured?"
+        requirement_ids: "ASVS V17.1-ASVS V17.3"
+        asked_when:
+          - "Interfaces exposed: WebRTC"
 
   - name: "Artificial Intelligence"
     triggers:
@@ -481,7 +539,7 @@ categories:
 
     features:
 
-      - feature: "Model sourcing"
+      - feature: "AI use and model sourcing"
         select: multiple
         options:
           - option: "Vendor-hosted model"
@@ -493,12 +551,15 @@ categories:
           - "Model served in production"
           - option: "Model delivered into an air-gapped enclave"
             tags: [ai:air-gapped-model-delivery]
+          - "None"
         affects: "AISVS C1, C3, C6, C11.2, C11.3, C11.4, C12"
         scoping: >
-          If only Vendor-hosted model is selected, mark C1, C3, and C6 not applicable, and
-          record that the vendor covers C11.2 and C11.3. Additionally, C1.2 applies only if Data
-          labeling is selected, C3.5 and C12.5 only if Training or fine-tuning is selected, and
-          C11.4 and C12 only if Model served in production is selected.
+          If None is selected, the application uses no AI, so the Artificial Intelligence focus
+          area does not apply. Otherwise, if only Vendor-hosted model is selected, mark C1, C3,
+          and C6 not applicable, and record that the vendor covers C11.2 and C11.3.
+          Additionally, C1.2 applies only if Data labeling is selected, C3.5 and C12.5 only if
+          Training or fine-tuning is selected, and C11.4 and C12 only if Model served in
+          production is selected.
 
       - feature: "AI deployment"
         select: multiple
@@ -554,23 +615,43 @@ categories:
 
     questions:
 
-      # Requirement IDs: AISVS C1.1-AISVS C1.3, AISVS C3.1-AISVS C3.5, AISVS C6.1-AISVS C6.2
-      "How are training data, labeling, and model artifacts secured, and how are model integrity and provenance verified?": ""
+      - question: "How are training data, labeling, and model artifacts secured, and how are model integrity and provenance verified?"
+        requirement_ids: "AISVS C1.1-AISVS C1.3, AISVS C3.1-AISVS C3.5, AISVS C6.1-AISVS C6.2"
+        asked_when:
+          - "AI use and model sourcing: Self-hosted model"
+          - "AI use and model sourcing: Training or fine-tuning"
+          - "AI use and model sourcing: Data labeling"
+          - "AI use and model sourcing: Model delivered into an air-gapped enclave"
 
-      # Requirement IDs: AISVS C2.1-AISVS C2.2, AISVS C8.1-AISVS C8.3
-      "How is untrusted input, including retrieved and embedded content, screened before it reaches the model, and who can access the memory or RAG index?": ""
+      - question: "How is untrusted input, including retrieved and embedded content, screened before it reaches the model, and who can access the memory or RAG index?"
+        requirement_ids: "AISVS C2.1-AISVS C2.2, AISVS C8.1-AISVS C8.3"
+        asked_when:
+          - "AI inputs and outputs: Prompts from end users"
+          - "AI inputs and outputs: External content read by the model"
+          - "Agent capabilities: Memory or RAG index"
 
-      # Requirement IDs: AISVS C4.1-AISVS C4.3, AISVS C5.1-AISVS C5.3
-      "How are AI workloads isolated, and how is access to AI resources authenticated and authorized?": ""
+      - question: "How are AI workloads isolated, and how is access to AI resources authenticated and authorized?"
+        requirement_ids: "AISVS C4.1-AISVS C4.3, AISVS C5.1-AISVS C5.3"
+        asked_when: always
 
-      # Requirement IDs: AISVS C7.1-AISVS C7.4
-      "How is model output validated and bounded before users or downstream systems receive it?": ""
+      - question: "How is model output validated and bounded before users or downstream systems receive it?"
+        requirement_ids: "AISVS C7.1-AISVS C7.4"
+        asked_when: always
 
-      # Requirement IDs: AISVS C9.1-AISVS C9.6, AISVS C10.1-AISVS C10.4
-      "What constrains the agent and its tools, and how are its MCP servers sourced, authenticated, and validated?": ""
+      - question: "What constrains the agent and its tools, and how are its MCP servers sourced, authenticated, and validated?"
+        requirement_ids: "AISVS C9.1-AISVS C9.6, AISVS C10.1-AISVS C10.4"
+        asked_when:
+          - "Agent capabilities: Tool calls"
+          - "Agent capabilities: MCP servers"
+          - "Agent capabilities: Code execution by the agent"
+          - "Agent capabilities: Agent skills"
 
-      # Requirement IDs: AISVS C11.1-AISVS C11.3
-      "How is the model hardened against adversarial input, membership inference, and extraction?": ""
+      - question: "How is the model hardened against adversarial input, membership inference, and extraction?"
+        requirement_ids: "AISVS C11.1-AISVS C11.3"
+        asked_when:
+          - "AI use and model sourcing: Self-hosted model"
+          - "AI use and model sourcing: Training or fine-tuning"
+          - "AI use and model sourcing: Model served in production"
 
   - name: "Data"
     triggers:
@@ -620,11 +701,13 @@ categories:
 
     questions:
 
-      # Requirement IDs: ASVS V11.1-ASVS V11.7
-      "How are cryptographic keys managed, and are the algorithms approved?": ""
+      - question: "How are cryptographic keys managed, and are the algorithms approved?"
+        requirement_ids: "ASVS V11.1-ASVS V11.7"
+        asked_when: always
 
-      # Requirement IDs: ASVS V14.1-ASVS V14.3
-      "How is sensitive data classified and protected at rest, in transit, and on the client?": ""
+      - question: "How is sensitive data classified and protected at rest, in transit, and on the client?"
+        requirement_ids: "ASVS V14.1-ASVS V14.3"
+        asked_when: always
 
   - name: "Detection"
     triggers:
@@ -634,11 +717,14 @@ categories:
 
     questions:
 
-      # Requirement IDs: ASVS V16.1-ASVS V16.5
-      "What is logged, where do the logs go, and what do error messages reveal?": ""
+      - question: "What is logged, where do the logs go, and what do error messages reveal?"
+        requirement_ids: "ASVS V16.1-ASVS V16.5"
+        asked_when: always
 
-      # Requirement IDs: AISVS C11.4, AISVS C12.1-AISVS C12.5
-      "How is the model monitored for anomalies, abuse, and drift, and is its lifecycle audited?": ""
+      - question: "How is the model monitored for anomalies, abuse, and drift, and is its lifecycle audited?"
+        requirement_ids: "AISVS C11.4, AISVS C12.1-AISVS C12.5"
+        asked_when:
+          - "AI use and model sourcing: Model served in production"
 
   - name: "Response"
     triggers:
@@ -660,8 +746,9 @@ categories:
 
     questions:
 
-      # Requirement IDs: IR-4, IR-4, IR-3, IR-6
-      "How are containment, credential rotation, and incident reporting handled, and have they been tested?": ""
+      - question: "How are containment, credential rotation, and incident reporting handled, and have they been tested?"
+        requirement_ids: "IR-4, IR-4, IR-3, IR-6"
+        asked_when: always
 
   - name: "Recovery"
     triggers:
@@ -692,5 +779,6 @@ categories:
 
     questions:
 
-      # Requirement IDs: CP-9 / AC-5, CP-2, CP-4, SA-9, SC-12
-      "How is the asset backed up, what are its RTO and RPO, and has a restore been tested?": ""
+      - question: "How is the asset backed up, what are its RTO and RPO, and has a restore been tested?"
+        requirement_ids: "CP-9 / AC-5, CP-2, CP-4, SA-9, SC-12"
+        asked_when: always
