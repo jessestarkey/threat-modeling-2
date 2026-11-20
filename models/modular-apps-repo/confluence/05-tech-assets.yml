@@ -710,6 +710,9 @@ technical_assets:
       - feature:file-upload-processing
       - feature:public-api-endpoint
       - feature:import-export
+      - feature:pdf-generation
+      - feature:deserialization
+      - feature:ugc-rendering
       - feature:admin-panel
       - feature:password-reset
       - exception:local-auth-fallback

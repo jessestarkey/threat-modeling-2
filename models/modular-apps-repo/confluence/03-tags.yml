@@ -62,6 +62,9 @@ tags_available:
   - feature:file-upload-processing  # Asset accepts and parses complex file formats uploaded by users (e.g., PDFs, Office documents, ZIP files, images)
   - feature:import-export           # Asset supports bulk data import (CSV/Excel/JSON batch upload) or bulk data export (full dataset download, report generation)
   - feature:dynamic-code-execution  # Asset interprets and runs code, scripts, or complex expressions provided by a user (e.g., template engines, eval(), formula processors)
+  - feature:deserialization         # Asset deserializes objects from user-supplied or externally-sourced byte streams (e.g., Java serialization, .NET BinaryFormatter, Python Pickle outside AI model context, YAML.load). Marks the feature only: for the risk, set data_formats_accepted: serialization on the asset, which Threagile's built-in untrusted-deserialization reads
+  - feature:pdf-generation          # Asset generates PDFs server-side from user-supplied or user-influenced content (e.g., wkhtmltopdf, Puppeteer, WeasyPrint rendering HTML templates with user data)
+  - feature:ugc-rendering           # Asset renders content created by one user to be displayed to another user (e.g., comments, forum posts, wiki pages) — XSS risk is covered by Threagile's native cross-site-scripting rule; this tag is retained for model completeness
 
   # --- Application Feature Risks ---
   - feature:search-index            # Asset has query capabilities over a search index (e.g., Elasticsearch, Lucene, Solr, Azure AI Search)
