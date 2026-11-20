@@ -36,8 +36,8 @@ questions:
 
   # ==============================================================================
   # Answers for the capability questions and feature checklist in 01-metadata-lib.yml,
-  # for the domains selected in this app's own 02-abuse-and-reqs.yml. This app has no
-  # AI domain, so those questions and checklist items are omitted. Checklist answers
+  # for the focus areas selected in this app's own 02-abuse-and-reqs.yml. This app has no
+  # AI focus area, so those questions and checklist items are omitted. Checklist answers
   # state only what this model already records, and mark everything else
   # [ANSWER REQUIRED].
   # ==============================================================================
@@ -233,7 +233,7 @@ questions:
 
   # Requirement IDs: IR-4, IR-3, IR-6
   "How are containment, credential rotation, and incident reporting handled, and have they been tested?": >
-    The Response domain applies because the model is mission-essential, and several assets also
+    The Response focus area applies because the model is mission-essential, and several assets also
     trigger it, namely the two Application Gateways in the DMZ, the CSI driver as a secrets broker,
     and Confluence's local-auth waiver. The secrets-broker chain (the CSI driver to Key Vault, and
     Keycloak to its store) gives a starting credential inventory.

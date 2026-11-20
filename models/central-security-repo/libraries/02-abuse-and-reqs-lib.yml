@@ -2,41 +2,43 @@
 # ABUSE CASE AND SECURITY REQUIREMENT LIBRARY: 02-abuse-and-reqs-lib.yml
 # ==============================================================================
 # This library contains modular abuse case and security requirement blocks
-# organized by SABER domain. It is not submitted to Threagile directly.
+# organized by SABER focus area (SABER itself calls these domains, a term this
+# framework avoids because security domains have their own meaning in DoD
+# systems). It is not submitted to Threagile directly.
 #
 # USAGE:
 #   1. Review your system's technical asset tags and machine types.
-#   2. For each domain with a matching trigger tag, copy the entire block
+#   2. For each focus area with a matching trigger tag, copy the entire block
 #      under `abuse_cases:` and `security_requirements:` directly into
 #      your 02-abuse-and-reqs.yml file.
 #
 # STRUCTURE:
-#   One entry per SABER domain (same framework/ordering as
+#   One entry per SABER focus area (same framework/ordering as
 #   09-custom-risks-lib.yml -- see that file's header) -- no sub-category
-#   layer beneath the domain anymore (an earlier revision had lettered
-#   sub-categories, A/B/I/J/etc., each with its own triggers; each domain
+#   layer beneath the focus area anymore (an earlier revision had lettered
+#   sub-categories, A/B/I/J/etc., each with its own triggers; each focus area
 #   now carries a single combined `triggers:` list instead, the union of
 #   what its former sub-categories used). There's also no separate
-#   "Baseline" bucket outside the domain structure -- that content
+#   "Baseline" bucket outside the focus area structure -- that content
 #   (encoding, validation, session, authorization, secure communication,
 #   configuration, secure coding -- universal regardless of any one
-#   feature tag) is redistributed into whichever domain it thematically
-#   fits. That makes a domain's `triggers:` list an imperfect gate in
+#   feature tag) is redistributed into whichever focus area it thematically
+#   fits. That makes a focus area's `triggers:` list an imperfect gate in
 #   places, but this is a human-curated reference an app author selects
 #   from, not a live dependency, so the imprecision is harmless.
 #
-#   Every SABER domain is now represented except most of Governance
+#   Every SABER focus area is now represented except most of Governance
 #   (org-level risk-acceptance/policy-exception content, out of scope for
 #   this per-asset file). Device and Infrastructure, Response, and
 #   Recovery draw from NIST SP 800-53 Rev 5 rather than ASVS/AISVS, since
 #   neither OWASP standard covers infrastructure, incident response, or
 #   backup/DR at all -- see SECURITY REQUIREMENTS SOURCING below for how
-#   that content differs in shape from the ASVS/AISVS-sourced domains.
+#   that content differs in shape from the ASVS/AISVS-sourced focus areas.
 #
 # SECURITY REQUIREMENTS SOURCING:
 #   Two source standards feed this file, in two different shapes:
 #
-#   ASVS/AISVS-sourced domains (Identity, most of Network and
+#   ASVS/AISVS-sourced focus areas (Identity, most of Network and
 #   Environment, Application, Artificial Intelligence, Data, most of
 #   Detection) come from OWASP ASVS 5.0.0
 #   (docs/OWASP_Application_Security_Verification_Standard_5.0.0_en.pdf)
@@ -55,7 +57,7 @@
 #   requirements and AISVS 1.0's 191 requirements (536 total) is
 #   represented exactly once.
 #
-#   NIST-sourced domains (Device and Infrastructure, Response, Recovery,
+#   NIST-sourced focus areas (Device and Infrastructure, Response, Recovery,
 #   plus the self-managed-network entries inside Network and Environment)
 #   come from NIST SP 800-53 Rev 5 (docs/SP_800-53_v5_1-derived-OSCAL.pdf)
 #   instead, in a different, plain-prose shape: unlike ASVS/AISVS this
@@ -71,11 +73,11 @@
 #   NIST SP 800-53 control ID it implements and citing that control by ID
 #   and name in the body -- selected because it already had a matching
 #   abuse case here, a matching risk category in 09-custom-risks-lib.yml,
-#   or both. `abuse_cases` in these domains follow the same control-ID
+#   or both. `abuse_cases` in these focus areas follow the same control-ID
 #   naming; more than one abuse case or requirement can cite the same
 #   control ID where multiple scenarios/statements share it.
 #
-#   `abuse_cases` in the ASVS/AISVS-sourced domains stay hand-authored too,
+#   `abuse_cases` in the ASVS/AISVS-sourced focus areas stay hand-authored too,
 #   not derived from either standard's text, but their titles adopt the
 #   same subsection naming as security_requirements (e.g. `V8.3:
 #   Horizontal Privilege Escalation (IDOR)`), keyed to whichever
@@ -90,10 +92,10 @@
 #   abuse case to the control that ANSWERS the scenario, and keep that
 #   requirement section in the same domain block, so a model that copies
 #   the block gets both. An abuse case no section answers renders at the
-#   end of its domain as a gap and warns when the report is generated;
+#   end of its focus area as a gap and warns when the report is generated;
 #   test_generate_report.py fails if this library has one.
 #
-# DOMAIN QUICK-REFERENCE:
+# FOCUS AREA QUICK-REFERENCE:
 #   IDENTITY                   ASVS V6, V7, V8, V9, V10, NIST SP 800-53 (AC-2(6), AC-2(7))
 #     Triggers: feature:oauth-oidc-provider, feature:saml-sp, feature:password-reset, multi_tenant:true,
 #               feature:admin-panel, mgmt:self-managed-identity, mgmt:self-managed-pam

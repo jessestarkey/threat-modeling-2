@@ -154,12 +154,12 @@
   along with the requirement sections each item affects and the tags its selections imply. The reviewer checks
   that each implied tag appears on the asset that has the feature. Where an answer rules out a section, that section appears in the next section as not
   applicable, with the reason. Second, the questions explain how each capability the application has is
-  implemented and verified. Both are grouped by the same security domains as the requirements, and any entry
-  not associated with a domain falls under Uncategorized.</p>
+  implemented and verified. Both are grouped by the same focus areas as the requirements, and any entry
+  not associated with a focus area falls under Uncategorized.</p>
   {% if feature_checklist %}
   <h2 class="domain-heading">Feature Checklist</h2>
   <table class="asset-table feature-checklist">
-    <tr><th>Domain</th><th>Feature</th><th>Selection</th><th>Sections affected and implied tags</th></tr>
+    <tr><th>Focus Area</th><th>Feature</th><th>Selection</th><th>Sections affected and implied tags</th></tr>
     {% for row in feature_checklist %}
     <tr>
       <td>{{ row.domain }}</td>
@@ -187,11 +187,11 @@
 <section id="security-requirements" style="page: content;">
   <h2 class="section-heading">Security Requirements and Abuse Cases</h2>
   <p>This section covers the mandatory controls and constraints for the application model, sourced from OWASP
-  ASVS/AISVS or NIST SP 800-53 and categorized by security domain. Where an abuse case describes a concrete
+  ASVS/AISVS or NIST SP 800-53 and categorized by focus area. Where an abuse case describes a concrete
   attacker goal those controls are designed against, it appears above the requirement table that answers it.
-  Abuse cases no requirement in this model answers are listed at the end of their domain. Requirement sections
+  Abuse cases no requirement in this model answers are listed at the end of their focus area. Requirement sections
   that the application's features rule out are marked not applicable, with the reason
-  ({{ not_applicable_requirement_count }} in this model). Any tailored entries not recognized under a domain fall
+  ({{ not_applicable_requirement_count }} in this model). Any tailored entries not recognized under a focus area fall
   under Uncategorized.</p>
   {% for group in requirement_abuse_groups %}
   <h2 class="domain-heading">{{ group.domain }}</h2>
@@ -470,7 +470,7 @@
 
 <section id="risks-by-category" style="page: content;">
   <h2 class="section-heading">Identified Risks by Vulnerability Category</h2>
-  <p>This section identifies every risk finding detail and is categorized by its assigned security domain.</p>
+  <p>This section identifies every risk finding detail and is categorized by its assigned focus area.</p>
   {% for group in all_domain_groups %}
   <h2 id="domain-{{ group.slug }}" class="domain-heading">{{ group.domain }}</h2>
   {% for cat in group.categories %}

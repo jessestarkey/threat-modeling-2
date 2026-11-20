@@ -495,7 +495,7 @@ actually carries. The direct consequence of a successful spoofing finding (an at
 another identity, forges a token, bypasses an authentication check) is that the integrity of the
 authentication decision itself is what broke; what the attacker does with that impersonated
 identity afterward is a downstream consequence, not the finding itself. This matters most in
-Identity-domain categories, where nearly every finding is tagged `spoofing`: an identity broker or
+Identity focus-area categories, where nearly every finding is tagged `spoofing`: an identity broker or
 CA whose real value is its Integrity rating (not necessarily its Confidentiality rating) is now
 scored off the axis that actually reflects what it is.
 
@@ -1028,13 +1028,13 @@ row's asset, since link titles repeat across sources.
 
 The report now prints the questions first, as "Application Features and Scoping," and the security
 requirements after them, because the answers decide which requirement sections apply. Applicability
-works at two levels. First, a domain's tag triggers decide whether its block of questions and
+works at two levels. First, a focus area's tag triggers decide whether its block of questions and
 requirements applies at all (02-abuse-and-reqs-lib.yml and 01-metadata-lib.yml share the same
 triggers). Second, within a block, the answers decide which sections apply, since a block's triggers
 are broad. For example, the Identity block fires on any OAuth or SAML feature, while password
 requirements apply only where local passwords exist.
 
-Tailoring is manual, and it rests on a feature checklist. Each domain in 01-metadata-lib.yml has a
+Tailoring is manual, and it rests on a feature checklist. Each focus area in 01-metadata-lib.yml has a
 few checklist items (25 in all), and for a new model the checklist comes first, since it records what
 the application has before any tags exist. An option can name the tags it implies, such as File
 uploads implying feature:file-upload-processing, and the author places each tag on the asset that has

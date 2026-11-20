@@ -4,19 +4,19 @@
 # Source library: 02-abuse-and-reqs-lib.yml
 # ==============================================================================
 # Migrated from the old flat, unlettered scheme (still recoverable in git
-# history) onto the library's current SABER-domain structure, ASVS/AISVS/
+# history) onto the library's current SABER focus-area structure, ASVS/AISVS/
 # NIST 800-53 sourcing, and ASVS Vx.x/NIST-ID titling. Unlike the AI
 # Coding Agent apps, this app IS the primary application being modeled
 # (not an integration point another app reaches into), so its own
-# Application-domain surface gets real coverage here rather than being
-# deferred elsewhere. Domain/subsection selection is grounded in this
+# Application focus-area surface gets real coverage here rather than being
+# deferred elsewhere. Focus area/subsection selection is grounded in this
 # app's actual technical-asset tags (05-tech-assets.yml):
 #
 #   IDENTITY: feature:oauth-oidc-provider, feature:saml-sp, and
 #     feature:password-reset all fire (Keycloak and Entra ID both
 #     support OAuth/SAML; Keycloak and Confluence itself support
 #     password reset), plus feature:admin-panel (Confluence) -- whole
-#     domain applies. No mgmt:self-managed-identity or
+#     focus area applies. No mgmt:self-managed-identity or
 #     mgmt:self-managed-pam tag anywhere in this model (Keycloak here is
 #     containerized but not tagged as self-managed directory/PAM
 #     infrastructure the way coding-agent-legacy's Keycloak is), so
@@ -31,7 +31,7 @@
 #     (the Confluence and Keycloak Application Gateways) -- only the
 #     ASVS V12 (TLS) portion applies; no mgmt:self-managed-network or
 #     cds:* tags.
-#   APPLICATION: unlike the AI Coding Agent apps, this domain gets real
+#   APPLICATION: unlike the AI Coding Agent apps, this focus area gets real
 #     coverage since Confluence's own application layer is what's being
 #     modeled. feature:dynamic-code-execution (wiki macros/OGNL/
 #     Velocity) grounds V1.3; feature:import-export grounds V2.3/V2.4;
@@ -55,10 +55,10 @@
 #     machine:container (widely) fire.
 #   RESPONSE: zone:dmz and sec:secrets-broker both fire, and this app
 #     carries an independent third reason per 02-abuse-and-reqs-lib.yml's
-#     own Response domain header: this model's mission_criticality is
+#     own Response focus area header: this model's mission_criticality is
 #     mission-essential, and Confluence itself carries a policy exception
 #     (exception:local-auth-fallback) -- either fact alone would pull in
-#     this domain even without the tag matches.
+#     this focus area even without the tag matches.
 #   RECOVERY: ops:requires-backup fires widely (Keycloak, Keycloak
 #     Identity Store, Entra ID, Postgres Database, Azure File Store,
 #     Azure Log Analytics Workspace). No ops:vendor-hosted-service tag,

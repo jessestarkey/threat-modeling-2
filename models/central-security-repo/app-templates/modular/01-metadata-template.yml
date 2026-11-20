@@ -121,12 +121,12 @@ technical_overview:
 # process.
 #
 # QUESTION SOURCE:
-# Questions come from 01-metadata-lib.yml. For each domain whose triggers match
-# your technical assets' tags or machine types, copy that domain's questions
+# Questions come from 01-metadata-lib.yml. For each focus area whose triggers match
+# your technical assets' tags or machine types, copy that focus area's questions
 # below.
 #
 # FEATURE CHECKLIST:
-#   Each domain in the library has a short feature checklist, and each item has
+#   Each focus area in the library has a short feature checklist, and each item has
 #   a fixed list of options. Copy each item below as "Feature: <item>", and
 #   answer it with the options that apply, separated by commas, for example
 #   "Enterprise IdP, Local accounts (including break-glass)". Append
@@ -164,7 +164,7 @@ technical_overview:
 #   Provide this template, 01-metadata-lib.yml, and a description of your
 #   system's architecture and tags to an AI assistant. Then, ask it to draft the
 #   narrative sections (management_summary_comment, threat_landscape, and
-#   technical_overview), select the domains whose triggers match your tags and
+#   technical_overview), select the focus areas whose triggers match your tags and
 #   machine types, and draft "[ANSWER REQUIRED]" guidance for each question,
 #   rather than inventing compliance answers. Review the output for accuracy
 #   before committing, and get the real answers from whoever actually knows the
@@ -174,10 +174,10 @@ technical_overview:
 questions:
 
   # ----------------------------------------------------------------------------
-  # Copy question blocks from 01-metadata-lib.yml for each domain that applies,
+  # Copy question blocks from 01-metadata-lib.yml for each focus area that applies,
   # and delete this comment block once the questions are filled in.
   #
-  # EXAMPLE (from the Identity domain):
+  # EXAMPLE (from the Identity focus area):
   #
   # "Feature: Authentication mechanisms": "Enterprise IdP, MFA"
   #

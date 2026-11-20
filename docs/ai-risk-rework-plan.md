@@ -267,7 +267,7 @@ No decisions are open. Settled in this round:
    5. Build the custom rules.
    
    Delete each old rule in the same commit as its replacement, and update the catalogue, the
-   report's domain map and `03-tags-lib.yml` in those same commits.
+   report's focus-area map and `03-tags-lib.yml` in those same commits.
 
    Status: steps 1 and 2 are done. The test harnesses are:
    - **Go:** `pkg/risks/scripts/all_rules_test.go` checks that every script rule loads with

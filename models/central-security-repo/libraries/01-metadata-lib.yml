@@ -6,10 +6,10 @@
 #
 # USAGE:
 #   1. Review your system's technical asset tags and machine types.
-#   2. For each domain with a matching trigger tag, copy the entire block
+#   2. For each focus area with a matching trigger tag, copy the entire block
 #      under `questions:` into the `questions:` section of your
 #      01-metadata.yml file.
-#   3. Answer the domain's feature checklist first. Copy each item into the
+#   3. Answer the focus area's feature checklist first. Copy each item into the
 #      same `questions:` section as "Feature: <item>", and answer it with
 #      the options that apply, separated by commas, for example
 #      "Enterprise IdP, Local accounts (including break-glass)". Append
@@ -24,13 +24,13 @@
 #      the report records what was tailored out and why.
 #
 # STRUCTURE:
-#   The questions follow the same nine SABER domains as
+#   The questions follow the same nine SABER focus areas as
 #   02-abuse-and-reqs-lib.yml, with the same triggers copied verbatim, so a
-#   domain's applicability is decided once. The report prints these questions
+#   focus area's applicability is decided once. The report prints these questions
 #   first, as "Application Features and Scoping", before the requirements
 #   that they scope.
 #
-#   Applicability works at two levels. First, a domain's triggers decide
+#   Applicability works at two levels. First, a focus area's triggers decide
 #   whether its block applies at all. Second, within a block, the feature
 #   checklist decides which requirement sections apply, since a block's
 #   triggers are broad. For example, the Identity block fires on any OAuth
@@ -44,7 +44,7 @@
 #   feature:file-upload-processing). Place each implied tag on the asset that
 #   actually has the feature, since the checklist describes the application
 #   as a whole and cannot say which asset that is. The tags then select the
-#   domain blocks to copy. The report prints the checklist as a table that
+#   focus area blocks to copy. The report prints the checklist as a table that
 #   marks each selected option, along with the sections the item affects and
 #   the tags its selections imply. A reviewer checks those tags against the
 #   model, and nothing checks them automatically.
@@ -60,8 +60,8 @@
 #   comment lists the requirement IDs whose numbered criteria to consult
 #   before answering.
 #
-# DOMAIN QUICK-REFERENCE (see 02-abuse-and-reqs-lib.yml for full sourcing
-# detail per domain):
+# FOCUS AREA QUICK-REFERENCE (see 02-abuse-and-reqs-lib.yml for full sourcing
+# detail per focus area):
 #   IDENTITY                   ASVS V6, V7, V8, V9, V10, NIST SP 800-53 (AC-2(6), AC-2(7))
 #   DEVICE AND INFRASTRUCTURE  NIST SP 800-53 (CM, SI, SC, AC, PE families)
 #   NETWORK AND ENVIRONMENT    ASVS V12, NIST SP 800-53 (SC-7, AC-18, AC-3, AC-4(6/9/19/25), AU-9, SI-3, SI-7, SC-31, MP-8, CA-3)
@@ -656,7 +656,7 @@ categories:
         scoping: >
           IR-6 applies only if Yes is selected, meaning a contract or regulation (for example,
           DFARS 252.204-7012) sets a reporting timeline. The other IR sections apply to every
-          asset in the Response domain.
+          asset in the Response focus area.
 
     questions:
 

@@ -30,31 +30,31 @@
 #      and to test_calibration.py's APPROVED and APPROVED_DIMENSION maps.
 #
 # STRUCTURE:
-#   Entries are grouped into sections numbered `D.S` (domain D, section S
-#   within it, `# --- D.S NAME ---`), under 10 numbered `# DOMAIN D: NAME`
+#   Entries are grouped into sections numbered `D.S` (focus area D, section S
+#   within it, `# --- D.S NAME ---`), under 10 numbered `# FOCUS AREA D: NAME`
 #   banners — purely for human navigation, in both cases: neither the
-#   numbering nor the domain grouping has any runtime effect; Threagile
+#   numbering nor the focus area grouping has any runtime effect; Threagile
 #   and inject_risks.py only ever look up an entry by its dict key, never
-#   by position. Domains are named, ORDERED, and NESTED after SABER
+#   by position. Focus areas are named, ORDERED, and NESTED after SABER
 #   (github.com's security-framework repo, an internal DoD-oriented
 #   reference we ran a gap analysis against): its chapter sequence is
 #   Identity, Device and Infrastructure, Network and Environment,
 #   Application, AI, Data, Detection, Response, Recovery, Governance,
-#   Risk, Compliance, and ours tracks it domain-for-domain in the same
+#   Risk, Compliance, and ours tracks it focus area-for focus-area in the same
 #   order, with one deliberate omission: SABER's own org-level Compliance
 #   chapter, and most of its Governance chapter, are absent (that content
 #   is org-level, not per-asset, and was screened out during the gap
-#   analysis rather than represented as a near-empty domain here) --
-#   domain 10 below is still named Governance, matching SABER's own short
+#   analysis rather than represented as a near-empty focus area here) --
+#   focus area 10 below is still named Governance, matching SABER's own short
 #   name, but is scoped narrowly to the one governance-flavored slice that
 #   *is* per-asset and did survive the gap analysis: risk acceptance and
 #   policy exceptions. Cross-Domain Solutions and Software Supply Chain
-#   are sections, not domains of their own — nested inside Network and
+#   are sections, not focus areas of their own — nested inside Network and
 #   Environment and Application respectively, matching exactly where
 #   SABER's own document nests them (CDS as outcome NE-2.10 inside
 #   04-saber-network-and-environment.md; supply-chain content inside
 #   05-saber-application.md) rather than being pulled out as standalone
-#   domains the way an earlier pass here had them. Secrets and
+#   focus areas the way an earlier pass here had them. Secrets and
 #   Cryptography sits under Data (6.2), not Application, for the same
 #   reason: SABER's own encryption/key-management content (DA-2/DA-3)
 #   lives in 07-saber-data.md, not its Application chapter, even though
@@ -81,7 +81,7 @@
 
 custom_risk_definitions:
   # #############################################################################
-  # DOMAIN 1: IDENTITY
+  # FOCUS AREA 1: IDENTITY
   # #############################################################################
 
   # --- 1.1 AUTHENTICATION AND IDENTITY ---
@@ -391,7 +391,7 @@ custom_risk_definitions:
     risks_identified: {}
 
   # #############################################################################
-  # DOMAIN 2: DEVICE AND INFRASTRUCTURE
+  # FOCUS AREA 2: DEVICE AND INFRASTRUCTURE
   # #############################################################################
 
   # --- 2.1 INFRASTRUCTURE: CONTAINERS ---
@@ -513,7 +513,7 @@ custom_risk_definitions:
     risks_identified: {}
 
   # #############################################################################
-  # DOMAIN 3: NETWORK AND ENVIRONMENT
+  # FOCUS AREA 3: NETWORK AND ENVIRONMENT
   # #############################################################################
 
   # --- 3.1 NETWORK SEGMENTATION AND PERIMETER (SELF-MANAGED) ---
@@ -794,7 +794,7 @@ custom_risk_definitions:
     risks_identified: {}
 
   # #############################################################################
-  # DOMAIN 4: APPLICATION
+  # FOCUS AREA 4: APPLICATION
   # #############################################################################
 
   # --- 4.1 INPUT HANDLING AND INJECTION ---
@@ -1201,7 +1201,7 @@ custom_risk_definitions:
   # rationale.
 
   # #############################################################################
-  # DOMAIN 5: ARTIFICIAL INTELLIGENCE
+  # FOCUS AREA 5: ARTIFICIAL INTELLIGENCE
   # #############################################################################
 
   # --- 5.1 MITRE ATLAS (v5.x — 16 tactics, 84 techniques) ---
@@ -1542,7 +1542,7 @@ custom_risk_definitions:
     risks_identified: {}
 
   # #############################################################################
-  # DOMAIN 6: DATA
+  # FOCUS AREA 6: DATA
   # #############################################################################
 
   # --- 6.1 DATA GOVERNANCE AND LIFECYCLE ---
@@ -1727,14 +1727,14 @@ custom_risk_definitions:
   # duplicated. See docs/risk-methodology.md for the full rationale.
 
   # #############################################################################
-  # DOMAIN 7: DETECTION
+  # FOCUS AREA 7: DETECTION
   # #############################################################################
 
   # --- 7.1 DETECTION ---
   # Relocated from API and Service Exposure and Infrastructure:
   # Containers (now 5.3 and 2.1), where they originally lived alongside
   # the asset-class entries they extend -- moved here so Detection has
-  # its own domain, mirroring SABER's split between Detection and
+  # its own focus area, mirroring SABER's split between Detection and
   # Response (08-saber-detection.md / 09-saber-response.md), which our
   # earlier merged "Detection and Incident Response" banner didn't
   # reflect. No id, tag, or trigger logic changed -- inject_risks.py
@@ -1791,7 +1791,7 @@ custom_risk_definitions:
   # here rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   # #############################################################################
-  # DOMAIN 8: RESPONSE
+  # FOCUS AREA 8: RESPONSE
   # #############################################################################
 
   # --- 8.1 INCIDENT-RESPONSE READINESS ---
@@ -1891,7 +1891,7 @@ custom_risk_definitions:
     risks_identified: {}
 
   # #############################################################################
-  # DOMAIN 9: RECOVERY
+  # FOCUS AREA 9: RECOVERY
   # #############################################################################
 
   # --- 9.1 INFRASTRUCTURE: BACKUP AND DR ---
@@ -2030,7 +2030,7 @@ custom_risk_definitions:
     risks_identified: {}
 
   # #############################################################################
-  # DOMAIN 10: GOVERNANCE
+  # FOCUS AREA 10: GOVERNANCE
   # #############################################################################
 
   # --- 10.1 POLICY EXCEPTIONS ---
