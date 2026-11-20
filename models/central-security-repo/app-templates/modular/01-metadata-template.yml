@@ -130,8 +130,11 @@ technical_overview:
 #   a fixed list of options. Copy each item below as "Feature: <item>", and
 #   answer it with the options that apply, separated by commas, for example
 #   "Enterprise IdP, Local accounts (including break-glass)". Append
-#   [ANSWER REQUIRED] to a selection that still needs confirming. The report
-#   prints the checklist as a table that marks each selected option.
+#   [ANSWER REQUIRED] to a selection that still needs confirming. Answer the
+#   checklist before tagging the assets, since an option can name the tags it
+#   implies. Then, place each implied tag on the asset that has the feature.
+#   The report prints the checklist as a table that marks each selected option
+#   and lists the implied tags, so that a reviewer can check them.
 #
 # ANSWER FORMAT:
 #   For each question, explain how the capability is implemented, which tool

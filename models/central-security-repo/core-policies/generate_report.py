@@ -522,8 +522,11 @@ def load_question_library() -> tuple:
         for question in block.get("questions") or {}:
             questions[question] = block["name"]
         for item in block.get("features") or []:
+            options = [o if isinstance(o, str) else o["option"] for o in item.get("options") or []]
+            option_tags = {(o if isinstance(o, str) else o["option"]): ([] if isinstance(o, str) else list(o.get("tags") or []))
+                           for o in item.get("options") or []}
             features[item["feature"]] = {"domain": block["name"], "affects": item.get("affects", ""),
-                                         "options": list(item.get("options") or []),
+                                         "options": options, "option_tags": option_tags,
                                          "multiple": item.get("select", "multiple") == "multiple"}
     return questions, features
 
@@ -559,6 +562,8 @@ def feature_checklist(questions: dict) -> list:
             "domain": known.get("domain", FALLBACK_DOMAIN), "feature": name, "affects": known.get("affects", ""),
             "options": [{"label": o, "selected": o in selected} for o in known.get("options", [])],
             "unknown": [c for c in chosen if c.lower() not in by_lower],
+            # Tags the selections imply, for a reviewer to check against the model.
+            "tags": sorted({tag for o in selected for tag in known.get("option_tags", {}).get(o, [])}),
             "multiple": known.get("multiple", True), "answered": bool(chosen), "confirm": confirm,
         })
     rows.sort(key=lambda r: (order.get(r["domain"], len(DOMAIN_ORDER)), library_order.get(r["feature"], 10 ** 6)))

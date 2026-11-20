@@ -37,13 +37,22 @@
 #   or SAML feature, while password requirements apply only where local
 #   passwords exist.
 #
-#   The checklist asks only for facts that no tag or native field already
-#   records. For instance, file handling, GraphQL, WebSockets, WebRTC, CDS
-#   direction, physical hardware, and most AI capabilities are tagged, so
-#   their blocks or sections exist only when the tag is present. Each item
-#   lists its options and whether one or several may be selected. The report
-#   prints the checklist as a table that marks each selected option, along
-#   with the requirement sections the item affects.
+#   The checklist comes first for a new model, since it records what the
+#   application has before any tags exist. Each item lists its options and
+#   whether one or several may be selected, and an option can name the tags
+#   it implies (for example, File uploads implies
+#   feature:file-upload-processing). Place each implied tag on the asset that
+#   actually has the feature, since the checklist describes the application
+#   as a whole and cannot say which asset that is. The tags then select the
+#   domain blocks to copy. The report prints the checklist as a table that
+#   marks each selected option, along with the sections the item affects and
+#   the tags its selections imply. A reviewer checks those tags against the
+#   model, and nothing checks them automatically.
+#
+#   Tags that record evidence of a control (such as the -hardened, ops:, and
+#   ir: tags), topology (zone:, net:, and path:), and policy waivers
+#   (exception:) are not checklist items. They are placed per asset as the
+#   model is built.
 #
 #   The questions are short on purpose, since the precise criteria live in
 #   the requirement rows rather than in the question. Each question is
@@ -86,13 +95,16 @@ categories:
           - "MFA"
           - "Out-of-band codes"
           - "Certificates or hardware keys"
+          - option: "Self-service password reset"
+            tags: [feature:password-reset]
         affects: "ASVS V6.2, V6.4, V6.6, V6.7"
         scoping: >
           If Enterprise IdP is selected without Local accounts (including break-glass), mark
           V6.2 (Password Security) and V6.4 (Authentication Factor Lifecycle and Recovery) not
           applicable. However, a local or break-glass account keeps both in scope for that
-          account. Additionally, V6.6 applies only if Out-of-band codes is selected, and V6.7
-          only if Certificates or hardware keys is selected.
+          account, and so does Self-service password reset. Additionally, V6.6 applies only if
+          Out-of-band codes is selected, and V6.7 only if Certificates or hardware keys is
+          selected.
 
       - feature: "Session model"
         select: multiple
@@ -105,14 +117,21 @@ categories:
           V7.6 (Federated Re-authentication) applies only if Federated login is selected. The
           rest of V7 applies whenever the application keeps a session of any kind.
 
-      - feature: "OAuth and OIDC roles"
+      - feature: "OAuth, OIDC, and SAML roles"
         select: multiple
         options:
-          - "OAuth client"
-          - "OAuth resource server"
-          - "OAuth authorization server"
-          - "OIDC client"
-          - "OpenID provider"
+          - option: "OAuth client"
+            tags: [feature:oauth-oidc-provider]
+          - option: "OAuth resource server"
+            tags: [feature:oauth-oidc-provider]
+          - option: "OAuth authorization server"
+            tags: [feature:oauth-oidc-provider]
+          - option: "OIDC client"
+            tags: [feature:oauth-oidc-provider]
+          - option: "OpenID provider"
+            tags: [feature:oauth-oidc-provider]
+          - option: "SAML service provider"
+            tags: [feature:saml-sp]
           - "Consent management"
           - "None"
         affects: "ASVS V10.2-V10.7"
@@ -120,20 +139,40 @@ categories:
           Keep only the V10 sections for the selected roles, namely V10.2 (OAuth client), V10.3
           (OAuth resource server), V10.4 (OAuth authorization server), V10.5 (OIDC client),
           V10.6 (OpenID provider), and V10.7 (Consent management). V9 and V10.1 apply whenever
-          any role other than None is selected.
+          any OAuth or OIDC role is selected. Place feature:oauth-oidc-provider on each asset
+          that issues or validates the tokens, and feature:saml-sp on each asset in the SAML
+          exchange.
 
       - feature: "Self-managed identity infrastructure"
         select: multiple
         options:
-          - "Directory"
-          - "Certificate authority"
-          - "Hybrid sync"
-          - "PAM"
+          - option: "Directory"
+            tags: [mgmt:self-managed-identity]
+          - option: "Certificate authority"
+            tags: [mgmt:self-managed-identity]
+          - option: "Hybrid sync"
+            tags: [mgmt:self-managed-identity]
+          - option: "PAM"
+            tags: [mgmt:self-managed-pam]
           - "None"
         affects: "AC-2(7), AC-2(6)"
         scoping: >
           If None is selected, mark AC-2(7) and AC-2(6) not applicable. Otherwise, AC-2(7)
           applies to a directory, certificate authority, or hybrid sync, and AC-2(6) to PAM.
+
+      - feature: "Administrative and support access"
+        select: multiple
+        options:
+          - option: "Administrative interface"
+            tags: [feature:admin-panel]
+          - option: "Vendor remote support"
+            tags: [feature:vendor-remote-support]
+          - "None"
+        affects: "ASVS V8.3, and the Identity block"
+        scoping: >
+          An administrative interface brings in the Identity block and the
+          exposed-admin-interface finding, and vendor remote support brings in the vendor-access
+          finding. Place each tag on the asset that offers the access.
 
     questions:
 
@@ -172,6 +211,20 @@ categories:
           sections not applicable and name the inherited control in the hardening question.
           Additionally, AC-17 applies only if Direct administrator access to hosts is selected.
 
+      - feature: "Self-managed hosts and workload identity"
+        select: multiple
+        options:
+          - option: "Physical hosts the team administers"
+            tags: [mgmt:self-managed-hardware]
+          - option: "Workload identity for cloud or platform APIs"
+            tags: [mgmt:workload-identity-assigned]
+          - "None"
+        affects: "PE-3 / SI-7, AC-6"
+        scoping: >
+          PE-3 / SI-7 applies only if Physical hosts the team administers is selected.
+          Additionally, a workload identity brings in the over-privileged workload identity
+          finding for each asset that holds one.
+
     questions:
 
       # Requirement IDs: CM-14, CM-7, SC-7(21), SC-5, AC-6, CM-6, SI-2, SI-4, AC-17, SC-28
@@ -197,13 +250,18 @@ categories:
       - feature: "Self-managed network"
         select: multiple
         options:
-          - "Self-managed segmentation"
-          - "Self-managed wireless"
+          - option: "Self-managed segmentation"
+            tags: [mgmt:self-managed-network]
+          - option: "Self-managed wireless"
+            tags: [mgmt:self-managed-network]
+          - option: "Self-managed external routing"
+            tags: [mgmt:self-managed-network]
           - "None"
         affects: "SC-7, AC-18"
         scoping: >
           SC-7 applies only if Self-managed segmentation is selected, and AC-18 only if
-          Self-managed wireless is selected.
+          Self-managed wireless is selected. Self-managed external routing brings in the route
+          origin validation finding.
 
       - feature: "Authorization boundary crossings"
         select: multiple
@@ -215,6 +273,28 @@ categories:
         scoping: >
           If None is selected, mark these sections not applicable. Additionally, MP-8 applies
           only if Media or datasets downgraded to a lower classification is selected.
+
+      - feature: "Cross-domain solution roles"
+        select: multiple
+        options:
+          - option: "Low-side submitter"
+            tags: [cds:low-side-submitter]
+          - option: "Low-side receiver"
+            tags: [cds:low-side-receiver]
+          - option: "Low-side broker"
+            tags: [cds:low-side-broker]
+          - option: "High-side submitter"
+            tags: [cds:high-side-submitter]
+          - option: "High-side receiver"
+            tags: [cds:high-side-receiver]
+          - option: "High-side broker"
+            tags: [cds:high-side-broker]
+          - "None"
+        affects: "AC-4(19), AC-4(8) / SI-3, AC-3, AC-4(25) / AC-4(9), SI-7"
+        scoping: >
+          If None is selected, mark the CDS sections not applicable. Otherwise, keep the
+          sections that match the selected roles. For example, release-authority gating
+          (AC-4(25) / AC-4(9)) applies only to a high-side submitter.
 
     questions:
 
@@ -251,35 +331,97 @@ categories:
 
     features:
 
-      - feature: "Browser use"
+      - feature: "Browser and VDI access"
         select: multiple
         options:
           - "Rendered in a browser"
           - "Sets cookies"
           - "Loads external resources"
+          - option: "Accessed through VDI"
+            tags: [feature:vdi-path]
           - "None"
         affects: "ASVS V3, V3.3, V3.6"
         scoping: >
-          If None is selected, mark V3 not applicable. Otherwise, V3.3 applies only if Sets
-          cookies is selected, and V3.6 only if Loads external resources is selected.
+          If the application is not rendered in a browser, mark V3 not applicable. Otherwise,
+          V3.3 applies only if Sets cookies is selected, and V3.6 only if Loads external
+          resources is selected. Access through VDI brings in the VDI clipboard finding.
 
-      - feature: "Unmanaged code and deserialization"
+      - feature: "Code execution and deserialization"
         select: multiple
         options:
+          - option: "Dynamic code or template execution"
+            tags: [feature:dynamic-code-execution]
           - "Unmanaged or memory-unsafe code"
-          - "Object deserialization"
-          - "XML deserialization"
+          - option: "Object deserialization"
+            tags: [feature:deserialization]
+          - option: "XML deserialization"
+            tags: [feature:deserialization]
           - "None"
         affects: "ASVS V1.4, V1.5"
         scoping: >
           V1.4 (Memory, String, and Unmanaged Code) applies only if Unmanaged or memory-unsafe
           code is selected, and V1.5 (Safe Deserialization) only if either deserialization
-          option is selected.
+          option is selected. Dynamic code or template execution brings in the template
+          injection finding.
+
+      - feature: "Interfaces exposed"
+        select: multiple
+        options:
+          - option: "Public or B2B API"
+            tags: [feature:public-api-endpoint]
+          - option: "GraphQL"
+            tags: [feature:graphql-endpoint]
+          - option: "WebSockets"
+            tags: [feature:websocket]
+          - option: "Webhook receiver"
+            tags: [feature:webhook-receiver]
+          - option: "Search over an index"
+            tags: [feature:search-index]
+          - "None"
+        affects: "ASVS V4.3, V4.4, and the Application block"
+        scoping: >
+          V4.3 applies only if GraphQL is selected, and V4.4 only if WebSockets is selected.
+          Place each tag on the asset that exposes the interface.
+
+      - feature: "Content handling"
+        select: multiple
+        options:
+          - option: "File uploads"
+            tags: [feature:file-upload-processing, risk:malware-vector]
+          - option: "Bulk import or export"
+            tags: [feature:import-export]
+          - option: "Server-side PDF generation"
+            tags: [feature:pdf-generation]
+          - option: "Rendering one user's content to others"
+            tags: [feature:ugc-rendering]
+          - option: "Email built from user input"
+            tags: [feature:email-sending]
+          - "None"
+        affects: "ASVS V5, and the Application block"
+        scoping: >
+          If no option other than None is selected, mark ASVS V5 not applicable. File uploads
+          also implies risk:malware-vector on the data asset that holds the uploaded content.
+
+      - feature: "Platform features"
+        select: multiple
+        options:
+          - option: "Background jobs built from user input"
+            tags: [feature:background-jobs]
+          - option: "Application cache"
+            tags: [feature:caching-layer]
+          - option: "Third-party plugins"
+            tags: [feature:third-party-plugins]
+          - "None"
+        affects: "ASVS V15.2, and the Application block"
+        scoping: >
+          Each selection brings in its matching finding, namely background job injection, cache
+          poisoning, or unauthorized plugins. Place each tag on the asset that has the feature.
 
       - feature: "User-facing flows that could be automated at scale"
         select: one
         options:
-          - "Yes"
+          - option: "Yes"
+            tags: [feature:sensitive-business-flow]
           - "No"
         affects: "ASVS V2.4"
         scoping: >
@@ -342,11 +484,15 @@ categories:
       - feature: "Model sourcing"
         select: multiple
         options:
-          - "Vendor-hosted model"
+          - option: "Vendor-hosted model"
+            tags: [ai:third-party-model-api]
           - "Self-hosted model"
           - "Training or fine-tuning"
-          - "Data labeling"
+          - option: "Data labeling"
+            tags: [ai:human-labeling]
           - "Model served in production"
+          - option: "Model delivered into an air-gapped enclave"
+            tags: [ai:air-gapped-model-delivery]
         affects: "AISVS C1, C3, C6, C11.2, C11.3, C11.4, C12"
         scoping: >
           If only Vendor-hosted model is selected, mark C1, C3, and C6 not applicable, and
@@ -370,9 +516,14 @@ categories:
       - feature: "Agent capabilities"
         select: multiple
         options:
-          - "Memory or RAG index"
+          - option: "Memory or RAG index"
+            tags: [ai:agent-memory]
           - "Tool calls"
           - "MCP servers"
+          - option: "Code execution by the agent"
+            tags: [ai:code-execution]
+          - option: "Agent skills"
+            tags: [ai:skills-enabled]
           - "Source citation in output"
           - "None"
         affects: "AISVS C7.4, C8, C9, C10"
@@ -380,6 +531,26 @@ categories:
           C8 applies only if Memory or RAG index is selected, C9 only if Tool calls is selected,
           C10 only if MCP servers is selected, and C7.4 only if Source citation in output is
           selected.
+
+      - feature: "AI inputs and outputs"
+        select: multiple
+        options:
+          - option: "Prompts from end users"
+            tags: [ai:user-prompt-input]
+          - option: "External content read by the model"
+            tags: [ai:indirect-prompt-input]
+          - option: "Output used for consequential decisions"
+            tags: [ai:decision-support-output]
+          - option: "Output that can reach OT or safety-critical processes"
+            tags: [ai:ot-adjacent-output]
+          - option: "AI assistant on user endpoints"
+            tags: [ai:endpoint-assistant]
+          - "None"
+        affects: "AISVS C2, C7, and the AI block"
+        scoping: >
+          AISVS C2 applies whenever prompts or external content reach the model. Each selection
+          brings in its matching finding, such as direct or indirect prompt injection,
+          overreliance, or an ungated path to OT actuation.
 
     questions:
 
@@ -425,6 +596,27 @@ categories:
           V11.7 (In-Use Data Cryptography) applies only if Data protected while in use is
           selected, which is typically an L3 requirement. Additionally, V14.3 (Client-side Data
           Protection) applies only if Sensitive data reaches a client is selected.
+
+      - feature: "Sensitive data handled"
+        select: multiple
+        options:
+          - option: "Personal information"
+            tags: [data:pii]
+          - option: "Credentials or keys"
+            tags: [data:credential]
+          - option: "Credentials brokered for other services"
+            tags: [sec:secrets-broker]
+          - option: "Ongoing external data feeds"
+            tags: [data:external-feed-ingest]
+          - option: "Files or datasets released outside the boundary"
+            tags: [data:release-candidate]
+          - "None"
+        affects: "ASVS V14, and the Data block"
+        scoping: >
+          Each selection brings in its matching finding, such as the privacy impact assessment,
+          the credential blast radius, data provenance, or re-identification of released data.
+          Place data:pii, data:credential, and data:release-candidate on the assets or data
+          assets that hold the data.
 
     questions:
 
@@ -486,6 +678,17 @@ categories:
         affects: "SA-9"
         scoping: >
           SA-9 applies only if Yes is selected.
+
+      - feature: "Data that requires backup"
+        select: one
+        options:
+          - option: "Yes"
+            tags: [ops:requires-backup]
+          - "No"
+        affects: "CP-9 / AC-5, CP-2, CP-4, SC-12, and the Recovery block"
+        scoping: >
+          If Yes is selected, place ops:requires-backup on each asset whose data must survive
+          its loss, which brings in the backup findings for that asset.
 
     questions:
 

@@ -44,23 +44,34 @@ questions:
 
   # ----------------------------------------------------------------------------
   # FEATURE CHECKLIST: the options that apply, separated by commas. [ANSWER REQUIRED]
-  # marks a selection that still needs confirming. The capability questions below
+  # marks a selection that still needs confirming. Selections come from this model's
+  # own answers and tags. Three have no matching tag yet (Server-side PDF generation,
+  # Object deserialization, and Rendering one user's content to others), which the
+  # report's implied-tags column shows for review. The capability questions below
   # carry the detail.
   # ----------------------------------------------------------------------------
 
-  "Feature: Authentication mechanisms": "Enterprise IdP, Local accounts (including break-glass) [ANSWER REQUIRED]"
+  "Feature: Authentication mechanisms": "Enterprise IdP, Local accounts (including break-glass), Self-service password reset [ANSWER REQUIRED]"
   "Feature: Session model": "Application sessions, Federated login"
-  "Feature: OAuth and OIDC roles": "OIDC client [ANSWER REQUIRED]"
+  "Feature: OAuth, OIDC, and SAML roles": "OIDC client, SAML service provider [ANSWER REQUIRED]"
   "Feature: Self-managed identity infrastructure": "None"
+  "Feature: Administrative and support access": "Administrative interface"
   "Feature: Host hardening and access": "[ANSWER REQUIRED]"
+  "Feature: Self-managed hosts and workload identity": "[ANSWER REQUIRED]"
   "Feature: Self-managed network": "None"
   "Feature: Authorization boundary crossings": "[ANSWER REQUIRED]"
-  "Feature: Browser use": "Rendered in a browser, Sets cookies [ANSWER REQUIRED]"
-  "Feature: Unmanaged code and deserialization": "[ANSWER REQUIRED]"
+  "Feature: Cross-domain solution roles": "None"
+  "Feature: Browser and VDI access": "Rendered in a browser, Sets cookies, Accessed through VDI [ANSWER REQUIRED]"
+  "Feature: Code execution and deserialization": "Dynamic code or template execution, Object deserialization [ANSWER REQUIRED]"
+  "Feature: Interfaces exposed": "Public or B2B API, Search over an index [ANSWER REQUIRED]"
+  "Feature: Content handling": "File uploads, Bulk import or export, Server-side PDF generation, Rendering one user's content to others [ANSWER REQUIRED]"
+  "Feature: Platform features": "Third-party plugins [ANSWER REQUIRED]"
   "Feature: User-facing flows that could be automated at scale": "[ANSWER REQUIRED]"
   "Feature: In-use and client-side data": "Sensitive data reaches a client [ANSWER REQUIRED]"
+  "Feature: Sensitive data handled": "Credentials or keys, Credentials brokered for other services [ANSWER REQUIRED]"
   "Feature: Incident reporting requirement": "[ANSWER REQUIRED]"
   "Feature: Vendor-hosted or SaaS components": "No"
+  "Feature: Data that requires backup": "Yes"
 
   # ----------------------------------------------------------------------------
   # IDENTITY

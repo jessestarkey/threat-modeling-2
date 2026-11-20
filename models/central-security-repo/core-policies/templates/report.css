@@ -149,13 +149,14 @@ th { background: #eef2f6; }
 .svs-table { margin-bottom: 16px; }
 
 .feature-checklist td { font-size: 8.5pt; vertical-align: top; }
-.feature-checklist td:last-child { white-space: nowrap; }
+.feature-checklist td:last-child { min-width: 1.6in; }
 .feature-checklist .opt { color: #777; line-height: 1.5; }
 .feature-checklist .opt.on { color: #111; font-weight: 600; }
 .feature-checklist .box { display: inline-block; width: 7px; height: 7px; border: 1px solid #555; margin-right: 5px; vertical-align: middle; }
 .feature-checklist .box.checked { background: #1a3a5c; border-color: #1a3a5c; }
 .feature-checklist .opt-flag { color: #8a6d00; font-style: italic; }
 .feature-checklist .select-note { color: #777; font-size: 8pt; }
+.feature-checklist .implied-tag { font-family: "Courier New", monospace; font-size: 7.5pt; color: #1a3a5c; }
 
 .req-not-applicable { color: #555; font-size: 9pt; border-left: 3px solid #bbb; padding-left: 8px; }
 

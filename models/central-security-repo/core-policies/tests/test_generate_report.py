@@ -4,6 +4,7 @@ generate_report.py imports WeasyPrint at module level, which needs native GTK li
 installs but a developer machine may not; these tests touch only the data handling, so they stub
 that one import.
 """
+import re
 import sys
 import types
 import unittest
@@ -77,7 +78,7 @@ class Scoping(unittest.TestCase):
         questions = [q for block in blocks for q in (block.get("questions") or {})]
         features = [f for block in blocks for f in (block.get("features") or [])]
         self.assertEqual(len(questions), 31)
-        self.assertEqual(len(features), 16)
+        self.assertEqual(len(features), 25)
         self.assertEqual(sorted(report.QUESTION_DOMAIN_MAP), sorted(questions))
         for item in features:
             with self.subTest(feature=item["feature"][:60]):
@@ -112,6 +113,17 @@ class Scoping(unittest.TestCase):
         self.assertTrue(auth["confirm"])
         self.assertFalse(vendor["answered"])
         self.assertFalse(vendor["multiple"])
+
+    def test_implied_tags_exist_and_follow_the_selection(self):
+        tag_library = (Path(__file__).resolve().parents[2] / "libraries" / "03-tags-lib.yml").read_text(encoding="utf-8")
+        known = set(re.findall(r"^  - ([a-z_]+:[a-z0-9-]+)", tag_library, re.M))
+        for name, item in report.FEATURE_INDEX.items():
+            for option, tags in item["option_tags"].items():
+                for tag in tags:
+                    with self.subTest(feature=name, option=option):
+                        self.assertIn(tag, known)
+        rows = report.feature_checklist({"Feature: Content handling": "File uploads, Bulk import or export"})
+        self.assertEqual(rows[0]["tags"], ["feature:file-upload-processing", "feature:import-export", "risk:malware-vector"])
 
     def test_every_checklist_item_has_options_and_a_selection_mode(self):
         for name, item in report.FEATURE_INDEX.items():

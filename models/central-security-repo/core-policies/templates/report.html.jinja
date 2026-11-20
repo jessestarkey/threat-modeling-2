@@ -151,14 +151,15 @@
   <p>This section establishes which features the application actually has, and therefore which of the security
   requirements in the next section apply. It has two parts. First, the feature checklist records the facts that
   no tag or model field captures, such as whether any local accounts exist, by marking the options that apply,
-  along with the requirement sections each item affects. Where an answer rules out a section, that section appears in the next section as not
+  along with the requirement sections each item affects and the tags its selections imply. The reviewer checks
+  that each implied tag appears on the asset that has the feature. Where an answer rules out a section, that section appears in the next section as not
   applicable, with the reason. Second, the questions explain how each capability the application has is
   implemented and verified. Both are grouped by the same security domains as the requirements, and any entry
   not associated with a domain falls under Uncategorized.</p>
   {% if feature_checklist %}
   <h2 class="domain-heading">Feature Checklist</h2>
   <table class="asset-table feature-checklist">
-    <tr><th>Domain</th><th>Feature</th><th>Selection</th><th>Sections affected</th></tr>
+    <tr><th>Domain</th><th>Feature</th><th>Selection</th><th>Sections affected and implied tags</th></tr>
     {% for row in feature_checklist %}
     <tr>
       <td>{{ row.domain }}</td>
@@ -169,7 +170,7 @@
         {% if not row.answered %}<div class="opt-flag">Not answered</div>{% endif %}
         {% if row.confirm %}<div class="opt-flag">To be confirmed</div>{% endif %}
       </td>
-      <td>{{ row.affects or '—' }}</td>
+      <td>{{ row.affects or '—' }}{% for tag in row.tags %}<div class="implied-tag">{{ tag }}</div>{% endfor %}</td>
     </tr>
     {% endfor %}
   </table>

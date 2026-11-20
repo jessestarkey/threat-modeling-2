@@ -1034,9 +1034,13 @@ triggers). Second, within a block, the answers decide which sections apply, sinc
 are broad. For example, the Identity block fires on any OAuth or SAML feature, while password
 requirements apply only where local passwords exist.
 
-Tailoring is manual, and it rests on a short feature checklist. Each domain in 01-metadata-lib.yml
-has a few checklist items (16 in all) that ask only for facts no tag or model field records, such as
-whether any local accounts exist. Each item has a fixed list of options, and the author answers by
+Tailoring is manual, and it rests on a feature checklist. Each domain in 01-metadata-lib.yml has a
+few checklist items (25 in all), and for a new model the checklist comes first, since it records what
+the application has before any tags exist. An option can name the tags it implies, such as File
+uploads implying feature:file-upload-processing, and the author places each tag on the asset that has
+the feature. The report lists the implied tags next to each item for a reviewer to check, and nothing
+checks them automatically. Tags that record evidence of a control, topology, or a policy waiver stay
+outside the checklist. Each item has a fixed list of options, and the author answers by
 selecting the ones that apply. Each item also names the sections it affects and how its selections
 can rule them out, and the report prints the checklist as a table with the selected options marked. The 31 questions that follow are short,
 since the precise criteria live in the requirement rows. An author tailors a section out
