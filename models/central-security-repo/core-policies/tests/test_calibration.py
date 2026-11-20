@@ -335,8 +335,8 @@ class Calibration(unittest.TestCase):
             with self.subTest(category=cid):
                 text = " ".join(definition["risk_assessment"].split())
                 self.assertTrue(text.startswith(
-                    f"Likelihood starts at {names[definition['baseline_likelihood']]}; "
-                    f"impact starts at {names[definition['baseline_impact']]},"), text[:120])
+                    f"Likelihood starts at {names[definition['baseline_likelihood']]}, "
+                    f"and impact starts at {names[definition['baseline_impact']]}."), text[:120])
 
 
 if __name__ == "__main__":
