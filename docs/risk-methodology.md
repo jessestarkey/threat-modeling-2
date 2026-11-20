@@ -1024,6 +1024,32 @@ for. The custom engine's direct-admin waiver, which defers to this rule where it
 same gate. The report's Communication Link column also names the link's source when it isn't the
 row's asset, since link titles repeat across sources.
 
+### Application features and requirement tailoring (2026-11-20)
+
+The report now prints the questions first, as "Application Features and Scoping," and the security
+requirements after them, because the answers decide which requirement sections apply. Applicability
+works at two levels. First, a domain's tag triggers decide whether its block of questions and
+requirements applies at all (02-abuse-and-reqs-lib.yml and 01-metadata-lib.yml share the same
+triggers). Second, within a block, the answers decide which sections apply, since a block's triggers
+are broad. For example, the Identity block fires on any OAuth or SAML feature, while password
+requirements apply only where local passwords exist.
+
+Tailoring is manual, and it rests on a short feature checklist. Each domain in 01-metadata-lib.yml
+has a few checklist items (16 in all) that ask only for facts no tag or model field records, such as
+whether any local accounts exist. Each item has a fixed list of options, and the author answers by
+selecting the ones that apply. Each item also names the sections it affects and how its selections
+can rule them out, and the report prints the checklist as a table with the selected options marked. The 31 questions that follow are short,
+since the precise criteria live in the requirement rows. An author tailors a section out
+by replacing its rows with "Not applicable: <reason>" in the model, rather than deleting it, and the
+report then shows the section as not applicable with that reason. As a result, a reviewer can see
+what was tailored out and why. The OWASP and NIST rows themselves are never edited, only replaced by
+that note. Additionally, the report warns when an abuse case pairs with a section marked not
+applicable, since the model would then state a threat without a control.
+
+Having said that, the decision needs judgment rather than a blanket rule. On the Confluence model,
+for instance, logins federate to Entra ID, but a local break-glass account still exists, so ASVS V6.2
+(Password Security) remains in scope for that account.
+
 ## Source of truth, by topic
 
 | Topic | Where |

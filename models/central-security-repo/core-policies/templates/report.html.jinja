@@ -26,8 +26,8 @@
     <li class="toc-l1"><a href="#executive-summary">Executive Summary</a><span class="toc-fill"></span><a class="toc-page" href="#executive-summary"></a></li>
     <li class="toc-l1"><a href="#data-flow-diagram">Data-Flow Diagram</a><span class="toc-fill"></span><a class="toc-page" href="#data-flow-diagram"></a></li>
     <li class="toc-l1"><a href="#data-asset-diagram">Data Asset Diagram</a><span class="toc-fill"></span><a class="toc-page" href="#data-asset-diagram"></a></li>
+    <li class="toc-l1"><a href="#application-features">Application Features and Scoping</a><span class="toc-fill"></span><a class="toc-page" href="#application-features"></a></li>
     <li class="toc-l1"><a href="#security-requirements">Security Requirements and Abuse Cases</a><span class="toc-fill"></span><a class="toc-page" href="#security-requirements"></a></li>
-    <li class="toc-l1"><a href="#open-questions">Open Questions</a><span class="toc-fill"></span><a class="toc-page" href="#open-questions"></a></li>
     <li class="toc-l1"><a href="#model-failures">Potential Model Failures</a><span class="toc-fill"></span><a class="toc-page" href="#model-failures"></a></li>
 
     <li class="toc-l0"><a href="#impact-methodology">Part II: Application Risks</a><span class="toc-fill"></span><a class="toc-page" href="#impact-methodology"></a></li>
@@ -146,13 +146,52 @@
   <div class="diagram">{{ data_asset_diagram | safe }}</div>
 </section>
 
+<section id="application-features" style="page: content;">
+  <h2 class="section-heading">Application Features and Scoping</h2>
+  <p>This section establishes which features the application actually has, and therefore which of the security
+  requirements in the next section apply. It has two parts. First, the feature checklist records the facts that
+  no tag or model field captures, such as whether any local accounts exist, by marking the options that apply,
+  along with the requirement sections each item affects. Where an answer rules out a section, that section appears in the next section as not
+  applicable, with the reason. Second, the questions explain how each capability the application has is
+  implemented and verified. Both are grouped by the same security domains as the requirements, and any entry
+  not associated with a domain falls under Uncategorized.</p>
+  {% if feature_checklist %}
+  <h2 class="domain-heading">Feature Checklist</h2>
+  <table class="asset-table feature-checklist">
+    <tr><th>Domain</th><th>Feature</th><th>Selection</th><th>Sections affected</th></tr>
+    {% for row in feature_checklist %}
+    <tr>
+      <td>{{ row.domain }}</td>
+      <td>{{ row.feature }}{% if not row.multiple %} <span class="select-note">(select one)</span>{% endif %}</td>
+      <td>
+        {% for option in row.options %}<div class="opt{% if option.selected %} on{% endif %}"><span class="box{% if option.selected %} checked{% endif %}"></span>{{ option.label }}</div>{% endfor %}
+        {% for extra in row.unknown %}<div class="opt on"><span class="box checked"></span>{{ extra }}</div>{% endfor %}
+        {% if not row.answered %}<div class="opt-flag">Not answered</div>{% endif %}
+        {% if row.confirm %}<div class="opt-flag">To be confirmed</div>{% endif %}
+      </td>
+      <td>{{ row.affects or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+  {% for group in question_domain_groups %}
+  <h2 class="domain-heading">{{ group.domain }}</h2>
+  {% for q_title, q_text in group.entries %}
+  <h3 class="category-heading">{{ q_title }}</h3>
+  {% for para in (q_text or '').split('\n') if para.strip() %}<p>{{ para.strip() }}</p>{% endfor %}
+  {% endfor %}
+  {% endfor %}
+</section>
+
 <section id="security-requirements" style="page: content;">
   <h2 class="section-heading">Security Requirements and Abuse Cases</h2>
   <p>This section covers the mandatory controls and constraints for the application model, sourced from OWASP
   ASVS/AISVS or NIST SP 800-53 and categorized by security domain. Where an abuse case describes a concrete
   attacker goal those controls are designed against, it appears above the requirement table that answers it.
-  Abuse cases no requirement in this model answers are listed at the end of their domain.
-  Any tailored entries not recognized under a domain fall under Uncategorized.</p>
+  Abuse cases no requirement in this model answers are listed at the end of their domain. Requirement sections
+  that the application's features rule out are marked not applicable, with the reason
+  ({{ not_applicable_requirement_count }} in this model). Any tailored entries not recognized under a domain fall
+  under Uncategorized.</p>
   {% for group in requirement_abuse_groups %}
   <h2 class="domain-heading">{{ group.domain }}</h2>
   {% for req in group.entries %}
@@ -164,7 +203,9 @@
     <p>{{ ac_text }}</p>
   </div>
   {% endfor %}
-  {% if req.rows %}
+  {% if req.not_applicable %}
+  <p class="req-not-applicable"><strong>Not applicable:</strong> {{ req.not_applicable }}</p>
+  {% elif req.rows %}
   <table class="svs-table">
     <thead><tr><th class="svs-num">#</th><th>Description</th><th class="svs-level">Level</th></tr></thead>
     <tbody>
@@ -192,19 +233,6 @@
   {% endfor %}
 </section>
 
-<section id="open-questions" style="page: content;">
-  <h2 class="section-heading">Open Questions</h2>
-  <p>This section describes how the modeled application implements its security requirements through a
-  question and answer format. The same domain categorization continues as laid out in previous sections.
-  Any tailored entries not associated with a domain fall under Uncategorized.</p>
-  {% for group in question_domain_groups %}
-  <h2 class="domain-heading">{{ group.domain }}</h2>
-  {% for q_title, q_text in group.entries %}
-  <h3 class="category-heading">{{ q_title }}</h3>
-  <p>{{ q_text }}</p>
-  {% endfor %}
-  {% endfor %}
-</section>
 
 <section id="model-failures" style="page: content;">
   <h2 class="section-heading">Potential Model Failures</h2>

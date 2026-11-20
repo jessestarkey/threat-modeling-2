@@ -7,41 +7,49 @@
 # USAGE:
 #   1. Review your system's technical asset tags and machine types.
 #   2. For each domain with a matching trigger tag, copy the entire block
-#      under `questions:` directly into the `questions:` section of your
+#      under `questions:` into the `questions:` section of your
 #      01-metadata.yml file.
-#   3. Answer every question conversationally: explain HOW the capability
-#      is implemented, WHICH tool/control enforces it, and HOW it is
-#      verified. If a question doesn't apply, state "N/A" and explain why.
+#   3. Answer the domain's feature checklist first. Copy each item into the
+#      same `questions:` section as "Feature: <item>", and answer it with
+#      the options that apply, separated by commas, for example
+#      "Enterprise IdP, Local accounts (including break-glass)". Append
+#      [ANSWER REQUIRED] to a selection that still needs confirming.
+#   4. Then, answer each question for the features the application has,
+#      explaining how the capability is implemented, which tool or control
+#      enforces it, and how it is verified.
+#   5. Use the checklist to tailor your 02-abuse-and-reqs.yml. Each item's
+#      `scoping` names the requirement sections that its answer can rule out.
+#      Replace a ruled-out section's rows with the text
+#      "Not applicable: <reason>" rather than deleting the section, so that
+#      the report records what was tailored out and why.
 #
 # STRUCTURE:
-#   Same 9-domain SABER structure as 02-abuse-and-reqs-lib.yml (see that
-#   file's header for the full reasoning), with the same triggers: list
-#   per domain -- copied verbatim from that file rather than re-derived,
-#   so a domain's applicability decision is made once, not twice.
+#   The questions follow the same nine SABER domains as
+#   02-abuse-and-reqs-lib.yml, with the same triggers copied verbatim, so a
+#   domain's applicability is decided once. The report prints these questions
+#   first, as "Application Features and Scoping", before the requirements
+#   that they scope.
 #
-#   Questions are grouped by CAPABILITY, not by individual ASVS/AISVS/NIST
-#   ID -- a developer thinks in terms of "how do we do authentication,"
-#   not "does the application satisfy ASVS 6.4." An earlier revision had
-#   one question per 02-abuse-and-reqs-lib.yml security_requirement key
-#   (157 questions total), each phrased as "Does the application meet the
-#   <topic> requirement?" -- mechanically traceable, but monotonous and
-#   too tied to the standard's own numbering for a conversational
-#   interview, whether the answerer is a developer or their agent. This
-#   revision collapses related IDs into one natural-language question per
-#   real capability (e.g. all of V6.1-V6.8 become one authentication
-#   question), cutting 157 questions down to 35. Each question carries a
-#   trailing comment listing the exact security_requirement IDs it covers
-#   -- consult those entries in 02-abuse-and-reqs-lib.yml (or the app's
-#   own 02-abuse-and-reqs.yml) for the precise numbered sub-criteria
-#   before answering; the question itself is deliberately not an
-#   enumeration of them.
+#   Applicability works at two levels. First, a domain's triggers decide
+#   whether its block applies at all. Second, within a block, the feature
+#   checklist decides which requirement sections apply, since a block's
+#   triggers are broad. For example, the Identity block fires on any OAuth
+#   or SAML feature, while password requirements apply only where local
+#   passwords exist.
 #
-#   Applicability is already fully decided by the triggers: tag match one
-#   level up -- this file's questions are attestation/implementation
-#   questions ("how do you do X, verified how?"), not applicability-gating
-#   questions ("do you have X at all?"); asking that again inside a
-#   section that only exists because the tag already matched would be
-#   circular.
+#   The checklist asks only for facts that no tag or native field already
+#   records. For instance, file handling, GraphQL, WebSockets, WebRTC, CDS
+#   direction, physical hardware, and most AI capabilities are tagged, so
+#   their blocks or sections exist only when the tag is present. Each item
+#   lists its options and whether one or several may be selected. The report
+#   prints the checklist as a table that marks each selected option, along
+#   with the requirement sections the item affects.
+#
+#   The questions are short on purpose, since the precise criteria live in
+#   the requirement rows rather than in the question. Each question is
+#   grouped by capability rather than by ASVS, AISVS, or NIST ID, and its
+#   comment lists the requirement IDs whose numbered criteria to consult
+#   before answering.
 #
 # DOMAIN QUICK-REFERENCE (see 02-abuse-and-reqs-lib.yml for full sourcing
 # detail per domain):
@@ -57,6 +65,7 @@
 # ==============================================================================
 
 categories:
+
   - name: "Identity"
     triggers:
       - feature:oauth-oidc-provider
@@ -67,22 +76,81 @@ categories:
       - mgmt:self-managed-identity
       - mgmt:self-managed-pam
 
+    features:
+
+      - feature: "Authentication mechanisms"
+        select: multiple
+        options:
+          - "Enterprise IdP"
+          - "Local accounts (including break-glass)"
+          - "MFA"
+          - "Out-of-band codes"
+          - "Certificates or hardware keys"
+        affects: "ASVS V6.2, V6.4, V6.6, V6.7"
+        scoping: >
+          If Enterprise IdP is selected without Local accounts (including break-glass), mark
+          V6.2 (Password Security) and V6.4 (Authentication Factor Lifecycle and Recovery) not
+          applicable. However, a local or break-glass account keeps both in scope for that
+          account. Additionally, V6.6 applies only if Out-of-band codes is selected, and V6.7
+          only if Certificates or hardware keys is selected.
+
+      - feature: "Session model"
+        select: multiple
+        options:
+          - "Application sessions"
+          - "IdP-issued tokens"
+          - "Federated login"
+        affects: "ASVS V7.6"
+        scoping: >
+          V7.6 (Federated Re-authentication) applies only if Federated login is selected. The
+          rest of V7 applies whenever the application keeps a session of any kind.
+
+      - feature: "OAuth and OIDC roles"
+        select: multiple
+        options:
+          - "OAuth client"
+          - "OAuth resource server"
+          - "OAuth authorization server"
+          - "OIDC client"
+          - "OpenID provider"
+          - "Consent management"
+          - "None"
+        affects: "ASVS V10.2-V10.7"
+        scoping: >
+          Keep only the V10 sections for the selected roles, namely V10.2 (OAuth client), V10.3
+          (OAuth resource server), V10.4 (OAuth authorization server), V10.5 (OIDC client),
+          V10.6 (OpenID provider), and V10.7 (Consent management). V9 and V10.1 apply whenever
+          any role other than None is selected.
+
+      - feature: "Self-managed identity infrastructure"
+        select: multiple
+        options:
+          - "Directory"
+          - "Certificate authority"
+          - "Hybrid sync"
+          - "PAM"
+          - "None"
+        affects: "AC-2(7), AC-2(6)"
+        scoping: >
+          If None is selected, mark AC-2(7) and AC-2(6) not applicable. Otherwise, AC-2(7)
+          applies to a directory, certificate authority, or hybrid sync, and AC-2(6) to PAM.
+
     questions:
 
       # Requirement IDs: ASVS V6.1-ASVS V6.8
-      "How are users and non-person entities authenticated and where is that documented? For example, are passwords, MFA, out-of-band codes, certs, or a federated IdP login utilized?": ""
+      "How is each authentication mechanism implemented, enforced, and documented?": ""
 
       # Requirement IDs: ASVS V7.1-ASVS V7.6
-      "Walk through session handling end to end: how long sessions live, what kills them early, and what happens on re-authentication after a federated login.": ""
+      "How are sessions created, timed out, ended, and re-authenticated?": ""
 
       # Requirement IDs: ASVS V8.1-ASVS V8.4
-      "Who can access what, and how is that enforced at the function, data, and field level? What protects the admin interface specifically?": ""
+      "How is authorization enforced at the function, data, and field level, and what protects the admin interface?": ""
 
       # Requirement IDs: ASVS V9.1-ASVS V9.2, ASVS V10.1-ASVS V10.7
-      "If this asset issues or accepts OAuth/OIDC tokens, how are they validated and scoped? What secures the client, resource-server, authorization-server, and consent flows involved?": ""
+      "For each OAuth or OIDC role the asset plays, how are tokens validated and scoped, and how are the flows secured?": ""
 
       # Requirement IDs: AC-2(7), AC-2(6)
-      "If the application runs its own directory, CA, or hybrid-sync service instead of the enterprise tenant, how is it hardened, and who governs privileged access to it?": ""
+      "How is the self-managed identity infrastructure hardened, and who governs privileged access to it?": ""
 
   - name: "Device and Infrastructure"
     triggers:
@@ -90,13 +158,27 @@ categories:
       - machine:virtual
       - mgmt:self-managed-hardware
 
+    features:
+
+      - feature: "Host hardening and access"
+        select: multiple
+        options:
+          - "Hardening inherited from a managed platform"
+          - "Direct administrator access to hosts"
+          - "None"
+        affects: "AC-17, and any section the platform inherits"
+        scoping: >
+          If Hardening inherited from a managed platform is selected, mark the inherited
+          sections not applicable and name the inherited control in the hardening question.
+          Additionally, AC-17 applies only if Direct administrator access to hosts is selected.
+
     questions:
 
       # Requirement IDs: CM-14, CM-7, SC-7(21), SC-5, AC-6, CM-6, SI-2, SI-4, AC-17, SC-28
-      "What hardens the containers and VMs? Cover image/OS provenance, least-privilege runtime, network segmentation, resource limits, patching, endpoint monitoring, admin access, and encryption at rest.": ""
+      "How are the containers and VMs hardened, patched, monitored, and administered?": ""
 
       # Requirement IDs: PE-3 / SI-7
-      "Does the application utilize any self-managed hardware? If so, have default BMC/iDRAC credentials been changed, is firmware tracked separately from OS patching, and is secure boot enabled?": ""
+      "How is the self-managed hardware hardened, including its BMC credentials, firmware patching, and secure boot?": ""
 
   - name: "Network and Environment"
     triggers:
@@ -110,19 +192,43 @@ categories:
       - cds:high-side-receiver
       - cds:high-side-broker
 
+    features:
+
+      - feature: "Self-managed network"
+        select: multiple
+        options:
+          - "Self-managed segmentation"
+          - "Self-managed wireless"
+          - "None"
+        affects: "SC-7, AC-18"
+        scoping: >
+          SC-7 applies only if Self-managed segmentation is selected, and AC-18 only if
+          Self-managed wireless is selected.
+
+      - feature: "Authorization boundary crossings"
+        select: multiple
+        options:
+          - "Data crosses the authorization boundary"
+          - "Media or datasets downgraded to a lower classification"
+          - "None"
+        affects: "AU-9, AC-3, SC-31, MP-8, CA-3"
+        scoping: >
+          If None is selected, mark these sections not applicable. Additionally, MP-8 applies
+          only if Media or datasets downgraded to a lower classification is selected.
+
     questions:
 
       # Requirement IDs: ASVS V12.1-ASVS V12.3
-      "How is TLS implemented, both for external-facing traffic and for service-to-service calls inside the network?": ""
+      "How is TLS implemented for external traffic and for service-to-service calls?": ""
 
       # Requirement IDs: SC-7, AC-18
-      "If the application manages its own network segmentation, how is it segmented, and what controls wireless access?": ""
+      "How is the self-managed network segmented, and how is wireless access controlled?": ""
 
       # Requirement IDs: AC-4(19), AC-4(8) / SI-3, AC-4(25) / AC-4(9), SI-7
-      "Does content cross a cross-domain solution? If so, how are classification markings checked, how is the content inspected and sanitized, and who signs off before release?": ""
+      "How are classification markings checked, content inspected and sanitized, and releases approved at the cross-domain solution?": ""
 
       # Requirement IDs: AU-9, AC-3, SC-31, MP-8, CA-3
-      "Does the application send or receive data across the authorization boundary? If so, how is the transfer path governed? Are controls such as broker access restrictions, a tamper-evident audit trail, covert-channel mitigation, and a signed interconnection agreement in place?": ""
+      "How is each transfer across the authorization boundary governed and audited?": ""
 
   - name: "Application"
     triggers:
@@ -143,31 +249,67 @@ categories:
       - feature:background-jobs
       - feature:third-party-plugins
 
+    features:
+
+      - feature: "Browser use"
+        select: multiple
+        options:
+          - "Rendered in a browser"
+          - "Sets cookies"
+          - "Loads external resources"
+          - "None"
+        affects: "ASVS V3, V3.3, V3.6"
+        scoping: >
+          If None is selected, mark V3 not applicable. Otherwise, V3.3 applies only if Sets
+          cookies is selected, and V3.6 only if Loads external resources is selected.
+
+      - feature: "Unmanaged code and deserialization"
+        select: multiple
+        options:
+          - "Unmanaged or memory-unsafe code"
+          - "Object deserialization"
+          - "XML deserialization"
+          - "None"
+        affects: "ASVS V1.4, V1.5"
+        scoping: >
+          V1.4 (Memory, String, and Unmanaged Code) applies only if Unmanaged or memory-unsafe
+          code is selected, and V1.5 (Safe Deserialization) only if either deserialization
+          option is selected.
+
+      - feature: "User-facing flows that could be automated at scale"
+        select: one
+        options:
+          - "Yes"
+          - "No"
+        affects: "ASVS V2.4"
+        scoping: >
+          If No is selected, V2.4 (Anti-automation) can be marked not applicable.
+
     questions:
 
       # Requirement IDs: ASVS V1.1-ASVS V1.5
-      "What prevents injection and unsafe deserialization? Is there a defined encoding and sanitization architecture, are memory-safety protections in place, and is XML/object deserialization handled safely?": ""
+      "What prevents injection and unsafe deserialization?": ""
 
       # Requirement IDs: ASVS V2.1-ASVS V2.4
-      "What stops someone from skipping steps in the application business logic or scripting abuse of it at volume?": ""
+      "What stops users from skipping business-logic steps or automating abuse?": ""
 
       # Requirement IDs: ASVS V3.1-ASVS V3.7
-      "On the frontend, how are cookies configured, what security headers are set, how is CSRF/origin separation enforced, and are external resources integrity-checked?": ""
+      "How are cookies, security headers, CSRF, and origin separation configured for the browser?": ""
 
       # Requirement IDs: ASVS V4.1-ASVS V4.4
-      "What secures HTTP, GraphQL, and WebSocket handling specifically? Are protections like request-smuggling defenses, GraphQL query depth limits, and WebSocket origin checks in place?": ""
+      "How are the HTTP, GraphQL, and WebSocket interfaces secured?": ""
 
       # Requirement IDs: ASVS V5.1-ASVS V5.4
-      "Describe the file handling process, to include upload validation, storage isolation, and safe download.": ""
+      "How are uploaded files validated, stored, and served?": ""
 
       # Requirement IDs: ASVS V13.1-ASVS V13.4
-      "How is configuration managed, how do backend services authenticate to each other, and where do secrets actually live?": ""
+      "How is configuration managed, how do backend services authenticate, and where do secrets live?": ""
 
       # Requirement IDs: ASVS V15.1-ASVS V15.4
-      "How does the application track third-party dependency risk and what defensive coding practices are actually enforced rather than just documented?": ""
+      "How is third-party dependency risk tracked, and which defensive coding practices are enforced?": ""
 
       # Requirement IDs: ASVS V17.1-ASVS V17.3
-      "If the application is running WebRTC, what secures the TURN relay and signaling?": ""
+      "How are the WebRTC TURN relay, media, and signaling secured?": ""
 
   - name: "Artificial Intelligence"
     triggers:
@@ -195,37 +337,69 @@ categories:
       - ai:human-labeling
       - ai:endpoint-assistant
 
+    features:
+
+      - feature: "Model sourcing"
+        select: multiple
+        options:
+          - "Vendor-hosted model"
+          - "Self-hosted model"
+          - "Training or fine-tuning"
+          - "Data labeling"
+          - "Model served in production"
+        affects: "AISVS C1, C3, C6, C11.2, C11.3, C11.4, C12"
+        scoping: >
+          If only Vendor-hosted model is selected, mark C1, C3, and C6 not applicable, and
+          record that the vendor covers C11.2 and C11.3. Additionally, C1.2 applies only if Data
+          labeling is selected, C3.5 and C12.5 only if Training or fine-tuning is selected, and
+          C11.4 and C12 only if Model served in production is selected.
+
+      - feature: "AI deployment"
+        select: multiple
+        options:
+          - "Accelerators the application controls"
+          - "Edge or distributed devices"
+          - "Tenants sharing the AI infrastructure"
+          - "None"
+        affects: "AISVS C4.2, C4.3, C5.3"
+        scoping: >
+          C4.2 applies only if Accelerators the application controls is selected, C4.3 only if
+          Edge or distributed devices is selected, and C5.3 only if Tenants sharing the AI
+          infrastructure is selected.
+
+      - feature: "Agent capabilities"
+        select: multiple
+        options:
+          - "Memory or RAG index"
+          - "Tool calls"
+          - "MCP servers"
+          - "Source citation in output"
+          - "None"
+        affects: "AISVS C7.4, C8, C9, C10"
+        scoping: >
+          C8 applies only if Memory or RAG index is selected, C9 only if Tool calls is selected,
+          C10 only if MCP servers is selected, and C7.4 only if Source citation in output is
+          selected.
+
     questions:
 
-      # Requirement IDs: AISVS C1.1-AISVS C1.3
-      "How is training and labeling data secured and what detects poisoning attempts?": ""
+      # Requirement IDs: AISVS C1.1-AISVS C1.3, AISVS C3.1-AISVS C3.5, AISVS C6.1-AISVS C6.2
+      "How are training data, labeling, and model artifacts secured, and how are model integrity and provenance verified?": ""
 
-      # Requirement IDs: AISVS C2.1-AISVS C2.2
-      "What stops a prompt injection and how is untrusted input screened before it reaches the model?": ""
+      # Requirement IDs: AISVS C2.1-AISVS C2.2, AISVS C8.1-AISVS C8.3
+      "How is untrusted input, including retrieved and embedded content, screened before it reaches the model, and who can access the memory or RAG index?": ""
 
-      # Requirement IDs: AISVS C3.1-AISVS C3.5, AISVS C6.1-AISVS C6.2
-      "How does the application verify a model artifact's integrity and provenance? Is it signed, is there an AI-BOM for it, and is its source tracked? What controls safe deployment and rollback?": ""
-
-      # Requirement IDs: AISVS C4.1-AISVS C4.3
-      "How are AI workloads isolated? Are enforcement mechanisms such as sandboxing, GPU/accelerator access restrictions, or protected edge-deployed models utilized?": ""
-
-      # Requirement IDs: AISVS C5.1-AISVS C5.3
-      "Who can access the application's AI resources and how is that authenticated? If multiple tenants share the infrastructure, how are they kept apart?": ""
+      # Requirement IDs: AISVS C4.1-AISVS C4.3, AISVS C5.1-AISVS C5.3
+      "How are AI workloads isolated, and how is access to AI resources authenticated and authorized?": ""
 
       # Requirement IDs: AISVS C7.1-AISVS C7.4
-      "What validates and bounds model output before a user sees it? Does anything catch hallucinations or check source attribution?": ""
+      "How is model output validated and bounded before users or downstream systems receive it?": ""
 
-      # Requirement IDs: AISVS C8.1-AISVS C8.3
-      "For the memory/RAG index: who can access it, is content sanitized before embedding, and does old material actually expire?": ""
-
-      # Requirement IDs: AISVS C9.1-AISVS C9.6
-      "What constrains the agent? Are safeguards such as execution budgets, a kill-switch, human approval before high-impact actions, tool isolation, and identity distinction in place?": ""
-
-      # Requirement IDs: AISVS C10.1-AISVS C10.4
-      "For each MCP server the agent talks to: where did it come from, how is it authenticated, what's the transport, and is input validated against a schema?": ""
+      # Requirement IDs: AISVS C9.1-AISVS C9.6, AISVS C10.1-AISVS C10.4
+      "What constrains the agent and its tools, and how are its MCP servers sourced, authenticated, and validated?": ""
 
       # Requirement IDs: AISVS C11.1-AISVS C11.3
-      "What hardens the model against adversarial inputs, membership inference, and someone trying to extract it wholesale?": ""
+      "How is the model hardened against adversarial input, membership inference, and extraction?": ""
 
   - name: "Data"
     triggers:
@@ -238,13 +412,27 @@ categories:
       - cds:high-side-broker
       - data:pii
 
+    features:
+
+      - feature: "In-use and client-side data"
+        select: multiple
+        options:
+          - "Data protected while in use"
+          - "Sensitive data reaches a client"
+          - "None"
+        affects: "ASVS V11.7, V14.3"
+        scoping: >
+          V11.7 (In-Use Data Cryptography) applies only if Data protected while in use is
+          selected, which is typically an L3 requirement. Additionally, V14.3 (Client-side Data
+          Protection) applies only if Sensitive data reaches a client is selected.
+
     questions:
 
       # Requirement IDs: ASVS V11.1-ASVS V11.7
-      "How are cryptographic keys managed? Is there an inventory, are the algorithms approved, and is data protected while it's in use?": ""
+      "How are cryptographic keys managed, and are the algorithms approved?": ""
 
       # Requirement IDs: ASVS V14.1-ASVS V14.3
-      "How is sensitive data classified and what protects it at rest, in transit, and on the client?": ""
+      "How is sensitive data classified and protected at rest, in transit, and on the client?": ""
 
   - name: "Detection"
     triggers:
@@ -255,27 +443,51 @@ categories:
     questions:
 
       # Requirement IDs: ASVS V16.1-ASVS V16.5
-      "What gets logged and what happens when something fails? Does the error message leak anything it shouldn't?": ""
+      "What is logged, where do the logs go, and what do error messages reveal?": ""
 
       # Requirement IDs: AISVS C11.4, AISVS C12.1-AISVS C12.5
-      "What's watching the model itself? Is there anomaly detection, do jailbreak or injection attempts trigger alerts, is it drift detected, and is there a lifecycle audit trail?": ""
+      "How is the model monitored for anomalies, abuse, and drift, and is its lifecycle audited?": ""
 
   - name: "Response"
     triggers:
       - zone:dmz
       - sec:secrets-broker
 
+    features:
+
+      - feature: "Incident reporting requirement"
+        select: one
+        options:
+          - "Yes"
+          - "No"
+        affects: "IR-6"
+        scoping: >
+          IR-6 applies only if Yes is selected, meaning a contract or regulation (for example,
+          DFARS 252.204-7012) sets a reporting timeline. The other IR sections apply to every
+          asset in the Response domain.
+
     questions:
 
       # Requirement IDs: IR-4, IR-4, IR-3, IR-6
-      "If this asset gets compromised, what's the plan for containment and credential rotation, and has any of it been tested rather than just written down? What's the reporting timeline?": ""
+      "How are containment, credential rotation, and incident reporting handled, and have they been tested?": ""
 
   - name: "Recovery"
     triggers:
       - ops:requires-backup
       - ops:vendor-hosted-service
 
+    features:
+
+      - feature: "Vendor-hosted or SaaS components"
+        select: one
+        options:
+          - "Yes"
+          - "No"
+        affects: "SA-9"
+        scoping: >
+          SA-9 applies only if Yes is selected.
+
     questions:
 
       # Requirement IDs: CP-9 / AC-5, CP-2, CP-4, SA-9, SC-12
-      "What backs this up, what's the RTO/RPO, and has a restore actually been tested? If any part of this is vendor-hosted or SaaS, how are independent exports handled?": ""
+      "How is the asset backed up, what are its RTO and RPO, and has a restore been tested?": ""

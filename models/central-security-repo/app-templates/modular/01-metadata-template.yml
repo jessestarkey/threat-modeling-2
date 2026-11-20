@@ -111,78 +111,76 @@ technical_overview:
 
 
 # ==============================================================================
-# DIGITAL SYSTEM SECURITY PLAN (SSP): questions
+# APPLICATION FEATURES AND SCOPING: questions
 # ==============================================================================
 # PURPOSE:
-# This section serves as the formal security narrative for your application.
-# The answers provided here are printed directly into the executive summary
-# of the final threat model report and are reviewed by the PMO ISSE during
-# the Continuous Certification to Field (CCTF) process.
+# This section establishes which features the application actually has, and
+# therefore which security requirements apply to it. The report prints it
+# before the security requirements, as "Application Features and Scoping," and
+# the PMO ISSE reviews it during the Continuous Certification to Field (CCTF)
+# process.
 #
 # QUESTION SOURCE:
-# Questions are drawn from the category library: 01-metadata-lib.yml
-# Select categories whose triggers match your system's asset tags and machine
-# types. The baseline category (cat-baseline) is ALWAYS required.
+# Questions come from 01-metadata-lib.yml. For each domain whose triggers match
+# your technical assets' tags or machine types, copy that domain's questions
+# below.
 #
-# HOW TO SELECT CATEGORIES:
-#   1. Open 01-metadata-lib.yml and review the `triggers` list for each category.
-#   2. If any trigger tag or machine type is present in your technical assets,
-#      copy that category's questions into this file below.
-#   3. Always include cat-baseline regardless of your system profile.
+# FEATURE CHECKLIST:
+#   Each domain in the library has a short feature checklist, and each item has
+#   a fixed list of options. Copy each item below as "Feature: <item>", and
+#   answer it with the options that apply, separated by commas, for example
+#   "Enterprise IdP, Local accounts (including break-glass)". Append
+#   [ANSWER REQUIRED] to a selection that still needs confirming. The report
+#   prints the checklist as a table that marks each selected option.
 #
-# CATEGORY QUICK-REFERENCE:
-#   cat-baseline          Always required — core application security
-#   cat-file-processing   feature:file-upload-processing, feature:import-export,
-#                         feature:pdf-generation, risk:malware-vector
-#   cat-public-api        feature:public-api-endpoint, feature:graphql-endpoint,
-#                         feature:search-index, feature:webhook-receiver
-#   cat-auth-flows        feature:oauth-oidc-provider, feature:saml-sp,
-#                         feature:password-reset, feature:multi-tenancy
-#   cat-container         machine: container
-#   cat-vm                machine: virtual
-#   cat-ai-inference      ai:user-prompt-input, ai:indirect-prompt-input,
-#                         ai:llm-endpoint, ai:rag-pipeline,
-#                         ai:agent-orchestrator
-#   cat-ai-supply-chain   ai:model-serving, ai:model-registry,
-#                         ai:training-pipeline, ai:dataset-store,
-#                         ai:eval-pipeline
-#
-# ANSWER FORMAT (The "Yes, And..." Method):
-#   Do NOT answer with a bare "Yes" or "No". Explain HOW the control is
-#   implemented, WHICH tool enforces it, and HOW it is verified.
-#     Bad:  "Yes, we validate input."
-#     Good: "Yes. Server-side input validation is enforced at the application
-#            layer using allow-list validation on all API parameters.
-#            The perimeter WAF (Azure App Gateway, OWASP CRS in Prevention
-#            mode) provides an additional blocking layer. Validated via DAST
-#            scan in the CI/CD pipeline."
-#   If a control is not applicable, state "N/A" and explain why.
+# ANSWER FORMAT:
+#   For each question, explain how the capability is implemented, which tool
+#   enforces it, and how it is verified. Do not answer with a bare "Yes" or "No".
+#   Keep each answer short: one paragraph of facts, and at most one paragraph of
+#   open items that starts with [ANSWER REQUIRED] and numbers them (1), (2),
+#   and so on. Separate paragraphs with a blank line.
+#     Weak:   "Yes, we use an IdP."
+#     Strong: "All user and administrator logins federate to Entra ID over
+#              OIDC, with MFA enforced by conditional access. No local accounts
+#              exist. Verified by a quarterly sign-in log review."
 #   If a control is platform-inherited, name the specific platform tool.
+#
+# TAILORING THE REQUIREMENTS:
+#   Each checklist item in the library has a `scoping` note that names the
+#   requirement sections its answer can rule out. In 02-abuse-and-reqs.yml,
+#   replace a ruled-out section's rows with "Not applicable: <reason>", citing
+#   the answer, rather than deleting the section. For example:
+#     "ASVS V6.2: Password Security": |
+#       Not applicable: every login federates to Entra ID, and no local
+#       accounts exist (see the authentication checklist item).
+#   The report then shows that section as not applicable, with the reason.
+#   Remove any abuse case that pairs with a section marked not applicable, since
+#   the report warns about that combination.
 #
 # AI ASSISTANCE (optional):
 #   Provide this template, 01-metadata-lib.yml, and a description of your
-#   system's architecture and tags to an AI assistant, and ask it to draft
-#   the narrative sections (management_summary_comment, threat_landscape,
-#   technical_overview), select the applicable question categories based on
-#   your tags/machine types, and draft "[ANSWER REQUIRED]" guidance for each
-#   question rather than inventing compliance answers. Review the output for
-#   accuracy before committing, and get real answers from whoever actually
-#   knows the implementation.
+#   system's architecture and tags to an AI assistant. Then, ask it to draft the
+#   narrative sections (management_summary_comment, threat_landscape, and
+#   technical_overview), select the domains whose triggers match your tags and
+#   machine types, and draft "[ANSWER REQUIRED]" guidance for each question,
+#   rather than inventing compliance answers. Review the output for accuracy
+#   before committing, and get the real answers from whoever actually knows the
+#   implementation.
 # ==============================================================================
 
 questions:
 
   # ----------------------------------------------------------------------------
-  # Copy question blocks from 01-metadata-lib.yml for each applicable category.
-  # Delete this comment block and the example below once questions are filled in.
+  # Copy question blocks from 01-metadata-lib.yml for each domain that applies,
+  # and delete this comment block once the questions are filled in.
   #
-  # EXAMPLE (from cat-baseline, question q-001):
+  # EXAMPLE (from the Identity domain):
   #
-  # Does the application enforce strict server-side input validation
-  # (e.g., allow-listing) for all user-supplied data, headers, and file
-  # uploads, independent of any WAF or perimeter control?: >
-  #   Yes. All API endpoints validate input against explicit allow-list schemas
-  #   defined in the OpenAPI specification. Validation is enforced in the
-  #   application middleware layer independent of the perimeter WAF. Verified
-  #   via automated DAST scans on every CI/CD deployment.
+  # "Feature: Authentication mechanisms": "Enterprise IdP, MFA"
+  #
+  # "How is each authentication mechanism implemented, enforced, and
+  # documented?": >
+  #   All user and administrator logins federate to Entra ID over OIDC, with
+  #   MFA enforced by conditional access. The OIDC client is documented in the
+  #   SSP, section 4.2. Verified by a quarterly sign-in log review.
   # ----------------------------------------------------------------------------

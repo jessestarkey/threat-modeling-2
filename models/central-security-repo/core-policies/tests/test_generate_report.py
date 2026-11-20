@@ -57,6 +57,69 @@ class AbuseCasePairing(unittest.TestCase):
                 self.assertEqual([t for t, _ in unmapped], [])
 
 
+class Scoping(unittest.TestCase):
+    def test_not_applicable_sections_carry_their_reason(self):
+        self.assertEqual(report.not_applicable_reason("Not applicable: every login federates to Entra ID."),
+                         "every login federates to Entra ID.")
+        self.assertEqual(report.not_applicable_reason("  not applicable:\n  no files are handled"), "no files are handled")
+        self.assertEqual(report.not_applicable_reason("6.2.1 | Verify that passwords ... | 1"), "")
+
+    def test_features_section_comes_before_the_requirements(self):
+        template = (Path(report.__file__).parent / "templates" / "report.html.jinja").read_text(encoding="utf-8")
+        self.assertLess(template.index('<section id="application-features"'),
+                        template.index('<section id="security-requirements"'))
+        self.assertNotIn("open-questions", template)
+
+    def test_library_questions_and_checklist_load_with_their_domains(self):
+        import yaml
+        library = Path(__file__).resolve().parents[2] / "libraries" / "01-metadata-lib.yml"
+        blocks = yaml.safe_load(library.read_text(encoding="utf-8"))["categories"]
+        questions = [q for block in blocks for q in (block.get("questions") or {})]
+        features = [f for block in blocks for f in (block.get("features") or [])]
+        self.assertEqual(len(questions), 31)
+        self.assertEqual(len(features), 16)
+        self.assertEqual(sorted(report.QUESTION_DOMAIN_MAP), sorted(questions))
+        for item in features:
+            with self.subTest(feature=item["feature"][:60]):
+                self.assertTrue(item.get("affects") and item.get("scoping"), "every item names what it affects and how")
+                self.assertIn(item["feature"], report.FEATURE_INDEX)
+
+    def test_confluence_questions_all_come_from_the_library(self):
+        # An author's own question has no domain and renders under Uncategorized, so the
+        # fixture model sticks to library questions.
+        import yaml
+        model = Path(__file__).resolve().parents[3] / "modular-apps-repo" / "confluence" / "01-metadata.yml"
+        questions = yaml.safe_load(model.read_text(encoding="utf-8"))["questions"]
+        for question in questions:
+            with self.subTest(question=question[:60]):
+                if question.startswith(report.FEATURE_PREFIX):
+                    self.assertIn(question[len(report.FEATURE_PREFIX):], report.FEATURE_INDEX)
+                else:
+                    self.assertIn(question, report.QUESTION_DOMAIN_MAP)
+
+    def test_feature_checklist_marks_the_selected_options(self):
+        rows = report.feature_checklist({
+            "Feature: Authentication mechanisms": "enterprise idp, MFA, Smartcards [ANSWER REQUIRED]",
+            "Feature: Vendor-hosted or SaaS components": "",
+            "How is each authentication mechanism implemented, enforced, and documented?": "Via Entra ID.",
+        })
+        self.assertEqual([r["feature"] for r in rows], ["Authentication mechanisms", "Vendor-hosted or SaaS components"])
+        auth, vendor = rows
+        self.assertEqual(auth["domain"], "Identity")
+        self.assertEqual([o["label"] for o in auth["options"] if o["selected"]], ["Enterprise IdP", "MFA"],
+                         "matched to the library's options without regard to case")
+        self.assertEqual(auth["unknown"], ["Smartcards"])
+        self.assertTrue(auth["confirm"])
+        self.assertFalse(vendor["answered"])
+        self.assertFalse(vendor["multiple"])
+
+    def test_every_checklist_item_has_options_and_a_selection_mode(self):
+        for name, item in report.FEATURE_INDEX.items():
+            with self.subTest(feature=name):
+                self.assertGreaterEqual(len(item["options"]), 2)
+                self.assertFalse(any("," in o for o in item["options"]), "options are comma-separated in answers")
+
+
 class LinkLabels(unittest.TestCase):
     def test_link_shows_its_source_unless_the_source_is_the_row_asset(self):
         titles = {"gw": "App Gateway", "fw": "Azure Firewall", "law": "Log Workspace"}

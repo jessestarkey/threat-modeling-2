@@ -512,61 +512,57 @@ SVS_REQUIREMENT_DOMAIN_MAP = {
     "SC-12: Backup Encryption Key Rotation and Retention": "Recovery",
 }
 
-# Same reasoning and same hardcoded-snapshot caveat as SVS_REQUIREMENT_DOMAIN_MAP
-# above, for 01-metadata-lib.yml's own current 35 capability-clustered
-# questions -- Open Questions otherwise has no domain grouping at all, unlike
-# Abuse Cases and Security Requirements, since build_context() previously just
-# sorted the flat questions: dict alphabetically. An app author's own
-# hand-written question (not copied from this library) falls back to
-# FALLBACK_DOMAIN. Regenerate by dumping {title: domain} for every question
-# across every category in the current 01-metadata-lib.yml if that file's
-# content changes.
-QUESTION_DOMAIN_MAP = {
-    # Identity
-    "How are users and non-person entities authenticated and where is that documented? For example, are passwords, MFA, out-of-band codes, certs, or a federated IdP login utilized?": "Identity",
-    "Walk through session handling end to end: how long sessions live, what kills them early, and what happens on re-authentication after a federated login.": "Identity",
-    "Who can access what, and how is that enforced at the function, data, and field level? What protects the admin interface specifically?": "Identity",
-    "If this asset issues or accepts OAuth/OIDC tokens, how are they validated and scoped? What secures the client, resource-server, authorization-server, and consent flows involved?": "Identity",
-    "If the application runs its own directory, CA, or hybrid-sync service instead of the enterprise tenant, how is it hardened, and who governs privileged access to it?": "Identity",
-    # Device and Infrastructure
-    "What hardens the containers and VMs? Cover image/OS provenance, least-privilege runtime, network segmentation, resource limits, patching, endpoint monitoring, admin access, and encryption at rest.": "Device and Infrastructure",
-    "Does the application utilize any self-managed hardware? If so, have default BMC/iDRAC credentials been changed, is firmware tracked separately from OS patching, and is secure boot enabled?": "Device and Infrastructure",
-    # Network and Environment
-    "How is TLS implemented, both for external-facing traffic and for service-to-service calls inside the network?": "Network and Environment",
-    "If the application manages its own network segmentation, how is it segmented, and what controls wireless access?": "Network and Environment",
-    "Does content cross a cross-domain solution? If so, how are classification markings checked, how is the content inspected and sanitized, and who signs off before release?": "Network and Environment",
-    "Does the application send or receive data across the authorization boundary? If so, how is the transfer path governed? Are controls such as broker access restrictions, a tamper-evident audit trail, covert-channel mitigation, and a signed interconnection agreement in place?": "Network and Environment",
-    # Application
-    "What prevents injection and unsafe deserialization? Is there a defined encoding and sanitization architecture, are memory-safety protections in place, and is XML/object deserialization handled safely?": "Application",
-    "What stops someone from skipping steps in the application business logic or scripting abuse of it at volume?": "Application",
-    "On the frontend, how are cookies configured, what security headers are set, how is CSRF/origin separation enforced, and are external resources integrity-checked?": "Application",
-    "What secures HTTP, GraphQL, and WebSocket handling specifically? Are protections like request-smuggling defenses, GraphQL query depth limits, and WebSocket origin checks in place?": "Application",
-    "Describe the file handling process, to include upload validation, storage isolation, and safe download.": "Application",
-    "How is configuration managed, how do backend services authenticate to each other, and where do secrets actually live?": "Application",
-    "How does the application track third-party dependency risk and what defensive coding practices are actually enforced rather than just documented?": "Application",
-    "If the application is running WebRTC, what secures the TURN relay and signaling?": "Application",
-    # Artificial Intelligence
-    "How is training and labeling data secured and what detects poisoning attempts?": "Artificial Intelligence",
-    "What stops a prompt injection and how is untrusted input screened before it reaches the model?": "Artificial Intelligence",
-    "How does the application verify a model artifact's integrity and provenance? Is it signed, is there an AI-BOM for it, and is its source tracked? What controls safe deployment and rollback?": "Artificial Intelligence",
-    "How are AI workloads isolated? Are enforcement mechanisms such as sandboxing, GPU/accelerator access restrictions, or protected edge-deployed models utilized?": "Artificial Intelligence",
-    "Who can access the application's AI resources and how is that authenticated? If multiple tenants share the infrastructure, how are they kept apart?": "Artificial Intelligence",
-    "What validates and bounds model output before a user sees it? Does anything catch hallucinations or check source attribution?": "Artificial Intelligence",
-    "For the memory/RAG index: who can access it, is content sanitized before embedding, and does old material actually expire?": "Artificial Intelligence",
-    "What constrains the agent? Are safeguards such as execution budgets, a kill-switch, human approval before high-impact actions, tool isolation, and identity distinction in place?": "Artificial Intelligence",
-    "For each MCP server the agent talks to: where did it come from, how is it authenticated, what's the transport, and is input validated against a schema?": "Artificial Intelligence",
-    "What hardens the model against adversarial inputs, membership inference, and someone trying to extract it wholesale?": "Artificial Intelligence",
-    # Data
-    "How are cryptographic keys managed? Is there an inventory, are the algorithms approved, and is data protected while it's in use?": "Data",
-    "How is sensitive data classified and what protects it at rest, in transit, and on the client?": "Data",
-    # Detection
-    "What gets logged and what happens when something fails? Does the error message leak anything it shouldn't?": "Detection",
-    "What's watching the model itself? Is there anomaly detection, do jailbreak or injection attempts trigger alerts, is it drift detected, and is there a lifecycle audit trail?": "Detection",
-    # Response
-    "If this asset gets compromised, what's the plan for containment and credential rotation, and has any of it been tested rather than just written down? What's the reporting timeline?": "Response",
-    # Recovery
-    "What backs this up, what's the RTO/RPO, and has a restore actually been tested? If any part of this is vendor-hosted or SaaS, how are independent exports handled?": "Recovery",
-}
+def load_question_library() -> tuple:
+    """({question: domain}, {feature: {"domain", "affects"}}) from 01-metadata-lib.yml, which
+    the report reads directly so that the questions and feature checklist stay in one place. A
+    question or feature an author writes themselves falls back to FALLBACK_DOMAIN."""
+    data = yaml.safe_load((LIBRARIES_DIR / "01-metadata-lib.yml").read_text(encoding="utf-8")) or {}
+    questions, features = {}, {}
+    for block in data.get("categories") or []:
+        for question in block.get("questions") or {}:
+            questions[question] = block["name"]
+        for item in block.get("features") or []:
+            features[item["feature"]] = {"domain": block["name"], "affects": item.get("affects", ""),
+                                         "options": list(item.get("options") or []),
+                                         "multiple": item.get("select", "multiple") == "multiple"}
+    return questions, features
+
+
+QUESTION_DOMAIN_MAP, FEATURE_INDEX = load_question_library()
+FEATURE_PREFIX = "Feature: "
+
+
+ANSWER_REQUIRED = "[ANSWER REQUIRED]"
+
+
+def feature_checklist(questions: dict) -> list:
+    """The "Feature: ..." entries of the questions map as checklist rows, in domain order and
+    then library order. An answer is the selected options separated by commas, matched to the
+    item's options without regard to case, and [ANSWER REQUIRED] marks it as unconfirmed.
+    Selections that are not one of the item's options are kept in "unknown" so that the
+    self-checks can report them."""
+    order = {name: i for i, name in enumerate(DOMAIN_ORDER)}
+    library_order = {name: i for i, name in enumerate(FEATURE_INDEX)}
+    rows = []
+    for key, answer in questions.items():
+        if not key.startswith(FEATURE_PREFIX):
+            continue
+        name = key[len(FEATURE_PREFIX):].strip()
+        known = FEATURE_INDEX.get(name, {})
+        raw = " ".join(str(answer or "").split())
+        confirm = ANSWER_REQUIRED.lower() in raw.lower()
+        raw = raw.replace(ANSWER_REQUIRED, "").replace(ANSWER_REQUIRED.lower(), "")
+        chosen = [s.strip() for s in raw.split(",") if s.strip()]
+        by_lower = {o.lower(): o for o in known.get("options", [])}
+        selected = {by_lower[c.lower()] for c in chosen if c.lower() in by_lower}
+        rows.append({
+            "domain": known.get("domain", FALLBACK_DOMAIN), "feature": name, "affects": known.get("affects", ""),
+            "options": [{"label": o, "selected": o in selected} for o in known.get("options", [])],
+            "unknown": [c for c in chosen if c.lower() not in by_lower],
+            "multiple": known.get("multiple", True), "answered": bool(chosen), "confirm": confirm,
+        })
+    rows.sort(key=lambda r: (order.get(r["domain"], len(DOMAIN_ORDER)), library_order.get(r["feature"], 10 ** 6)))
+    return rows
 
 TAG_LINE_RE = re.compile(r"^\s*-\s*(\S+)\s*(?:#\s*(.*))?$")
 RISK_LIB_DOMAIN_BANNER_RE = re.compile(r"^\s*#\s*DOMAIN\s+\d+:\s*(.+?)\s*$")
@@ -1125,6 +1121,14 @@ def render_diagram_svg(gv_path: str, title: str, confidentiality_by_label: dict 
     return svg_for_pdf
 
 
+def not_applicable_reason(text: str) -> str:
+    """The reason a requirement section was tailored out, or "" when it applies. An author
+    tailors a section out by replacing its rows with "Not applicable: <reason>" (see
+    01-metadata-lib.yml), so the report can show what was ruled out and why."""
+    m = re.match(r"\s*Not applicable:\s*(.*)", text or "", re.S | re.I)
+    return " ".join(m.group(1).split()) if m else ""
+
+
 def control_ids(title: str) -> list:
     """The control IDs an abuse-case or requirement title is keyed on:
     'CP-9 / AC-5: Backups' -> ['CP-9', 'AC-5'], 'ASVS V6.3: ...' -> ['ASVS V6.3']."""
@@ -1391,7 +1395,7 @@ def build_context(model: dict, output_dir: str) -> dict:
         stats = json.load(f)
 
     security_requirements = [
-        {"title": title, "text": text, "rows": parse_svs_rows(text)}
+        {"title": title, "text": text, "rows": parse_svs_rows(text), "not_applicable": not_applicable_reason(text)}
         for title, text in (model.get("security_requirements") or {}).items()
     ]
     abuse_cases = list((model.get("abuse_cases") or {}).items())
@@ -1436,9 +1440,11 @@ def build_context(model: dict, output_dir: str) -> dict:
             security_requirements, title_key="title"),
         "abuse_cases": abuse_cases,
         "requirement_abuse_groups": group_requirements_with_abuse_cases(security_requirements, abuse_cases),
+        "not_applicable_requirement_count": sum(1 for r in security_requirements if r["not_applicable"]),
         "questions": sorted((model.get("questions") or {}).items()),
+        "feature_checklist": feature_checklist(model.get("questions") or {}),
         "question_domain_groups": group_svs_entries_by_domain(
-            sorted((model.get("questions") or {}).items()),
+            sorted((k, v) for k, v in (model.get("questions") or {}).items() if not k.startswith(FEATURE_PREFIX)),
             domain_map=QUESTION_DOMAIN_MAP),
         "tags": tags,
         "trust_boundary_tree": build_trust_boundary_tree(model.get("trust_boundaries") or {}, assets_by_id),
@@ -1512,6 +1518,22 @@ def run_self_checks(context: dict, risks_json_count: int) -> bool:
         for title, _ in group["unmapped"]:
             print(f"WARNING: abuse case '{title}' pairs with no security requirement section "
                   f"(control ID {control_ids(title)[:1]}); add the section or fix the ID")
+    # Also not fatal: a checklist selection outside the item's options, or several
+    # selections on a single-choice item, is almost always a typo in the model.
+    for row in context.get("feature_checklist", []):
+        if row["unknown"] and row["options"]:
+            print(f"WARNING: feature '{row['feature']}' has selections that are not among its options: "
+                  f"{', '.join(row['unknown'])}")
+        if not row["multiple"] and sum(o["selected"] for o in row["options"]) > 1:
+            print(f"WARNING: feature '{row['feature']}' takes one selection but has several")
+    for group in context.get("requirement_abuse_groups", []):
+        # Also not fatal: an abuse case under a section marked not applicable states a threat
+        # that the model says has no control, so either the tailoring or the abuse case is wrong.
+        for entry in group["entries"]:
+            if entry.get("not_applicable"):
+                for title, _ in entry["abuse_cases"]:
+                    print(f"WARNING: abuse case '{title}' pairs with '{entry['title']}', which is marked "
+                          f"not applicable; remove the abuse case or reconsider the tailoring")
 
     return ok
 

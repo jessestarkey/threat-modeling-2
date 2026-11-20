@@ -122,8 +122,13 @@ metadata_fields:
   questions:
     type: map
     notes: >
-      Flat map of question string → answer string. Both key and value are free text.
-      Unanswered questions (empty string value) appear as findings in the report.
+      Flat map of question string to answer string, where both are free text. The report prints
+      these first, as "Application Features and Scoping", because the answers decide which
+      security requirement sections apply (see 01-metadata-lib.yml). Keys that start with
+      "Feature: " are feature checklist items, whose value is the item's options that apply,
+      separated by commas (with [ANSWER REQUIRED] appended while unconfirmed). The report prints
+      them as a table. Unanswered questions
+      (an empty string value) appear as findings in the report.
 
   tags_available:
     type: list of strings
