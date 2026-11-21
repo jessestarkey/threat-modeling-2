@@ -45,14 +45,15 @@
 #   The checklist comes first for a new model, since it records what the
 #   application has before any tags exist. Each item lists its options and
 #   whether one or several may be selected, and an option can name the tags
-#   it implies (for example, File uploads implies
-#   feature:file-upload-processing). Place each implied tag on the asset that
+#   and model fields it implies (for example, File uploads implies
+#   feature:file-upload-processing, and Internet-facing endpoints implies
+#   internet: true). Place each implied tag or field on the asset that
 #   actually has the feature, since the checklist describes the application
 #   as a whole and cannot say which asset that is. The tags then select the
 #   focus area blocks to copy. The report prints the checklist as a table that
 #   marks each selected option, along with the sections the item affects and
-#   the tags its selections imply. A reviewer checks those tags against the
-#   model, and nothing checks them automatically.
+#   the tags and fields its selections imply. A reviewer checks those against
+#   the model, and nothing checks them automatically.
 #
 #   Tags that record evidence of a control (such as the -hardened, ops:, and
 #   ir: tags), topology (zone:, net:, and path:), and policy waivers
@@ -63,11 +64,9 @@
 #   the requirement rows rather than in the question. Each question is
 #   grouped by capability rather than by ASVS, AISVS, or NIST ID, and its
 #   requirement_ids name the numbered criteria to consult before answering.
-#   The report lists every question in a focus area the model covers. A
-#   question whose selections are absent appears as "Not asked" with the
-#   reason, one that depends on an unanswered checklist item appears as
-#   "Pending", and one that applies but is missing from the model raises a
-#   warning.
+#   The report leaves out a question whose selections are absent. However, it
+#   lists one that depends on an unanswered checklist item as "Pending", and
+#   it warns about one that applies but is missing from the model.
 #
 # FOCUS AREA QUICK-REFERENCE (see 02-abuse-and-reqs-lib.yml for full sourcing
 # detail per focus area):
@@ -183,6 +182,23 @@ categories:
           exposed-admin-interface finding, and vendor remote support brings in the vendor-access
           finding. Place each tag on the asset that offers the access.
 
+      - feature: "Multi-tenancy"
+        select: multiple
+        options:
+          - option: "Application serves multiple tenants"
+            fields:
+              - "multi_tenant: true on the assets that tenants share"
+          - option: "Shared multi-tenant platform services"
+            fields:
+              - "multi_tenant: true on those platform services"
+          - "None"
+        affects: "ASVS V8, AISVS C5.3, and the Identity focus area"
+        scoping: >
+          Multi-tenancy brings in the Identity focus area and the tenant-isolation findings.
+          Mark each shared asset multi_tenant: true. Shared platform services raise those
+          findings on the platform asset, whereas an application that serves several tenants
+          raises them on the application itself.
+
     questions:
 
       - question: "How is each authentication mechanism implemented, enforced, and documented?"
@@ -236,19 +252,78 @@ categories:
           sections not applicable and name the inherited control in the hardening question.
           Additionally, AC-17 applies only if Direct administrator access to hosts is selected.
 
-      - feature: "Self-managed hosts and workload identity"
+      - feature: "Compute and workload identity"
         select: multiple
         options:
+          - option: "Containers"
+            fields:
+              - "machine: container on each containerized asset"
+          - option: "Virtual machines"
+            fields:
+              - "machine: virtual on each virtual machine"
+          - option: "Managed or serverless platform services"
+            fields:
+              - "machine: serverless on each managed service"
           - option: "Physical hosts the team administers"
             tags: [mgmt:self-managed-hardware]
+            fields:
+              - "machine: physical on each such host"
           - option: "Workload identity for cloud or platform APIs"
             tags: [mgmt:workload-identity-assigned]
-          - "None"
-        affects: "PE-3 / SI-7, AC-6"
+        affects: "PE-3 / SI-7, AC-6, and the Device and Infrastructure focus area"
         scoping: >
-          PE-3 / SI-7 applies only if Physical hosts the team administers is selected.
-          Additionally, a workload identity brings in the over-privileged workload identity
-          finding for each asset that holds one.
+          Containers and virtual machines bring in the Device and Infrastructure focus area.
+          PE-3 / SI-7 applies only if Physical hosts the team administers is selected, and a
+          workload identity brings in the over-privileged workload identity finding for each
+          asset that holds one.
+
+      - feature: "Hosting environment"
+        select: multiple
+        options:
+          - option: "Azure Government"
+            tags: [mgmt:csp-managed]
+          - option: "AWS GovCloud"
+            tags: [mgmt:csp-managed]
+          - option: "Commercial cloud"
+            tags: [mgmt:csp-managed]
+          - "On-premises data center"
+          - "Edge or tactical environment"
+        affects: "Inherited platform controls"
+        scoping: >
+          A cloud environment brings in the controls inherited from the provider. Place
+          mgmt:csp-managed on the trust boundaries where the provider owns the underlying
+          controls, and name each inherited control where a section is marked not applicable.
+
+      - feature: "Impact level"
+        select: one
+        options:
+          - "IL2"
+          - "IL4"
+          - "IL5"
+          - "IL6"
+        affects: "Inherited platform controls, and the key ownership requirements in the Data focus area"
+        scoping: >
+          The impact level decides which provider authorizations the inherited controls rest on,
+          and whether customer-managed keys are required. It does not rule any section out on
+          its own.
+
+      - feature: "Approved policy exceptions"
+        select: multiple
+        options:
+          - option: "Local authentication fallback"
+            tags: [exception:local-auth-fallback]
+          - option: "Container runs as root"
+            tags: [exception:runs-as-root]
+          - option: "Direct administrative access"
+            tags: [exception:direct-admin-access]
+          - option: "End-of-life component"
+            tags: [exception:eol-component]
+          - "None"
+        affects: "The matching policy exception findings"
+        scoping: >
+          Each approved exception brings in its own finding, which records the waiver and its
+          compensating controls. Place the tag on the asset that the waiver covers, and record
+          the AO acceptance in risk_tracking.
 
     questions:
 
@@ -259,7 +334,7 @@ categories:
       - question: "How is the self-managed hardware hardened, including its BMC credentials, firmware patching, and secure boot?"
         requirement_ids: "PE-3 / SI-7"
         asked_when:
-          - "Self-managed hosts and workload identity: Physical hosts the team administers"
+          - "Compute and workload identity: Physical hosts the team administers"
 
   - name: "Network and Environment"
     triggers:
@@ -274,6 +349,28 @@ categories:
       - cds:high-side-broker
 
     features:
+
+      - feature: "Users and exposure"
+        select: multiple
+        options:
+          - option: "Internal users"
+            fields:
+              - "an out-of-scope external-entity asset for each user population"
+          - option: "Mission partners"
+            fields:
+              - "an external-entity asset for each partner system"
+          - option: "Public users"
+            fields:
+              - "internet: true on a public client asset, and on each asset it reaches directly"
+          - option: "Internet-facing endpoints"
+            fields:
+              - "internet: true on each internet-facing asset"
+        affects: "The internet-exposure findings, such as unguarded access from internet, and the Network and Environment focus area"
+        scoping: >
+          Internet exposure drives many findings, so mark internet: true only on assets that
+          face the internet, and model outside users and partner systems as external entities or
+          out-of-scope assets. That way, the rules can tell an internet-side caller from an
+          in-scope gateway.
 
       - feature: "Self-managed network"
         select: multiple
@@ -471,6 +568,25 @@ categories:
         affects: "ASVS V2.4"
         scoping: >
           If No is selected, V2.4 (Anti-automation) can be marked not applicable.
+
+      - feature: "Development and delivery"
+        select: multiple
+        options:
+          - option: "Custom-developed code"
+            fields:
+              - "custom_developed_parts: true on each asset with custom code"
+          - option: "CI/CD pipeline the team runs"
+            fields:
+              - "a build-pipeline and a sourcecode-repository asset, with links to their deployment targets"
+          - option: "Container images the team builds"
+            fields:
+              - "a container-registry asset, and links from the pipeline to it"
+          - "Commercial or open-source software only"
+        affects: "The supply-chain findings, such as code backdooring, unchecked deployment, and missing build infrastructure"
+        scoping: >
+          Custom-developed code brings in the supply-chain rules, and without a modeled pipeline
+          it raises the missing build infrastructure finding. If only Commercial or open-source
+          software only is selected, those rules do not apply.
 
     questions:
 

@@ -141,7 +141,7 @@ technical_overview:
 # WHICH QUESTIONS TO ANSWER:
 #   Each library question has an asked_when list. Answer every question marked
 #   "always", and every question whose listed checklist selections include one
-#   you made. The report shows the others as not asked, with the reason.
+#   you made. The report leaves the others out.
 #
 # ANSWER FORMAT:
 #   For each question, explain how the capability is implemented, which tool

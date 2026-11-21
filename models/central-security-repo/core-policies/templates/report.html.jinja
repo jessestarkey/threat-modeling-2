@@ -151,16 +151,16 @@
   <p>This section establishes which features the application actually has, and therefore which of the security
   requirements in the next section apply. It has two parts. First, the feature checklist records the facts that
   no tag or model field captures, such as whether any local accounts exist, by marking the options that apply,
-  along with the requirement sections each item affects and the tags its selections imply. The reviewer checks
-  that each implied tag appears on the asset that has the feature. Where an answer rules out a section, that section appears in the next section as not
+  along with the requirement sections each item affects and the tags and model fields its selections imply. The
+  reviewer checks that each implied tag and field appears on the asset that has the feature. Where an answer rules out a section, that section appears in the next section as not
   applicable, with the reason. Second, the questions explain how each capability the application has is
-  implemented and verified. A question that the checklist rules out appears as not asked, with the reason, and
-  one that depends on an unanswered checklist item appears as pending. Both are grouped by the same focus areas as the requirements, and any entry
+  implemented and verified. Questions that the checklist rules out are left out, and a question that depends on
+  an unanswered checklist item appears as pending. Both are grouped by the same focus areas as the requirements, and any entry
   not associated with a focus area falls under Uncategorized.</p>
   {% if feature_checklist %}
   <h2 class="domain-heading">Feature Checklist</h2>
   <table class="asset-table feature-checklist">
-    <tr><th>Focus Area</th><th>Feature</th><th>Selection</th><th>Sections affected and implied tags</th></tr>
+    <tr><th>Focus Area</th><th>Feature</th><th>Selection</th><th>Sections affected, and implied tags and fields</th></tr>
     {% for row in feature_checklist %}
     <tr>
       <td>{{ row.domain }}</td>
@@ -171,7 +171,7 @@
         {% if not row.answered %}<div class="opt-flag">Not answered</div>{% endif %}
         {% if row.confirm %}<div class="opt-flag">To be confirmed</div>{% endif %}
       </td>
-      <td>{{ row.affects or '—' }}{% for tag in row.tags %}<div class="implied-tag">{{ tag }}</div>{% endfor %}</td>
+      <td>{{ row.affects or '—' }}{% for tag in row.tags %}<div class="implied-tag">{{ tag }}</div>{% endfor %}{% for field in row.fields %}<div class="implied-field">{{ field }}</div>{% endfor %}</td>
     </tr>
     {% endfor %}
   </table>
@@ -184,8 +184,7 @@
   {% endfor %}
   {% for entry in group.absent %}
   <h3 class="category-heading question-absent">{{ entry.question }}</h3>
-  {% if entry.status == 'not asked' %}<p class="question-note">Not asked: {{ entry.reason }}.</p>
-  {% elif entry.status == 'pending' %}<p class="question-note">Pending: {{ entry.reason }}.</p>
+  {% if entry.status == 'pending' %}<p class="question-note">Pending: {{ entry.reason }}.</p>
   {% else %}<p class="question-note missing">Not answered: this question applies to the model but has no answer.</p>{% endif %}
   {% endfor %}
   {% endfor %}

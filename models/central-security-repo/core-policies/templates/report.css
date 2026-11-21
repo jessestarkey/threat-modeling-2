@@ -155,6 +155,7 @@ th { background: #eef2f6; }
 .feature-checklist .box { display: inline-block; width: 7px; height: 7px; border: 1px solid #555; margin-right: 5px; vertical-align: middle; }
 .feature-checklist .box.checked { background: #1a3a5c; border-color: #1a3a5c; }
 .feature-checklist .opt-flag { color: #8a6d00; font-style: italic; }
+.feature-checklist .implied-field { font-size: 7.5pt; color: #555; font-style: italic; }
 .feature-checklist .select-note { color: #777; font-size: 8pt; }
 .feature-checklist .implied-tag { font-family: "Courier New", monospace; font-size: 7.5pt; color: #1a3a5c; }
 

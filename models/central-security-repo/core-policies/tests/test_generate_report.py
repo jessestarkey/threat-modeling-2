@@ -78,7 +78,7 @@ class Scoping(unittest.TestCase):
         questions = [q["question"] for block in blocks for q in (block.get("questions") or [])]
         features = [f for block in blocks for f in (block.get("features") or [])]
         self.assertEqual(len(questions), 31)
-        self.assertEqual(len(features), 25)
+        self.assertEqual(len(features), 31)
         self.assertTrue(all("asked_when" in q for block in blocks for q in block["questions"]))
         self.assertEqual(sorted(report.QUESTION_DOMAIN_MAP), sorted(questions))
         for item in features:

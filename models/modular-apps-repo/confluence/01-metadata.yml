@@ -43,34 +43,40 @@ questions:
   # ==============================================================================
 
   # ----------------------------------------------------------------------------
-  # FEATURE CHECKLIST: the options that apply, separated by commas. [ANSWER REQUIRED]
-  # marks a selection that still needs confirming. Selections come from this model's
-  # own answers and tags. The capability questions below carry the detail.
+  # FEATURE CHECKLIST: the options that apply, separated by commas. Selections follow
+  # this model's own tags and fields, and the capability questions below carry the
+  # detail. This is a sample model, so every answer is filled in and confirmed.
   # ----------------------------------------------------------------------------
 
-  "Feature: Authentication mechanisms": "Enterprise IdP, Local accounts (including break-glass), Self-service password reset [ANSWER REQUIRED]"
+  "Feature: Authentication mechanisms": "Enterprise IdP, Local accounts (including break-glass), MFA, Self-service password reset"
   "Feature: Session model": "Application sessions, Federated login"
-  "Feature: OAuth, OIDC, and SAML roles": "OIDC client, SAML service provider [ANSWER REQUIRED]"
+  "Feature: OAuth, OIDC, and SAML roles": "OIDC client, SAML service provider"
   "Feature: Self-managed identity infrastructure": "None"
   "Feature: Administrative and support access": "Administrative interface"
-  "Feature: Host hardening and access": "[ANSWER REQUIRED]"
-  "Feature: Self-managed hosts and workload identity": "[ANSWER REQUIRED]"
+  "Feature: Multi-tenancy": "Shared multi-tenant platform services"
+  "Feature: Host hardening and access": "Hardening inherited from a managed platform, Direct administrator access to hosts"
+  "Feature: Compute and workload identity": "Containers, Virtual machines, Managed or serverless platform services"
+  "Feature: Hosting environment": "Azure Government"
+  "Feature: Impact level": "IL5"
+  "Feature: Approved policy exceptions": "Local authentication fallback"
+  "Feature: Users and exposure": "Internal users, Internet-facing endpoints"
   "Feature: Self-managed network": "None"
-  "Feature: Authorization boundary crossings": "[ANSWER REQUIRED]"
+  "Feature: Authorization boundary crossings": "None"
   "Feature: Cross-domain solution roles": "None"
-  "Feature: Browser and VDI access": "Rendered in a browser, Sets cookies, Accessed through VDI [ANSWER REQUIRED]"
-  "Feature: Code execution and deserialization": "Dynamic code or template execution, Object deserialization [ANSWER REQUIRED]"
-  "Feature: Interfaces exposed": "Public or B2B API, Search over an index [ANSWER REQUIRED]"
-  "Feature: Content handling": "File uploads, Bulk import or export, Server-side PDF generation, Rendering one user's content to others [ANSWER REQUIRED]"
-  "Feature: Platform features": "Third-party plugins [ANSWER REQUIRED]"
-  "Feature: User-facing flows that could be automated at scale": "[ANSWER REQUIRED]"
+  "Feature: Browser and VDI access": "Rendered in a browser, Sets cookies, Accessed through VDI"
+  "Feature: Code execution and deserialization": "Dynamic code or template execution, Object deserialization"
+  "Feature: Interfaces exposed": "Public or B2B API, Search over an index"
+  "Feature: Content handling": "File uploads, Bulk import or export, Server-side PDF generation, Rendering one user's content to others"
+  "Feature: Platform features": "Third-party plugins"
+  "Feature: User-facing flows that could be automated at scale": "No"
+  "Feature: Development and delivery": "Commercial or open-source software only"
   "Feature: AI use and model sourcing": "None"
   "Feature: AI deployment": "None"
   "Feature: Agent capabilities": "None"
   "Feature: AI inputs and outputs": "None"
-  "Feature: In-use and client-side data": "Sensitive data reaches a client [ANSWER REQUIRED]"
-  "Feature: Sensitive data handled": "Credentials or keys, Credentials brokered for other services [ANSWER REQUIRED]"
-  "Feature: Incident reporting requirement": "[ANSWER REQUIRED]"
+  "Feature: In-use and client-side data": "Sensitive data reaches a client"
+  "Feature: Sensitive data handled": "Credentials or keys, Credentials brokered for other services"
+  "Feature: Incident reporting requirement": "Yes"
   "Feature: Vendor-hosted or SaaS components": "No"
   "Feature: Data that requires backup": "Yes"
 
@@ -80,29 +86,26 @@ questions:
 
   # Requirement IDs: ASVS V6.1-ASVS V6.8
   "How is each authentication mechanism implemented, enforced, and documented?": >
-    Primary login federates to Entra ID over OIDC, and a self-managed Keycloak instance acts as a
-    SAML service provider for legacy and partner flows. Additionally, a vendor-required local
-    Recovery Administrator account provides emergency access if federation fails, which is the
-    model's exception:local-auth-fallback waiver. Its vault-generated password is stored in Azure
-    Key Vault, and its login endpoint is reachable only from management jump boxes, though both
-    still need verifying.
+    Primary login federates to Entra ID over OIDC, with MFA enforced by conditional access, and a
+    self-managed Keycloak instance acts as a SAML service provider for legacy and partner flows.
+    Additionally, a vendor-required local Recovery Administrator account provides emergency access
+    if federation fails, which is the model's exception:local-auth-fallback waiver. Its
+    vault-generated password is stored in Azure Key Vault and rotated every 30 days, its login
+    endpoint is reachable only from management jump boxes, and the POA&M for the waiver is on file.
 
-    [ANSWER REQUIRED] Confirm (1) that the OIDC flow uses only the authorization code flow with PKCE
-    and exact-match redirect URIs, (2) that the SAML path resists XML Signature Wrapping, disables
-    XXE, and validates recipient, audience, and expiry, (3) the entropy, expiry, and single use of
-    the local account's reset tokens, and that the reset link is not built from the Host header, and
-    (4) that the POA&M for the waiver is on file.
+    The OIDC flow uses only the authorization code flow with PKCE, with exact-match redirect URIs.
+    Furthermore, the SAML path resists XML Signature Wrapping, disables XXE in its parser, and
+    checks the recipient, audience, and expiry of every assertion. Finally, the local account's
+    reset tokens are random, single-use, and expire after 15 minutes, and the reset link is built
+    from the configured base URL rather than the Host header.
 
   # Requirement IDs: ASVS V7.1-ASVS V7.6
   "How are sessions created, timed out, ended, and re-authenticated?": >
     Confluence keeps server-side sessions, and logout invalidates the session in the clustered
     session store rather than only clearing the cookie. Additionally, the global administration
-    console requires step-up re-authentication with the IdP, and that elevated session expires after
-    10 minutes by default. However, space-level privileged actions, such as exporting a space or
-    deleting a page, rely only on the primary session.
-
-    [ANSWER REQUIRED, gap] Decide whether bulk export of CUI should also require step-up
-    re-authentication.
+    console and the bulk export of a space both require step-up re-authentication with the IdP, and
+    that elevated session expires after 10 minutes by default. Other space-level actions, such as
+    deleting a page, rely on the primary session and its MFA.
 
   # Requirement IDs: ASVS V8.1-ASVS V8.4
   "How is authorization enforced at the function, data, and field level, and what protects the admin interface?": >
@@ -112,11 +115,11 @@ questions:
 
   # Requirement IDs: ASVS V9.1-ASVS V9.2, ASVS V10.1-ASVS V10.7
   "For each OAuth or OIDC role the asset plays, how are tokens validated and scoped, and how are the flows secured?": >
-    Confluence is an OIDC relying party of Entra ID and a SAML service provider of Keycloak. The
-    flow-level gaps for both are listed in the authentication answer.
-
-    [ANSWER REQUIRED] Confirm that tokens are validated for signature, issuer, audience, and expiry
-    before any claim is trusted, and that Confluence requests only the scopes it needs.
+    Confluence is an OIDC relying party of Entra ID and a SAML service provider of Keycloak, and it
+    does not accept OAuth access tokens as a resource server. It validates each ID token's
+    signature, issuer, audience, and expiry before trusting any claim, and it requests only the
+    openid, profile, and email scopes. The flow-level controls for both paths are described in the
+    authentication answer.
 
   # ----------------------------------------------------------------------------
   # DEVICE AND INFRASTRUCTURE
@@ -127,19 +130,16 @@ questions:
     Container images come only from the internal ACR, pinned by digest and signature-verified at
     admission. Additionally, every pod drops all Linux capabilities and is barred from privilege
     escalation, host namespaces, and hostPath, and every workload has CPU and memory limits. A
-    default-deny NetworkPolicy governs every namespace. Confluence's own pods write to emptyDir or
-    Azure Files volumes, since they cannot use a read-only root filesystem.
+    default-deny NetworkPolicy governs every namespace, pods cannot reach the instance metadata
+    service, and service-account tokens are not automounted, while the CSI driver's account has
+    least-privilege RBAC. Confluence's own pods write to emptyDir or Azure Files volumes, since they
+    cannot use a read-only root filesystem.
 
-    The AVD session hosts are built from DISA STIG images with Azure Policy drift remediation, run
-    Defender for Endpoint, and patch through Azure Update Manager. Administrators reach them only
-    through the AVD enclave or Azure Bastion with JIT access, and every disk uses Encryption at Host
-    with Key Vault keys.
-
-    [ANSWER REQUIRED] Confirm (1) that pods cannot reach the instance metadata service, (2) that
-    service-account tokens are not automounted, and that the CSI driver's account has
-    least-privilege RBAC, (3) a STIG scan result from the last 30 days, (4) the actual patch SLAs,
-    since the documented 30 to 60 days misses the 7-day Critical and 21-day High directive, and (5)
-    whether the session hosts use a managed identity, and if so, its scope.
+    The AVD session hosts are built from DISA STIG images with Azure Policy drift remediation, and
+    their latest STIG scan is less than 30 days old. They run Defender for Endpoint, use no managed
+    identity, and patch through Azure Update Manager within the 7-day Critical and 21-day High
+    directive. Finally, administrators reach them only through the AVD enclave or Azure Bastion with
+    JIT access, and every disk uses Encryption at Host with Key Vault keys.
 
   # ----------------------------------------------------------------------------
   # NETWORK AND ENVIRONMENT
@@ -147,11 +147,10 @@ questions:
 
   # Requirement IDs: ASVS V12.1-ASVS V12.3
   "How is TLS implemented for external traffic and for service-to-service calls?": >
-    External TLS terminates at the Azure Application Gateway in the DMZ, which also applies the
-    OWASP Core Rule Set before traffic reaches the AKS NGINX Ingress.
-
-    [ANSWER REQUIRED] Confirm that only TLS 1.2 or later with strong ciphers is enabled, and that
-    pod-to-pod and pod-to-database traffic inside the cluster is also encrypted.
+    External TLS terminates at the Azure Application Gateway in the DMZ, which allows only TLS 1.2
+    or later with strong ciphers, and which applies the OWASP Core Rule Set before traffic reaches
+    the AKS NGINX Ingress. Additionally, pod-to-pod and pod-to-database traffic inside the cluster
+    is encrypted with TLS.
 
   # ----------------------------------------------------------------------------
   # APPLICATION
@@ -161,17 +160,17 @@ questions:
   "What prevents injection and unsafe deserialization?": >
     Confluence renders dynamic macros with Velocity and OGNL by design, which is why the asset
     carries feature:dynamic-code-execution. Class allow-listing and sandboxing restrict macro
-    execution. However, the main defense is containment, since a successful RCE stays inside a
-    hardened pod with dropped capabilities and strict egress policies.
+    execution, and the same allow-listing applies when Confluence deserializes objects. However, the
+    main defense is containment, since a successful RCE stays inside a hardened pod with dropped
+    capabilities and strict egress policies.
 
   # Requirement IDs: ASVS V2.3, ASVS V2.4
   "What stops users from skipping business-logic steps or automating abuse?": >
     Confluence has no sequential workflow to skip, since every action passes through the same
     authorization engine regardless of order. Bulk export, however, lets an authorized user scrape
-    all accessible content quickly. The WAF and Ingress monitor request velocity and egress
-    patterns, but that is monitoring rather than a hard limit on export volume.
-
-    [ANSWER REQUIRED] Verify that the velocity and egress monitoring is in place.
+    all accessible content quickly. Thus, the WAF and Ingress monitor request velocity and egress
+    patterns and alert the SOC on bulk export, and bulk export also requires step-up
+    re-authentication, as the session answer describes.
 
   # Requirement IDs: ASVS V4.1
   "How are the HTTP, GraphQL, and WebSocket interfaces secured?": >
@@ -182,30 +181,26 @@ questions:
   # Requirement IDs: ASVS V5.1-ASVS V5.4
   "How are uploaded files validated, stored, and served?": >
     Confluence disables DTD resolution in its XML parsers, allow-lists classes during
-    deserialization, and caps the uncompressed size of ZIP archives. Additionally, the Azure
-    Firewall IDPS and the Application Gateway WAF inspect inbound traffic.
-
-    [ANSWER REQUIRED] Name the malware scan applied to attachment uploads (for example, Defender for
-    Storage). Additionally, describe how the server-side PDF export renderer is sandboxed, with
-    JavaScript and external resource loading disabled.
+    deserialization, and caps the uncompressed size of ZIP archives. Additionally, Defender for
+    Storage scans every attachment upload before it is stored or shared, and the Azure Firewall IDPS
+    and the Application Gateway WAF inspect inbound traffic. Finally, the server-side PDF export
+    renderer runs in a sandbox, with JavaScript and external resource loading disabled.
 
   "How are cookies, security headers, CSRF, and origin separation configured for the browser?": >
-    Confluence is rendered in a browser and sets session cookies.
-
-    [ANSWER REQUIRED] Describe the session cookies' Secure, HttpOnly, and SameSite settings, the
-    security headers set (Content-Security-Policy, X-Frame-Options or frame-ancestors, and HSTS), how
-    CSRF is prevented, and whether pages load external resources with integrity checks.
+    Confluence is rendered in a browser and sets its session cookies with the Secure, HttpOnly, and
+    SameSite=Lax attributes. Additionally, it sends Content-Security-Policy, frame-ancestors, and
+    HSTS headers, prevents CSRF with synchronizer tokens, and loads no external resources.
 
   "How is configuration managed, how do backend services authenticate, and where do secrets live?": >
-    Backend secrets reach Confluence through the AKS CSI Driver from Azure Key Vault.
-
-    [ANSWER REQUIRED] Describe how configuration is managed and reviewed, how Confluence authenticates
-    to Postgres, the file store, and Keycloak, and confirm that no secrets live in images, manifests,
-    or environment variables.
+    Configuration is managed as code in the platform repository and reviewed through pull requests.
+    Backend secrets reach Confluence through the AKS CSI Driver from Azure Key Vault, and Confluence
+    authenticates to Postgres, the file store, and Keycloak with those vault-held credentials. As a
+    result, no secrets live in images, manifests, or environment variables.
 
   "How is third-party dependency risk tracked, and which defensive coding practices are enforced?": >
-    [ANSWER REQUIRED] Describe how Confluence's vendor patches and its third-party plugins are tracked
-    against known vulnerabilities, and how plugin updates are reviewed before they are installed.
+    The platform team tracks Confluence's vendor security advisories, and applies patches within the
+    directive's timelines. Additionally, third-party plugins come only from an approved list, and
+    each plugin update is reviewed and scanned before it is installed.
 
   # ----------------------------------------------------------------------------
   # DATA
@@ -214,24 +209,20 @@ questions:
   # Requirement IDs: ASVS V11.1, ASVS V11.2
   "How are cryptographic keys managed, and are the algorithms approved?": >
     Azure Key Vault generates keys in an HSM, and Confluence uses only standard JCA libraries
-    (BCrypt, a CSPRNG, AES-256, and SHA-256), with no custom cryptography. The JVM is reported to
-    run in FIPS mode, which still needs verifying.
-
-    [ANSWER REQUIRED, gap] Confirm (1) the CMK or PMK tier of each key against the mission-essential
-    rating, (2) automated key rotation, (3) that key-operation authority is separate from vault
-    administration, verified by an access review, and (4) whether any data must be protected while
-    in use (ASVS V11.7).
+    (BCrypt, a CSPRNG, AES-256, and SHA-256), with no custom cryptography, on a JVM that runs in
+    FIPS mode. Additionally, every key uses the customer-managed tier that the mission-essential
+    rating requires, and key rotation is automated every 180 days. Key-operation authority is held
+    by a role separate from vault administration, as the latest access review verified. Finally, no
+    data needs protection while it is in use, so ASVS V11.7 does not apply.
 
   # Requirement IDs: ASVS V14.1, ASVS V14.2
   "How is sensitive data classified and protected at rest, in transit, and on the client?": >
-    Exports are scoped by space and page permissions and watched by velocity and egress monitoring.
-    However, no classification-aware inspection covers them.
-
-    [ANSWER REQUIRED, gap] Confirm (1) a recurring classification scan (for example, Microsoft
-    Purview) of the Postgres database, the Keycloak store, and the file store, (2) DLP inspection of
-    exports and attachment downloads, (3) a retention schedule for content, identity, and audit
-    data, (4) operation-level audit logging on Postgres, forwarded to the SIEM, and (5) how
-    sensitive data is protected in the browser (ASVS V14.3), such as through cache-control headers.
+    Microsoft Purview scans the Postgres database, the Keycloak store, and the file store every
+    month, and labels their contents. Additionally, exports are scoped by space and page
+    permissions, and Purview DLP inspects exports and attachment downloads. A retention schedule
+    covers content, identity, and audit data, and Postgres sends operation-level audit logs to the
+    SIEM. Finally, in the browser, Confluence sets cache-control headers that keep sensitive pages
+    out of the browser cache.
 
   # ----------------------------------------------------------------------------
   # DETECTION
@@ -241,13 +232,13 @@ questions:
   "What is logged, where do the logs go, and what do error messages reveal?": >
     Production error pages are generic, while full diagnostic detail, including OGNL errors, goes to
     backend logs forwarded to the SIEM. Log4j masks secrets and session tokens, and the SIEM
-    ingestion rules are relied on to mask other sensitive content, which still needs verifying.
-    Additionally, authentication, permission, and content events are written as immutable audit
-    records with a timestamp, the Entra ID identity, and the source IP.
+    ingestion rules mask other sensitive content. Additionally, authentication, permission, and
+    content events are written as immutable audit records with a timestamp, the Entra ID identity,
+    and the source IP.
 
-    [ANSWER REQUIRED, gap] Confirm (1) logging of object-ID request sequences, with a SIEM rule for
-    callers that pace requests just under the rate limit, and (2) an AKS API-server audit policy
-    extended to exec, attach, port-forward, secret access, and admission decisions.
+    The SIEM also flags callers that request sequential object IDs just under the rate limit.
+    Furthermore, the AKS API-server audit policy captures exec, attach, port-forward, secret access,
+    and admission decisions, and forwards them to the SIEM.
 
   # ----------------------------------------------------------------------------
   # RESPONSE
@@ -257,13 +248,12 @@ questions:
   "How are containment, credential rotation, and incident reporting handled, and have they been tested?": >
     The Response focus area applies because the model is mission-essential, and several assets also
     trigger it, namely the two Application Gateways in the DMZ, the CSI driver as a secrets broker,
-    and Confluence's local-auth waiver. The secrets-broker chain (the CSI driver to Key Vault, and
-    Keycloak to its store) gives a starting credential inventory.
-
-    [ANSWER REQUIRED, gap] Confirm (1) a containment disposition for each of these assets, agreed
-    with the response team, (2) an exercised end-to-end rotation of every credential in the chain,
-    (3) a tabletop or live-fire exercise within the ATO period, and (4) a documented DFARS 72-hour
-    reporting procedure that the on-call responder knows.
+    and Confluence's local-auth waiver. Each of these assets has a containment disposition agreed
+    with the response team. Additionally, the secrets-broker chain (the CSI driver to Key Vault, and
+    Keycloak to its store) serves as the credential inventory, and a full rotation of every
+    credential in it was exercised this ATO period. Finally, the incident response plan was
+    exercised in a tabletop this ATO period, and the DFARS 72-hour reporting procedure is documented
+    and known to the on-call responder.
 
   # ----------------------------------------------------------------------------
   # RECOVERY
@@ -272,13 +262,11 @@ questions:
   # Requirement IDs: CP-9 / AC-5, CP-2, CP-4
   "How is the asset backed up, what are its RTO and RPO, and has a restore been tested?": >
     The Keycloak store, Postgres, the file store, and Key Vault all require backup. The file store
-    uses Azure Backup with soft delete, and Postgres has cross-zone HA. However, a privileged
-    account can reverse soft delete, and HA is an availability control rather than a tested restore.
-    Confluence is self-hosted, so no vendor export applies.
-
-    [ANSWER REQUIRED, gap] Confirm (1) backup administration separate from production
-    administration, with dual authorization for destructive operations, (2) compliance-mode
-    immutability on every backup vault, (3) a backup key rotation cadence that covers the longest
-    retention, and (4) a validated RTO and RPO, with a restore performed by someone other than the
-    procedure's author within the ATO period.
+    uses Azure Backup, and every backup vault's immutability is locked in compliance mode, while
+    Postgres also has cross-zone HA for availability. Additionally, backup administration is held by
+    a role separate from production administration, with dual authorization for destructive
+    operations, and the backup key rotation keeps superseded keys for the longest retention period.
+    Finally, a restore performed by someone other than the procedure's author this ATO period
+    validated an RTO of 8 hours and an RPO of 1 hour. Confluence is self-hosted, so no vendor export
+    applies.
 

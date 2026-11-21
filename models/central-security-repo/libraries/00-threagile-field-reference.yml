@@ -127,7 +127,7 @@ metadata_fields:
       security requirement sections apply (see 01-metadata-lib.yml). Keys that start with
       "Feature: " are feature checklist items, whose value is the item's options that apply,
       separated by commas (with [ANSWER REQUIRED] appended while unconfirmed). The report prints
-      them as a table. Unanswered questions
+      them as a table, with the tags and model fields each selection implies. Unanswered questions
       (an empty string value) appear as findings in the report.
 
   tags_available:

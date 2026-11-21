@@ -530,8 +530,10 @@ def load_question_library() -> tuple:
             options = [o if isinstance(o, str) else o["option"] for o in item.get("options") or []]
             option_tags = {(o if isinstance(o, str) else o["option"]): ([] if isinstance(o, str) else list(o.get("tags") or []))
                            for o in item.get("options") or []}
+            option_fields = {(o if isinstance(o, str) else o["option"]): ([] if isinstance(o, str) else list(o.get("fields") or []))
+                             for o in item.get("options") or []}
             features[item["feature"]] = {"domain": block["name"], "affects": item.get("affects", ""),
-                                         "options": options, "option_tags": option_tags,
+                                         "options": options, "option_tags": option_tags, "option_fields": option_fields,
                                          "multiple": item.get("select", "multiple") == "multiple"}
     return questions, features, asked_when
 
@@ -615,6 +617,7 @@ def feature_checklist(questions: dict) -> list:
             "unknown": [c for c in chosen if c.lower() not in by_lower],
             # Tags the selections imply, for a reviewer to check against the model.
             "tags": sorted({tag for o in selected for tag in known.get("option_tags", {}).get(o, [])}),
+            "fields": [f for o in known.get("options", []) if o in selected for f in known.get("option_fields", {}).get(o, [])],
             "multiple": known.get("multiple", True), "answered": bool(chosen), "confirm": confirm,
         })
     rows.sort(key=lambda r: (order.get(r["domain"], len(DOMAIN_ORDER)), library_order.get(r["feature"], 10 ** 6)))
@@ -1182,7 +1185,10 @@ def question_groups(questions: dict, checklist: list) -> list:
     questions in that focus area that the model does not answer (see question_status)."""
     answered = sorted((k, v) for k, v in questions.items() if not k.startswith(FEATURE_PREFIX))
     groups = group_svs_entries_by_domain(answered, domain_map=QUESTION_DOMAIN_MAP)
-    absent = question_status(questions, checklist)
+    # Questions the checklist rules out are left out of the report altogether.
+    absent = {area: [e for e in entries if e["status"] != "not asked"]
+              for area, entries in question_status(questions, checklist).items()}
+    absent = {area: entries for area, entries in absent.items() if entries}
     by_area = {g["domain"]: g for g in groups}
     for g in groups:
         g["absent"] = absent.get(g["domain"], [])
