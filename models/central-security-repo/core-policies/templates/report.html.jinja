@@ -58,23 +58,24 @@
 <section id="methodology" style="page: content;">
   <h1>Part I: Application Profile</h1>
   <h2 class="section-heading">Threagile Methodology</h2>
-  <p>This report was produced using <strong>Threagile</strong>, an open-source, model-driven threat
+  <p>This report was produced with <strong>Threagile</strong>, an open-source, model-driven threat
   modeling engine. The system's architecture, technical assets, trust boundaries, data flows, and
-  data assets, is described as structured data rather than drawn free-hand, and Threagile analyzes
-  that model against a library of risk rules to systematically identify where the architecture
-  doesn't meet expected security properties. This model's own custom risk-injection engine extends
-  that analysis with additional risk categories built for this organization's specific compliance
-  and hardening requirements.</p>
+  data assets are described as structured data rather than drawn by hand. Threagile then analyzes
+  that model against a library of risk rules, which shows where the architecture does not meet the
+  expected security properties. Additionally, this model's custom risk-injection engine extends that
+  analysis with risk categories built for this organization's compliance and hardening
+  requirements.</p>
 </section>
 
 <section id="executive-summary" style="page: content;">
   <h2 class="section-heading">Executive Summary</h2>
-  <p>What this system does, how it's built, and where its identified risks currently stand.</p>
+  <p>This section covers what the system does, how it is built, and where its identified risks stand.</p>
 
   <h2>Mission Criticality</h2>
-  <p>This model is rated <strong>{{ mission_criticality }}</strong>. The rating changes no finding's score; at
-  Mission Essential or above, the incident-response readiness checks (IR plan testing, breach notification,
-  forensic chain of custody, containment disposition) apply to the model's assets.</p>
+  <p>This model is rated <strong>{{ mission_criticality }}</strong>. The rating changes no finding's
+  score. However, at Mission Essential or above, the incident-response readiness checks (IR plan
+  testing, breach notification, forensic chain of custody, and containment disposition) apply to the
+  model's assets.</p>
   <table class="asset-table">
     <tr><th>Level</th><th>Meaning</th></tr>
     {% for level, meaning in [
@@ -126,37 +127,38 @@
 
 <section id="data-flow-diagram" style="page: content;">
   <h2 class="section-heading">Data-Flow Diagram</h2>
-  <p>This diagram visually depicts every technical asset, trust boundary, and communication link contained in the application model. 
-  Small icons in a node's or boundary's corner call out specific application components or
-  cloud services where tagged (see Tag Listing). This page is a fixed-size overview. For a
-  full-resolution, zoomable version, see the accompanying <code>data-flow-diagram.html</code>
-  (or <code>.svg</code>) file included alongside this report.</p>
+  <p>This diagram shows every technical asset, trust boundary, and communication link in the
+  application model. Small icons in the corner of a node or boundary mark specific application
+  components or cloud services where they are tagged (see Tag Listing). This page is a fixed-size
+  overview, while the accompanying <code>data-flow-diagram.html</code> (or <code>.svg</code>) file is
+  a full-resolution, zoomable version.</p>
   <div class="diagram">{{ data_flow_diagram | safe }}</div>
 </section>
 
 <section id="data-asset-diagram" style="page: content;">
   <h2 class="section-heading">Data Asset Diagram</h2>
-  <p>This diagram maps each data asset to every technical asset that sends, receives, or stores it. Both data
-  assets and technical assets are shaded by their own Confidentiality level (see Data Assets). A
-  solid edge indicates that the data asset is stored by that technical asset whereas a dashed edge depicts it is
-  processed by or transits through that asset without being persisted there. This page is a
-  fixed-size overview. For a full-resolution, zoomable version, see the accompanying
-  <code>data-asset-diagram.html</code> (or <code>.svg</code>) file included alongside this
-  report.</p>
+  <p>This diagram maps each data asset to every technical asset that sends, receives, or stores it.
+  Both kinds of asset are shaded by their Confidentiality level (see Data Assets). A solid edge means
+  the technical asset stores the data asset, whereas a dashed edge means the data asset is processed
+  by or passes through that asset without being stored there. This page is a fixed-size overview,
+  while the accompanying <code>data-asset-diagram.html</code> (or <code>.svg</code>) file is a
+  full-resolution, zoomable version.</p>
   <div class="diagram">{{ data_asset_diagram | safe }}</div>
 </section>
 
 <section id="application-features" style="page: content;">
   <h2 class="section-heading">Application Features and Scoping</h2>
-  <p>This section establishes which features the application actually has, and therefore which of the security
-  requirements in the next section apply. It has two parts. First, the feature checklist records the facts that
-  no tag or model field captures, such as whether any local accounts exist, by marking the options that apply,
-  along with the requirement sections each item affects and the tags and model fields its selections imply. The
-  reviewer checks that each implied tag and field appears on the asset that has the feature. Where an answer rules out a section, that section appears in the next section as not
-  applicable, with the reason. Second, the questions explain how each capability the application has is
-  implemented and verified. Questions that the checklist rules out are left out, and a question that depends on
-  an unanswered checklist item appears as pending. Both are grouped by the same focus areas as the requirements, and any entry
-  not associated with a focus area falls under Uncategorized.</p>
+  <p>This section establishes which features the application has, and therefore which of the
+  security requirements in the next section apply. It has two parts. First, the feature checklist
+  records facts that no tag or model field captures, such as whether any local accounts exist. It
+  marks the options that apply, and it lists the requirement sections each item affects and the tags
+  and model fields its selections imply. A reviewer checks that each implied tag and field appears on
+  the asset that has the feature. Where an answer rules out a section, the next section shows it as
+  not applicable, with the reason.</p>
+  <p>Second, the questions explain how each capability the application has is implemented and
+  verified. A question that the checklist rules out is left out, and a question that depends on an
+  unanswered checklist item appears as pending. Both parts are grouped by the same focus areas as the
+  requirements, and any entry without a focus area falls under Uncategorized.</p>
   {% if feature_checklist %}
   <h2 class="domain-heading">Feature Checklist</h2>
   <table class="asset-table feature-checklist">
@@ -192,13 +194,13 @@
 
 <section id="security-requirements" style="page: content;">
   <h2 class="section-heading">Security Requirements and Abuse Cases</h2>
-  <p>This section covers the mandatory controls and constraints for the application model, sourced from OWASP
-  ASVS/AISVS or NIST SP 800-53 and categorized by focus area. Where an abuse case describes a concrete
-  attacker goal those controls are designed against, it appears above the requirement table that answers it.
-  Abuse cases no requirement in this model answers are listed at the end of their focus area. Requirement sections
-  that the application's features rule out are marked not applicable, with the reason
-  ({{ not_applicable_requirement_count }} in this model). Any tailored entries not recognized under a focus area fall
-  under Uncategorized.</p>
+  <p>This section covers the mandatory controls and constraints for the application model, drawn
+  from OWASP ASVS and AISVS or NIST SP 800-53 and grouped by focus area. Where an abuse case describes
+  an attacker goal that a requirement answers, it appears above that requirement's table, and abuse
+  cases that no requirement in this model answers are listed at the end of their focus area.
+  Additionally, requirement sections that the application's features rule out are marked not
+  applicable, with the reason ({{ not_applicable_requirement_count }} in this model). Any tailored
+  entry that does not belong to a focus area falls under Uncategorized.</p>
   {% for group in requirement_abuse_groups %}
   <h2 class="domain-heading">{{ group.domain }}</h2>
   {% for req in group.entries %}
@@ -243,10 +245,10 @@
 
 <section id="model-failures" style="page: content;">
   <h2 class="section-heading">Potential Model Failures</h2>
-  <p>This section describes model failure findings from Threagile's model-consistency rules such as unreferenced or unnecessary assets,
-  or incomplete boundary/link content. This does not indicate an architecture risk, but rather flags
-  problems in how the model itself was authored and should be resolved by correcting the model,
-  not by adding mitigating controls.</p>
+  <p>This section lists the findings from Threagile's model-consistency rules, such as unreferenced
+  or unnecessary assets and incomplete boundary or link content. These findings do not indicate an
+  architecture risk. Instead, they flag problems in how the model was authored, so the fix is to
+  correct the model rather than to add mitigating controls.</p>
   {% if model_failure_categories %}
   {% for cat in model_failure_categories %}
   <h2>{{ cat.title }}</h2>
@@ -271,29 +273,27 @@
 <section id="impact-methodology" style="page: content;">
   <h1>Part II: Application Risks</h1>
   <h2 class="section-heading">Risk Methodology</h2>
-  <p>This section describes the methodology in how each risk is categorized. Every finding gets a Severity rating on a five-level scale:
-  <span class="severity-low">Low</span> &lt; <span class="severity-medium">Medium</span> &lt;
+  <p>This section describes how each risk is rated. Every finding receives a Severity on a
+  five-level scale, <span class="severity-low">Low</span> &lt; <span class="severity-medium">Medium</span> &lt;
   <span class="severity-elevated">Elevated</span> &lt; <span class="severity-high">High</span> &lt;
-  <span class="severity-critical">Critical</span>, and is shown throughout this report via the colored
-  Severity column and badges. Severity is always derived from a Likelihood score and an Impact
-  score for that finding, but how those two scores get computed depends on where the finding came
-  from. This report draws on two separate rule sources, and each scores its findings differently:</p>
+  <span class="severity-critical">Critical</span>, which the report shows in its colored Severity
+  columns and badges. Severity always comes from a Likelihood score and an Impact score, but how those
+  scores are computed depends on where the finding came from. This report draws on two rule sources,
+  and each scores its findings in its own way:</p>
   <ul>
-    <li><strong>Threagile's own built-in risk categories</strong> get their Severity computed by
-    Threagile itself, using this report's own custom-built engine (<code>jessestarkey/threagile</code>),
-    a fork of upstream Threagile that edits both the Severity formula and most individual rules'
-    scoring. Each rule starts from its own author-judged baseline Likelihood and Impact. Most rules
-    then nudge that baseline using the same per-asset adjustment the custom categories below use:
-    Likelihood gets a Relative Attacker Attractiveness (RAA) and internet-reachability adjustment,
-    and Impact gets narrowed to the single CIA dimension the finding's STRIDE category actually
-    threatens where that fits (kept broader where a category's own documented Impact genuinely
-    spans more than one dimension). A minority of rules -- checks for missing model elements or
-    whole-model issues with no single asset to adjust for -- keep a flat baseline instead. Threagile
-    then combines the two scores arithmetically: each Likelihood and Impact level carries a
-    Fibonacci-spaced weight (1, 2, 3, 5 -- not a linear 1-4) rather than equal steps, since the real-world jump in
-    exploitability or consequence from the third tier to the fourth is bigger than the jump from the first to the
-    second. The two weights are then multiplied, and the product is bucketed into a
-    Severity level, shown below.
+    <li><strong>Threagile's built-in risk categories</strong> are scored by Threagile itself, in
+    this project's fork (<code>jessestarkey/threagile</code>), which changes both the Severity formula
+    and the scoring of most individual rules. Each rule starts from its own baseline Likelihood and
+    Impact. Most rules then adjust that baseline for the asset, the same way the custom categories
+    below do. Specifically, Likelihood is adjusted for Relative Attacker Attractiveness (RAA) and
+    internet reachability, and Impact is narrowed to the CIA dimension that the finding's STRIDE
+    category threatens (or kept broader where the category's impact spans several dimensions). A
+    minority of rules, namely the checks for missing model elements and whole-model issues, have no
+    single asset to adjust for and keep a flat baseline. Threagile then gives each Likelihood and
+    Impact level a Fibonacci-spaced weight (1, 2, 3, and 5, rather than a linear 1 to 4), since the
+    real-world jump from the third tier to the fourth is larger than the jump from the first to the
+    second. Finally, it multiplies the two weights and buckets the product into a Severity level, as
+    shown below.
     <table class="severity-matrix">
       <caption>Threagile's built-in Severity matrix</caption>
       <tr><th></th><th>Low (1)</th><th>Medium (2)</th><th>High (3)</th><th>Very-High (5)</th></tr>
@@ -304,22 +304,20 @@
     </table>
     <br>
     </li>
-    <li><strong>The model's custom risk-injection categories</strong> get their
-    Severity computed by an independently-maintained scoring rule rather than calling Threagile's own. Each custom
-    category starts from an author-judged baseline Likelihood and baseline Impact that is grounded in
-    CWE or OWASP data where a mapping exists and expert judgment where it doesn't. Those
-    baselines are then adjusted for the specific asset each finding landed on. Likelihood gets +1 rating increase
-    if the asset's own RAA score is at or above 40%, and another +1 if the asset is
-    internet-exposed via the <code>net:internet-reachable</code> tag. RAA is computed
-    independently here, replicating Threagile's own RAA formula (asset and data sensitivity, data
-    volume, a technology-type multiplier, and a "pivoting" effect where an asset inherits some
-    attractiveness from whatever it can reach). Impact gets a -1, 0, or +1 adjustment from
-    the asset's own rating on whichever specific CIA dimension the finding's STRIDE category
-    threatens, rather than a flat maximum across all three. The model's overall Mission Criticality does not
-    change any score; at Mission Essential or above it adds the incident-response readiness checks.
-    The two scores then combine through the same Fibonacci-weighted product-and-threshold rule as Threagile's own
-    built-in path above, shown below -- the two paths are kept independently computed and maintained by design (see
-    <code>docs/risk-methodology.md</code>), even where, as here, they currently land on the same matrix shape.
+    <li><strong>The custom risk-injection categories</strong> are scored by a separately maintained
+    rule rather than by Threagile's. Each category starts from a baseline Likelihood and Impact,
+    grounded in CWE or OWASP data where a mapping exists and in expert judgment where it does not.
+    Those baselines are then adjusted for the asset that each finding lands on. First, Likelihood rises
+    one level if the asset's RAA score is 40% or more, and one more level if the asset carries the
+    <code>net:internet-reachable</code> tag. RAA is computed here with a copy of Threagile's formula
+    (asset and data sensitivity, data volume, a technology-type multiplier, and a pivoting effect, in
+    which an asset inherits some attractiveness from whatever it can reach). Second, Impact moves down
+    one level, stays, or moves up one level, according to the asset's rating on the CIA dimension that
+    the finding's STRIDE category threatens, rather than taking the highest of all three. The model's
+    Mission Criticality changes no score, although at Mission Essential or above it adds the
+    incident-response readiness checks. The two scores then combine through the same Fibonacci-weighted
+    rule as the built-in path above. The two paths are computed and maintained separately by design
+    (see <code>docs/risk-methodology.md</code>), even though they currently share the same matrix.
     <table class="severity-matrix">
       <caption>Custom-category Severity matrix</caption>
       <tr><th></th><th>Low (1)</th><th>Medium (2)</th><th>High (3)</th><th>Very-High (5)</th></tr>
@@ -330,23 +328,23 @@
     </table>
     </li>
   </ul>
-  <p>Though the two paths are computed independently and can diverge for a similar-looking finding (they consult
-  different Likelihood/Impact inputs even where the weighting and bucketing rule is now shared), both reach Severity
-  the same general way: Likelihood and Impact combine through a fixed rule rather than a per-finding judgment call.</p>
+  <p>Though the two paths are computed separately and can rate similar findings differently, since
+  they draw on different Likelihood and Impact inputs, both reach Severity the same way. In other
+  words, Likelihood and Impact combine through a fixed rule rather than a judgment call for each
+  finding.</p>
 </section>
 
 <section id="impact-analysis" style="page: content;">
   <h2 class="section-heading">Severity Analysis of {{ remaining_finding_count }} Open Risks in {{ remaining_categories | length }} Categories</h2>
-  <p>This section covers Open risk items, which are marked unchecked, in-progress, or in-discussion.
-  These are risks that have been neither mitigated nor accepted.</p>
-  <p>Open risks are split by what the threat model itself can show.
-  <strong>Model Weaknesses</strong> ({{ remaining_weakness_finding_count }}) are
-  findings the model's own facts demonstrate, such as data sent over a plain-HTTP link or a
-  static secret used to authenticate. <strong>Control Verifications</strong>
-  ({{ remaining_control_finding_count }}) are findings raised because an interface or capability
-  exists, where the model can't show whether the control is in place: a reviewer confirms each
-  one, and the assessment shown with it is the severity to assign if the control turns out to be
-  missing.</p>
+  <p>This section covers open risks, which are the findings marked unchecked, in progress, or in
+  discussion. These risks have been neither mitigated nor accepted.</p>
+  <p>Open risks are split by what the threat model can show. <strong>Model Weaknesses</strong>
+  ({{ remaining_weakness_finding_count }}) are findings that the model's own facts demonstrate, such
+  as data sent over a plain-HTTP link or a static secret used to authenticate.
+  <strong>Control Verifications</strong> ({{ remaining_control_finding_count }}) are findings raised
+  because an interface or capability exists, while the model cannot show whether the control is in
+  place. A reviewer confirms each one, and its assessment is the severity to assign if the control
+  turns out to be missing.</p>
 
   <h2 class="domain-heading">Model Weaknesses ({{ remaining_weakness_finding_count }})</h2>
   {% for group in remaining_weakness_domain_groups %}
@@ -416,9 +414,9 @@
 
 <section id="accepted-risks" style="page: content;">
   <h2 class="section-heading">Severity Analysis of {{ accepted_finding_count }} Accepted Risks in {{ accepted_categories | length }} Categories</h2>
-  <p>This section covers accepted risks, which are findings where the underlying vulnerability is still present in the
-  architecture, but a documented decision was made to tolerate it rather than remediate it. 
-  Each risk acceptance contains a justification, ticket reference, reviewer, and date.</p>
+  <p>This section covers accepted risks, which are findings whose vulnerability is still present in
+  the architecture, but which a documented decision tolerates rather than remediates. Each acceptance
+  records a justification, a ticket reference, a reviewer, and a date.</p>
   {% if accepted_categories %}
   {% for group in accepted_domain_groups %}
   <h2 class="domain-heading">{{ group.domain }}</h2>
@@ -446,9 +444,9 @@
 
 <section id="closed-risks" style="page: content;">
   <h2 class="section-heading">Severity Analysis of {{ closed_finding_count }} Closed Risks in {{ closed_categories | length }} Categories</h2>
-  <p>This section covers closed risks, which are mitigated or false-positive findings. Here, the underlying vulnerability is either
-  fixed or was never a real exposure in the first place. Each risk mitigation has a justification, reviewer, and date that come from that finding's
-  <code>risk_tracking</code> entry.</p>
+  <p>This section covers closed risks, which are the mitigated and false-positive findings. In these,
+  the vulnerability is either fixed or was never a real exposure. Each one has a justification, a
+  reviewer, and a date from its <code>risk_tracking</code> entry.</p>
   {% if closed_categories %}
   {% for group in closed_domain_groups %}
   <h2 class="domain-heading">{{ group.domain }}</h2>
@@ -476,29 +474,16 @@
 
 <section id="risks-by-category" style="page: content;">
   <h2 class="section-heading">Identified Risks by Vulnerability Category</h2>
-  <p>This section identifies every risk finding detail and is categorized by its assigned focus area.</p>
+  <p>This section gives the full detail of every finding, grouped by focus area.</p>
   {% for group in all_domain_groups %}
   <h2 id="domain-{{ group.slug }}" class="domain-heading">{{ group.domain }}</h2>
   {% for cat in group.categories %}
   <div id="cat-{{ cat.slug }}" class="category-block">
 
     {% if cat.shared %}
-    {# Every finding in this category agrees on STRIDE/function/CWE/action/
-       mitigation -- the vulnerability class itself -- so that's shown once
-       here instead of once per asset. True whenever a category has one
-       finding (trivially) or several that agree; the whole section uses
-       this one shape by default, with the non-uniform branch below as the
-       exception rather than the rule. Severity/likelihood/impact/status
-       stay broken out per asset in the table below even on categories
-       where those also happen to be identical everywhere (rather than
-       switching to a flat asset list there) -- a deliberate visual-
-       consistency choice: every collapsed category has the same shape, so
-       a reader always finds severity/likelihood/impact/status in the same
-       place, right after the heading -- no severity badge on the heading
-       itself, since severity is now always a table column, never
-       restated in two places. Each row keeps its own finding-
-       {{ synthetic_id }} anchor so the Severity Analysis / Closed Risks
-       tables' jump-links still resolve. #}
+    {# Every finding in this category shares its STRIDE, function, CWE, action, and mitigation, so
+       those are shown once. Severity, likelihood, impact, and status stay per asset in the table, so
+       that every category has the same shape. #}
     <div class="finding">
       <h3 class="category-heading">{{ cat.title }}</h3>
       <table class="finding-meta">
@@ -538,17 +523,8 @@
       {% endif %}
     </div>
     {% else %}
-    {# A single-finding category is always cat.shared (see _shared_fields()'s
-       docstring) so this branch is now reached only when a category has
-       multiple findings that genuinely don't agree on STRIDE/function/CWE/
-       action/mitigation -- a different vulnerability class per asset, not
-       just different scoring. Each finding keeps its own heading -- but
-       only the first carries the category-heading class (PDF bookmark +
-       description/impact), rather than repeating category background
-       once per asset the way the old standalone category title used to.
-       Same table-first, no-badge-in-heading shape as the branch above,
-       just one row per finding's own block instead of one row per asset
-       inside a single shared block. #}
+    {# The findings disagree on STRIDE, function, CWE, action, or mitigation, so each keeps its own
+       block. Only the first carries the category heading and description. #}
     {% for f in cat.findings %}
     <div id="finding-{{ f.synthetic_id }}" class="finding">
       <h3{% if loop.first %} class="category-heading"{% endif %}>{{ f.title }}</h3>
@@ -599,7 +575,7 @@
 <section id="tag-listing" style="page: content;">
   <h1>Part III: Application Components</h1>
   <h2 class="section-heading">Tag Listing</h2>
-  <p>This section lists every tag that is applied in this model, its meaning, and how often.</p>
+  <p>This section lists every tag applied in this model, with its meaning and how often it is used.</p>
   <table class="tag-table">
     <tr><th>Tag</th><th>Meaning</th><th>Usage Count</th></tr>
     {% for tag in tags %}
@@ -614,10 +590,11 @@
 
 <section id="data-assets" style="page: content;">
   <h2 class="section-heading">Data Assets</h2>
-  <p>This section outlines the information the application model processes or stores, independent of which technical asset
-  touches it. Each entry records who's accountable for it (<strong>Owner</strong>), roughly how
-  much of it exists (<strong>Quantity</strong>), where it comes from (<strong>Origin</strong>),
-  and its Confidentiality/Integrity/Availability ratings, defined below.</p>
+  <p>This section outlines the information that the application model processes or stores,
+  regardless of which technical asset handles it. Each entry records who is accountable for it
+  (<strong>Owner</strong>), roughly how much of it exists (<strong>Quantity</strong>), where it comes
+  from (<strong>Origin</strong>), and its Confidentiality, Integrity, and Availability ratings, which
+  are defined below.</p>
 
   <h2>Confidentiality</h2>
   <table class="asset-table">
@@ -630,9 +607,9 @@
   </table>
 
   <h2>Integrity &amp; Availability</h2>
-  <p>Both Integrity and Availability use the same five-level scale, applied to what happens if the asset is respectively
-  modified (Integrity) or made unavailable (Availability). Technical Assets (next section) reuses
-  this same scale, applied to the asset itself rather than a specific payload.</p>
+  <p>Integrity and Availability share one five-level scale, which rates what happens if the asset is
+  modified (Integrity) or made unavailable (Availability). Technical Assets (the next section) uses
+  the same scale, applied to the asset itself rather than to a specific payload.</p>
   <table class="asset-table">
     <tr><th>Level</th><th>If modified (Integrity)</th><th>If unavailable (Availability)</th></tr>
     <tr><td>Archive</td><td>Historical/reference data. Modification has minimal impact.</td><td>Minimal operational impact.</td></tr>
@@ -664,16 +641,16 @@
 
 <section id="technical-assets" style="page: content;">
   <h2 class="section-heading">Technical Assets</h2>
-  <p>This section depicts every component in the application model's architecture, with its own risk-relevant attributes:
-  <strong>Type</strong> (external-entity, process, or datastore), <strong>Technology</strong>
-  (its specific technical classification), <strong>Machine</strong> (physical, virtual,
-  container, or serverless), and <strong>Encryption</strong>. Confidentiality, Integrity, and
-  Availability use the same five-level scale defined in Data Assets, applied here to the asset
-  itself rather than a specific payload.</p>
-  <p>Relative Attacker Attractiveness (RAA) is a score Threagile computes for each asset, which
-  factors in its exposure, size, and CIA ratings, and estimates how appealing a target it is
-  relative to the rest of the model. Threagile's own risk rules use RAA as an input to their
-  likelihood scoring, so it helps explain why some findings are rated more severely than others.</p>
+  <p>This section describes every component in the application model's architecture, with its
+  risk-relevant attributes: <strong>Type</strong> (external-entity, process, or datastore),
+  <strong>Technology</strong> (its technical classification), <strong>Machine</strong> (physical,
+  virtual, container, or serverless), and <strong>Encryption</strong>. Confidentiality, Integrity, and
+  Availability use the scale defined in Data Assets, applied to the asset itself rather than to a
+  specific payload.</p>
+  <p>Relative Attacker Attractiveness (RAA) is a score that Threagile computes for each asset from its
+  exposure, size, and CIA ratings, and it estimates how appealing a target the asset is relative to
+  the rest of the model. Both rule sources use RAA in their likelihood scoring, so it helps explain
+  why some findings are rated more severely than others.</p>
   {% macro raa_badge(raa) -%}
   {%- if raa is none -%}
   —
@@ -710,8 +687,8 @@
 <section id="out-of-scope-assets" style="page: content;">
   <h2 class="section-heading">Out of Scope Assets</h2>
   {% if out_of_scope_assets %}
-  <p>This section lists the assets that are excluded from the threat model's accreditation boundary and their
-  justification for exclusion.</p>
+  <p>This section lists the assets excluded from the threat model's accreditation boundary, with the
+  justification for each.</p>
   {% for a in out_of_scope_assets %}
   <h2>{{ a.title }}</h2>
   <p>{{ a.justification_out_of_scope }}</p>
@@ -723,8 +700,8 @@
 
 <section id="trust-boundaries" style="page: content;">
   <h2 class="section-heading">Trust Boundaries</h2>
-  <p>This section lists every network, cluster, and namespace boundary in the model, nested to match the
-  architecture, along with the associated tags and technical assets.</p>
+  <p>This section lists every network, cluster, and namespace boundary in the model, nested to match
+  the architecture, with its tags and technical assets.</p>
   {% macro boundary(b, depth=0) %}
   <div class="boundary-node" style="margin-left: {{ depth * 20 }}px;">
     <h3>{{ b.title }} <span class="boundary-type">({{ b.type }})</span></h3>
@@ -739,9 +716,9 @@
 
 <section id="shared-runtimes" style="page: content;">
   <h2 class="section-heading">Shared Runtimes</h2>
-  <p>This section contains compute platforms, such as a shared Kubernetes cluster, that host multiple technical assets
-  that don't otherwise share a trust boundary. Relevant for blast-radius analysis if the platform
-  itself is compromised.</p>
+  <p>This section lists the compute platforms, such as a shared Kubernetes cluster, that host several
+  technical assets that do not otherwise share a trust boundary. Thus, it shows the blast radius if
+  the platform itself is compromised.</p>
   {% for rt in shared_runtimes %}
   <div class="runtime-node">
     <h3>{{ rt.title }}</h3>
@@ -754,11 +731,11 @@
 
 <section id="disclaimer" style="page: content;">
   <h2 class="section-heading">Disclaimer</h2>
-  <p>This report was generated by an automated threat-modeling process (Threagile, augmented with
-  a custom risk-injection engine) and represents a point-in-time architectural analysis based
-  on the model provided. It is intended to support, not replace, manual security review, penetration
-  testing, and continuous monitoring. Identified risks should be triaged and tracked to resolution
-  through the organization's standard risk-management process.</p>
+  <p>This report was generated by an automated threat-modeling process (Threagile, extended with a
+  custom risk-injection engine), and it is a point-in-time analysis of the architecture as modeled.
+  It supports, but does not replace, manual security review, penetration testing, and continuous
+  monitoring. Thus, identified risks should be triaged and tracked to resolution through the
+  organization's standard risk-management process.</p>
 </section>
 
 </body>
