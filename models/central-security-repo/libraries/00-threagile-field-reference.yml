@@ -1,61 +1,34 @@
 # ==============================================================================
 # THREAGILE FIELD REFERENCE: 00-threagile-field-reference.yml
 # ==============================================================================
-# Authoritative enum values and field options for every key in a Threagile
-# model YAML. Source: pkg.go.dev/github.com/threagile/threagile/model
-# (model package constants, v0.9.1 / master branch types.go)
-#
-# CORRECTED 2026-09-11: the enum lists below were never actually checked
-# against a real Threagile run -- a model using "binary-protocol-encrypted"
-# (this file's own former listed value) was rejected outright by the pinned
-# threagile:0.9.1 image ("unknown 'protocol' of technical asset..."). Every
-# enum in this file was then re-verified against that same pinned image's
-# own bundled JSON schema (`docker run --rm --entrypoint cat
-# threagile/threagile:0.9.1 /app/schema.json`), which is generated from the
-# real Go enum constants and is a strictly more reliable source than
-# secondhand recollection of pkg.go.dev. The protocol, technology, and
-# diagram_tweak_edge_layout enums each had genuine errors (wrong spellings,
-# fabricated values not present in the real schema, or missing real values)
-# and are now corrected and annotated below. This schema.json does NOT cover
-# custom_risk_categories/risks_identified in a way that was cross-checked
-# here -- see 09-custom-risks-lib.yml's own header for that structure instead
-# of trusting an addition to this file for it.
-#
-# UPDATED for the custom-engine migration (jessestarkey/threagile, current
-# master as of this writing, not the pinned threagile:0.9.1 referenced
-# above): two enum values were confirmed renamed between that pinned
-# version and current master -- authorization's enduser-identity-
-# propagation is now end-user-identity-propagation, and encryption's
-# data-with-enduser-individual-key is now data-with-end-user-individual-
-# key -- both already corrected below. The top-level model field also
-# changed shape: what was individual_risk_categories (a dict keyed by
-# title) is now custom_risk_categories (a list, each entry carrying its
-# own explicit title field) -- inject_risks.py's output already targets
-# this new shape; this is a field-shape change, not an enum value, so it
-# has no entry of its own in the tables below.
+# The valid values and options for every key in a Threagile model YAML, for the
+# fork this framework runs (jessestarkey/threagile). The enums were verified
+# against the engine's own JSON schema (support/schema.json in the fork), which
+# is generated from the Go enum constants and is more reliable than secondhand
+# documentation. The schema does not cover custom_risk_categories in detail, so
+# see 09-custom-risks-lib.yml's header for that structure.
 #
 # USAGE:
 #   Keep this file in your central security repo as a read-only reference.
 #   When authoring any Threagile model file, consult this document to find
 #   valid values for any enum field. Fields marked (free text) accept any
 #   string value. Fields marked (bool) accept: true / false. If in doubt,
-#   the schema.json extraction command above is the fastest way to verify
-#   any field on this pinned version directly rather than trust a copy.
+#   check the field in the fork's support/schema.json.
 #
 # STRUCTURE OF THIS FILE:
-#   01-metadata.yml         — top-level model fields
-#   02-abuse-and-reqs.yml   — abuse_cases / security_requirements
-#   04-data-assets.yml      — data_assets fields
-#   05a-tech-assets.yml      — technical_assets fields
-#   05b-comm-links.yml       — communication_links fields (nested under tech assets)
-#   06-trust-boundaries.yml — trust_boundaries fields
-#   07-shared-runtimes.yml  — shared_runtimes fields
-#   08-risk-tracking.yml    — risk_tracking fields
+#   01-metadata.yml         top-level model fields
+#   02-abuse-and-reqs.yml   abuse_cases / security_requirements
+#   04-data-assets.yml      data_assets fields
+#   05a-tech-assets.yml      technical_assets fields
+#   05b-comm-links.yml       communication_links fields (nested under tech assets)
+#   06-trust-boundaries.yml trust_boundaries fields
+#   07-shared-runtimes.yml  shared_runtimes fields
+#   08-risk-tracking.yml    risk_tracking fields
 # ==============================================================================
 
 
 # ==============================================================================
-# 01-METADATA.YML  —  top-level model fields
+# 01-METADATA.YML: top-level model fields
 # ==============================================================================
 
 metadata_fields:
@@ -98,7 +71,7 @@ metadata_fields:
       Deprecated: the older name for mission_criticality, still accepted. Its five older values map
       onto the four: archive and operational to administrative, important to mission-support,
       critical to mission-essential, mission-critical to mission-critical. Set mission_criticality
-      in new models; a model that sets both must give them the same value.
+      in new models. A model that sets both must give them the same value.
 
   threat_landscape:
     notes: >
@@ -140,9 +113,7 @@ metadata_fields:
   diagram_tweak_edge_layout:
     type: enum
     notes: >
-      Verified against the pinned threagile:0.9.1 image's own /app/schema.json
-      -- the previous version of this entry (spline/polyline/ortho/line/compound)
-      didn't match and was never runtime-tested.
+      The edge layouts the engine's schema accepts.
     values:
       "":       Unset (default Graphviz edge routing)
       spline:   Curved edges
@@ -175,7 +146,7 @@ metadata_fields:
 
 
 # ==============================================================================
-# 02-ABUSE-AND-REQS.YML  —  abuse cases and security requirements
+# 02-ABUSE-AND-REQS.YML: abuse cases and security requirements
 # ==============================================================================
 
 abuse_and_reqs_fields:
@@ -184,17 +155,17 @@ abuse_and_reqs_fields:
     type: map
     notes: >
       Flat map of title string → description string (free text block scalar).
-      Title becomes the key; value is the abuse case narrative.
+      Title becomes the key, and the value is the abuse case narrative.
 
   security_requirements:
     type: map
     notes: >
       Flat map of title string → requirement string (free text block scalar).
-      Title becomes the key; value is the requirement narrative.
+      Title becomes the key, and the value is the requirement narrative.
 
 
 # ==============================================================================
-# 04-DATA-ASSETS.YML  —  data_assets
+# 04-DATA-ASSETS.YML: data_assets
 # ==============================================================================
 
 data_asset_fields:
@@ -218,7 +189,7 @@ data_asset_fields:
 
   origin:
     type: free text
-    notes: Where the data originates (e.g., "End User", "Third-Party Provider").
+    notes: Where the data originates (such as "End User", "Third-Party Provider").
 
   owner:
     type: free text
@@ -268,7 +239,7 @@ data_asset_fields:
 
 
 # ==============================================================================
-# 05a-TECH-ASSETS.YML  —  technical_assets
+# 05a-TECH-ASSETS.YML: technical_assets
 # ==============================================================================
 
 technical_asset_fields:
@@ -283,7 +254,7 @@ technical_asset_fields:
   type:
     type: enum
     values:
-      external-entity:  Out-of-scope actor or system (e.g., end user, external API).
+      external-entity:  Out-of-scope actor or system (such as end user, external API).
       process:          An in-scope application, service, or running process.
       datastore:        A database, file store, cache, or persistent storage system.
 
@@ -295,7 +266,7 @@ technical_asset_fields:
 
   used_as_client_by_human:
     type: bool
-    notes: True if a human directly interacts with this asset (e.g., a browser, desktop app).
+    notes: True if a human directly interacts with this asset (such as a browser, desktop app).
 
   out_of_scope:
     type: bool
@@ -310,8 +281,8 @@ technical_asset_fields:
   size:
     type: enum
     values:
-      system:      An entire system or platform (e.g., an ERP, a cloud environment).
-      service:     A distinct deployed service (e.g., a microservice, a SaaS product).
+      system:      An entire system or platform (such as an ERP, a cloud environment).
+      service:     A distinct deployed service (such as a microservice, a SaaS product).
       application: A single application instance.
       component:   A library, module, or sub-component within an application.
 
@@ -319,63 +290,63 @@ technical_asset_fields:
     type: enum
     notes: >
       The primary technical classification. Affects which built-in risk rules fire.
-      Use tags for specific product names (e.g., tag "nginx" alongside technology "reverse-proxy").
+      Use tags for specific product names (such as tag "nginx" alongside technology "reverse-proxy").
     values:
       unknown-technology:        Technology type is not specified or unknown.
       client-system:             A generic external client system.
       browser:                   A web browser client.
       desktop:                   A desktop application client.
       mobile-app:                A mobile application client.
-      devops-client:             A DevOps tool acting as a client (e.g., CI runner, deployment agent).
-      web-server:                A static or simple web server (e.g., Apache httpd, Nginx serving static content).
-      web-application:           A full web application serving dynamic HTML (e.g., Confluence, SharePoint).
-      application-server:        A JEE or equivalent application server (e.g., JBoss, WebLogic, Tomcat).
-      database:                  A relational or NoSQL database (e.g., PostgreSQL, MySQL, MongoDB, Cosmos DB).
-      file-server:               A file serving system (e.g., NFS, CIFS, FTP server).
+      devops-client:             A DevOps tool acting as a client (such as CI runner, deployment agent).
+      web-server:                A static or simple web server (such as Apache httpd, Nginx serving static content).
+      web-application:           A full web application serving dynamic HTML (such as Confluence, SharePoint).
+      application-server:        A JEE or equivalent application server (such as JBoss, WebLogic, Tomcat).
+      database:                  A relational or NoSQL database (such as PostgreSQL, MySQL, MongoDB, Cosmos DB).
+      file-server:               A file serving system (such as NFS, CIFS, FTP server).
       local-file-system:         A local filesystem used by the application process.
       erp:                       An Enterprise Resource Planning system.
       cms:                       A Content Management System.
       web-service-rest:          A REST API web service.
       web-service-soap:          A SOAP web service.
       ejb:                       An Enterprise Java Bean component.
-      search-index:              A search index (e.g., Elasticsearch, Solr, Azure AI Search).
+      search-index:              A search index (such as Elasticsearch, Solr, Azure AI Search).
       search-engine:             A search engine platform (distinct from the index itself).
-      service-registry:          A service discovery registry (e.g., Consul, Eureka, etcd).
-      reverse-proxy:             A reverse proxy or ingress controller (e.g., Nginx, HAProxy, Traefik).
-      load-balancer:             A load balancer (e.g., Azure Load Balancer, AWS ALB, F5).
-      build-pipeline:            A CI/CD build pipeline (e.g., GitHub Actions, Jenkins, Azure Pipelines).
-      sourcecode-repository:     A source code version control system (e.g., GitHub, GitLab, Bitbucket).
-      artifact-registry:         A container or package registry (e.g., ACR, Artifactory, Iron Bank).
-      code-inspection-platform:  A SAST or code quality platform (e.g., SonarQube, Semgrep, Checkmarx).
-      monitoring:                A monitoring, observability, or logging platform (e.g., Datadog, Splunk, Azure Monitor).
-      ldap-server:               An LDAP directory server (e.g., Active Directory, OpenLDAP).
-      container-platform:        A container orchestration platform (e.g., AKS, EKS, OpenShift).
+      service-registry:          A service discovery registry (such as Consul, Eureka, etcd).
+      reverse-proxy:             A reverse proxy or ingress controller (such as Nginx, HAProxy, Traefik).
+      load-balancer:             A load balancer (such as Azure Load Balancer, AWS ALB, F5).
+      build-pipeline:            A CI/CD build pipeline (such as GitHub Actions, Jenkins, Azure Pipelines).
+      sourcecode-repository:     A source code version control system (such as GitHub, GitLab, Bitbucket).
+      artifact-registry:         A container or package registry (such as ACR, Artifactory, Iron Bank).
+      code-inspection-platform:  A SAST or code quality platform (such as SonarQube, Semgrep, Checkmarx).
+      monitoring:                A monitoring, observability, or logging platform (such as Datadog, Splunk, Azure Monitor).
+      ldap-server:               An LDAP directory server (such as Active Directory, OpenLDAP).
+      container-platform:        A container orchestration platform (such as AKS, EKS, OpenShift).
       batch-processing:          A batch or scheduled job processing system.
-      event-listener:            An event-driven listener or consumer (e.g., Azure Function, Lambda trigger).
-      identity-provider:         An Identity Provider or authorization server (e.g., Keycloak, Okta, Entra ID).
+      event-listener:            An event-driven listener or consumer (such as Azure Function, Lambda trigger).
+      identity-provider:         An Identity Provider or authorization server (such as Keycloak, Okta, Entra ID).
       identity-store-ldap:       An identity store backed by LDAP.
       identity-store-database:   An identity store backed by a database.
       tool:                      A generic internal tool or utility.
       cli:                       A command-line interface tool.
       task:                      A scheduled or one-off task/job.
-      function:                  A serverless function (e.g., Azure Function, AWS Lambda).
-      gateway:                   An API gateway (e.g., Azure API Management, Kong, AWS API Gateway).
+      function:                  A serverless function (such as Azure Function, AWS Lambda).
+      gateway:                   An API gateway (such as Azure API Management, Kong, AWS API Gateway).
       iot-device:                An IoT or embedded device.
-      message-queue:             A message broker or queue (e.g., Azure Service Bus, RabbitMQ, Kafka).
-      stream-processing:         A stream processing platform (e.g., Azure Event Hubs, Apache Flink).
-      service-mesh:              A service mesh control/data plane (e.g., Istio, Linkerd).
-      data-lake:                 A data lake storage platform (e.g., Azure Data Lake, S3).
-      report-engine:             A reporting or BI engine (e.g., Power BI, SSRS, Tableau).
+      message-queue:             A message broker or queue (such as Azure Service Bus, RabbitMQ, Kafka).
+      stream-processing:         A stream processing platform (such as Azure Event Hubs, Apache Flink).
+      service-mesh:              A service mesh control/data plane (such as Istio, Linkerd).
+      data-lake:                 A data lake storage platform (such as Azure Data Lake, S3).
+      report-engine:             A reporting or BI engine (such as Power BI, SSRS, Tableau).
       ai:                        An AI or ML model serving system or inference endpoint.
-      mail-server:               An email server or relay (e.g., Exchange, Postfix, SendGrid).
-      vault:                     A secrets management system (e.g., Azure Key Vault, HashiCorp Vault).
+      mail-server:               An email server or relay (such as Exchange, Postfix, SendGrid).
+      vault:                     A secrets management system (such as Azure Key Vault, HashiCorp Vault).
       hsm:                       A Hardware Security Module.
-      waf:                       A Web Application Firewall (e.g., Azure App Gateway WAF, Cloudflare WAF).
+      waf:                       A Web Application Firewall (such as Azure App Gateway WAF, Cloudflare WAF).
       ids:                       An Intrusion Detection System.
       ips:                       An Intrusion Prevention System.
-      scheduler:                 A job or task scheduler (e.g., Azure Scheduler, cron).
+      scheduler:                 A job or task scheduler (such as Azure Scheduler, cron).
       mainframe:                 A mainframe computer system.
-      block-storage:             A block storage service (e.g., Azure Managed Disk, AWS EBS).
+      block-storage:             A block storage service (such as Azure Managed Disk, AWS EBS).
       library:                   A software library or SDK component.
 
   tags:
@@ -390,19 +361,19 @@ technical_asset_fields:
     type: enum
     values:
       physical:    Bare-metal physical hardware.
-      virtual:     A virtual machine (IaaS VM, e.g., Azure VM, EC2).
-      container:   A containerized workload (e.g., AKS pod, Docker container).
-      serverless:  A serverless or PaaS component (e.g., Azure Function, managed database).
+      virtual:     A virtual machine (IaaS VM, such as Azure VM or EC2).
+      container:   A containerized workload (such as AKS pod, Docker container).
+      serverless:  A serverless or PaaS component (such as Azure Function, managed database).
 
   encryption:
     type: enum
     notes: Encryption applied to data stored or processed by this asset.
     values:
       none:                             No encryption in use.
-      transparent:                      Transparent encryption (e.g., TDE, LUKS, Azure SSE with PMK).
-      data-with-symmetric-shared-key:   Data encrypted with a symmetric shared key (e.g., AES with shared secret).
-      data-with-asymmetric-shared-key:  Data encrypted with an asymmetric key pair (e.g., RSA, TLS at rest).
-      data-with-end-user-individual-key: Data encrypted with a per-user key (e.g., client-side encryption, E2EE).
+      transparent:                      Transparent encryption (such as TDE, LUKS, Azure SSE with PMK).
+      data-with-symmetric-shared-key:   Data encrypted with a symmetric shared key (such as AES with shared secret).
+      data-with-asymmetric-shared-key:  Data encrypted with an asymmetric key pair (such as RSA, TLS at rest).
+      data-with-end-user-individual-key: Data encrypted with a per-user key (such as client-side encryption, E2EE).
 
   owner:
     type: free text
@@ -472,7 +443,7 @@ technical_asset_fields:
 
 
 # ==============================================================================
-# 05b-COMM-LINKS  —  communication_links (nested under technical_assets)
+# 05b-COMM-LINKS: communication_links (nested under technical_assets)
 # ==============================================================================
 
 communication_link_fields:
@@ -488,13 +459,8 @@ communication_link_fields:
     type: enum
     notes: >
       The network protocol used for this communication. Affects encryption and
-      risk rules. Verified directly against the pinned threagile:0.9.1 image's
-      own /app/schema.json after a prior version of this list
-      (binary-protocol-encrypted) was rejected outright by a real render --
-      several other entries below were wrong the same way and had never
-      actually been runtime-tested. Extract it yourself to re-verify against
-      a future pinned version: `docker run --rm --entrypoint cat
-      threagile/threagile:<tag> /app/schema.json`.
+      risk rules. The values match the engine's schema (support/schema.json in
+      the fork), so check there when the engine changes.
     values:
       unknown-protocol:       Protocol is unknown or unspecified.
       http:                   Unencrypted HTTP (triggers cleartext risk rules).
@@ -515,7 +481,7 @@ communication_link_fields:
       binary:                 Generic binary protocol (unencrypted).
       binary-encrypted:       Generic binary protocol over TLS. Also the closest
                                schema-valid catch-all for protocols with no
-                               dedicated entry (e.g. RDP).
+                               dedicated entry (such as RDP).
       text:                   Generic text protocol (unencrypted).
       text-encrypted:         Generic text protocol over TLS.
       ssh:                    SSH (encrypted administrative access).
@@ -553,19 +519,19 @@ communication_link_fields:
     notes: >
       Authentication mechanism used on this communication link. Choose the value by where the
       secret comes from: if the source asset has to hold a static secret (password, API key,
-      shared secret, connection string), use credentials -- never token -- even when it is sent
+      shared secret, connection string), use credentials, never token, even when it is sent
       as a bearer header. token is only for secrets issued at runtime (managed identity, OAuth,
       workload identity federation). The fork's hardcoded-credentials-secrets-sprawl rule fires
       on the source asset of any credentials or client-certificate link and ignores token, so a
       static API key modeled as token is invisible to it.
     values:
       none:                     No authentication.
-      credentials:              A static secret the source asset holds - username/password, API key, shared secret or connection string.
+      credentials:              A static secret the source asset holds, such as a username and password, API key, shared secret, or connection string.
       session-id:               Session cookie or session token.
-      token:                    A token issued at runtime (e.g., managed identity, OAuth access token, JWT) - not a static API key.
+      token:                    A token issued at runtime (such as managed identity, OAuth access token, JWT) rather than a static API key.
       client-certificate:       Mutual TLS client certificate (the source asset holds the private key).
       two-factor:               Multi-factor authentication enforced.
-      externalized:             Authentication is delegated to an external system not modeled on this link (e.g., enforced upstream by a gateway/mesh).
+      externalized:             Authentication is delegated to an external system not modeled on this link (such as enforced upstream by a gateway/mesh).
 
   authorization:
     type: enum
@@ -615,7 +581,7 @@ communication_link_fields:
 
 
 # ==============================================================================
-# 06-TRUST-BOUNDARIES.YML  —  trust_boundaries
+# 06-TRUST-BOUNDARIES.YML: trust_boundaries
 # ==============================================================================
 
 trust_boundary_fields:
@@ -634,12 +600,12 @@ trust_boundary_fields:
       Affects which built-in risk rules fire for assets crossing the boundary.
     values:
       network-on-prem:                  On-premises network segment.
-      network-dedicated-hoster:         Dedicated hosted network (e.g., colocation, dedicated Azure region).
+      network-dedicated-hoster:         Dedicated hosted network (such as colocation, dedicated Azure region).
       network-virtual-lan:              Virtual LAN (VLAN) segment.
-      network-cloud-provider:           Top-level cloud provider boundary (e.g., Azure Government tenant).
-      network-cloud-security-group:     Cloud network security group or VNet (e.g., Azure VNet, NSG, subnet).
+      network-cloud-provider:           Top-level cloud provider boundary (such as Azure Government tenant).
+      network-cloud-security-group:     Cloud network security group or VNet (such as Azure VNet, NSG, subnet).
       network-policy-namespace-isolation: Kubernetes namespace with NetworkPolicy enforcement.
-      execution-environment:            A shared execution environment (e.g., same OS, same JVM).
+      execution-environment:            A shared execution environment (such as same OS, same JVM).
 
   tags:
     type: list of strings
@@ -655,7 +621,7 @@ trust_boundary_fields:
 
 
 # ==============================================================================
-# 07-SHARED-RUNTIMES.YML  —  shared_runtimes
+# 07-SHARED-RUNTIMES.YML: shared_runtimes
 # ==============================================================================
 
 shared_runtime_fields:
@@ -674,13 +640,13 @@ shared_runtime_fields:
   technical_assets_running:
     type: list of technical asset IDs
     notes: >
-      Assets sharing this underlying compute runtime (e.g., containers sharing
+      Assets sharing this underlying compute runtime (such as containers sharing
       the same AKS worker node pool). Used by the mixed-targets-on-shared-runtime
       risk rule to flag high-sensitivity assets co-located with lower-sensitivity ones.
 
 
 # ==============================================================================
-# 08-RISK-TRACKING  —  risk_tracking
+# 08-RISK-TRACKING: risk_tracking
 # ==============================================================================
 # Risk tracking entries are typically auto-generated by Threagile and then
 # manually updated. Format:

@@ -10,19 +10,15 @@
 
   # ============================================================================
   # 6b. THE CDS APPLIANCE ITSELF (Out of Scope)
-  # Pick whichever of these two matches the actual CDS product your app
-  # transfers through -- a software-mediated guard (bidirectional, does its
-  # own content inspection) or a hardware data diode (strictly one-way, no
-  # inspection of its own). Modeled as technology: cds-guard / cds-data-diode
-  # with out_of_scope: true to indicate the appliance itself is
-  # government-furnished, separately accredited equipment outside this app's
-  # own ATO boundary -- not something this app operates or hardens. If your
-  # app DOES self-operate its own guard/diode rather than treating it as
-  # externally furnished, drop out_of_scope and type: external-entity and
-  # model it as a normal in-scope process asset instead; the jessestarkey/
-  # threagile fork's native script rules for these technologies only fire on
-  # in-scope assets, so a self-operated guard/diode gets real coverage this
-  # way that an out-of-scope one deliberately does not.
+  # Pick the one that matches the CDS product your app transfers through: a
+  # software-mediated guard (bidirectional, with its own content inspection)
+  # or a hardware data diode (strictly one-way, with no inspection). Each is
+  # out_of_scope: true, since the appliance is government-furnished,
+  # separately accredited equipment outside this app's ATO boundary. If your
+  # app operates its own guard or diode, drop out_of_scope and type:
+  # external-entity and model it as an in-scope process instead. The fork's
+  # script rules for these technologies fire only on in-scope assets, so a
+  # self-operated appliance then gets their coverage.
   # ============================================================================
 
   External CDS Guard:
@@ -30,7 +26,7 @@
     description: >
       A government-furnished, separately accredited Cross-Domain Solution (CDS) guard
       mediating content transfer between this system's classification domain and another.
-      Bidirectional, software-mediated appliance (e.g. a UCDMO-approved guard product)
+      Bidirectional, software-mediated appliance (such as a UCDMO-approved guard product)
       performing automated content, malware, and classification-marking checks, often with
       human-in-the-loop review before release.
     type: external-entity
@@ -40,9 +36,8 @@
       The CDS guard itself is government-furnished equipment, separately accredited under its
       own ATO and outside this system's own Accreditation Boundary. This application's
       responsibility ends at its own submitter/receiver/broker interface assets (see 03-tags-
-      lib.yml's cds: tags) -- the guard's own internal hardening, rule-set currency, and
-      bypass-path controls are the accrediting authority's responsibility, not this
-      application's.
+      lib.yml's cds: tags). The guard's internal hardening, rule-set currency, and bypass-path
+      controls are the accrediting authority's responsibility, not this application's.
     size: component
     technology: cds-guard
     internet: false
@@ -78,8 +73,8 @@
       The data diode itself is government-furnished equipment, separately accredited under its
       own ATO and outside this system's own Accreditation Boundary. This application's
       responsibility ends at its own submitter/receiver interface asset on whichever side it
-      sits -- the diode's own physical unidirectionality verification is the accrediting
-      authority's responsibility, not this application's.
+      sits. Verifying the diode's physical one-way path is the accrediting authority's
+      responsibility, not this application's.
     size: component
     technology: cds-data-diode
     internet: false
@@ -99,6 +94,5 @@
       system's architecture can produce.
 
       Availability (Important): A diode outage blocks the one-way feed but has no bearing on
-      content already transferred -- a materially lower consequence than the guard's own
-      availability loss, which can interrupt an active, in-progress multi-step review
-      workflow.
+      content already transferred. That is a lower consequence than losing the guard, which
+      can interrupt a multi-step review already in progress.

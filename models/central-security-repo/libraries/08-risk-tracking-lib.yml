@@ -10,7 +10,7 @@
 # USAGE INSTRUCTIONS (The "Risk Lifecycle & Inheritance" Method):
 # 1. RUN the Threagile pipeline to generate your initial Risk Report (Excel/PDF).
 # 2. IDENTIFY any 'Open' risks assigned to your application's technical assets.
-# 3. OPEN the Enterprise Risk Tracking Library (e.g., 08-risk-tracking-lib.yml) 
+# 3. OPEN the Enterprise Risk Tracking Library (08-risk-tracking-lib.yml) 
 #    located in the central security repository.
 # 4. MATCH your 'Open' risks against the library. If the risk is a known 
 #    Platform Inherited Mitigation or False-Positive, COPY the justification 
@@ -31,53 +31,43 @@
 #    is mitigated or *why* it is accepted.
 # 9. LINK an official issue tracker or POA&M number in the 'ticket' field.
 #
-# FOR status: accepted ENTRIES SPECIFICALLY, structure the 'justification'
-# text itself around four labeled elements below -- deliberately NOT new
-# top-level YAML keys. risk_tracking's only real fields are status,
-# justification, ticket, date, and checked_by (00-threagile-field-
-# reference.yml's risk_tracking_fields) -- this file's content is merged
-# straight into the model Threagile itself parses, and an unrecognized
-# key risks a strict-schema failure in Threagile's own Go parser (not
-# verified safe either way; treat "free text inside justification" as the
-# only guaranteed-safe place for this until it is). An acceptance with
-# none of these four elements is a standing waiver nobody is on the hook
-# to revisit, not a tracked risk decision:
-# 10. "Expiration: YYYY-MM-DD" -- an acceptance with no expiration is a
-#     permanent waiver nobody is on the hook to revisit. Re-decide (don't
-#     silently renew) at expiration: re-run the acceptance decision
-#     against current conditions rather than just pushing the date out.
-# 11. "Extension count: N" (starts at 0, incremented each time the
-#     acceptance is re-decided past its original expiration) -- a risk
-#     accepted once and extended eleven times should not read identically
-#     in the ledger to one accepted once and never revisited.
-# 12. "Compensating measures: ..." -- the specific technical or
-#     procedural control relied upon (e.g., "network-isolated to the
-#     management VNet, monitored via X"), stated separately from the rest
-#     of the narrative justification. A residual risk with nothing listed
-#     here usually means an unstated assumption that some other control
-#     covers it.
-# 13. "Accepting authority: ..." (ISSO / ISSM / PMO ISSE / AO) -- named at
-#     a tier matching the finding's severity, especially relevant once
-#     inject_risks.py's severity-escalation rule (see CLAUDE.md) has
-#     bumped a finding a level.
+# FOR status: accepted ENTRIES SPECIFICALLY, write the 'justification' around
+# the four labeled elements below, as free text rather than new YAML keys.
+# risk_tracking's only fields are status, justification, ticket, date, and
+# checked_by (see 00-threagile-field-reference.yml, risk_tracking_fields), and
+# this file merges straight into the model that Threagile parses, so an
+# unrecognized key could fail its schema. An acceptance with none of these
+# elements is a standing waiver that nobody has to revisit, not a tracked
+# decision:
+# 10. "Expiration: YYYY-MM-DD." At expiration, re-decide the acceptance against
+#     current conditions rather than pushing the date out.
+# 11. "Extension count: N," starting at 0 and incremented each time the
+#     acceptance is re-decided past its expiration, so a risk extended eleven
+#     times does not read like one accepted once.
+# 12. "Compensating measures: ...," the specific technical or procedural
+#     control relied on (for example, "network-isolated to the management
+#     VNet, monitored via X"), stated apart from the rest of the
+#     justification. A residual risk with nothing listed here usually rests
+#     on an unstated assumption that another control covers it.
+# 13. "Accepting authority: ..." (ISSO, ISSM, PMO ISSE, or AO), named at a
+#     tier that matches the finding's severity.
 #
 # POLICY WAIVERS (AO-approved exceptions): record a waiver as status: accepted,
-# with the four elements above, on the finding the waived condition raises --
-# not as a separate tag or finding. Example, cleartext transit inside the
-# enclave: the built-in unencrypted-communication finding for that link,
+# with the four elements above, on the finding that the waived condition
+# raises, rather than as a separate tag or finding. For example, cleartext
+# transit inside the enclave is the built-in unencrypted-communication finding
+# for that link:
 #     unencrypted-communication@<source-asset-id>@<target-asset-id>@<link-id>:
 #       status: accepted
 #       justification: "AO waiver <ref>. Expiration: YYYY-MM-DD. Extension count: 0.
 #         Compensating measures: ... Accepting authority: AO."
 #       ticket: POAM-1234
-# The exception:cleartext-internal tag and its "Policy Exception: Cleartext
-# Internal Transit" finding were retired on 2026-11-18 for this reason. The
-# exception:local-auth-fallback and exception:runs-as-root waivers keep their
-# own findings, because no built-in raises the identity-provider bypass or a
-# root container; record their acceptance on those findings the same way.
-# exception:direct-admin-access raises its own finding only where the built-in
-# unguarded-access-from-internet does not cover the asset; where it does,
-# accept that built-in finding instead.
+# The exception:local-auth-fallback and exception:runs-as-root waivers keep
+# their own findings, since no built-in raises the identity-provider bypass or
+# a root container, and their acceptance is recorded on those findings the same
+# way. exception:direct-admin-access raises its own finding only where the
+# built-in unguarded-access-from-internet does not cover the asset. Where it
+# does, accept that built-in finding instead.
 # ==============================================================================
 
 # NOTE:
