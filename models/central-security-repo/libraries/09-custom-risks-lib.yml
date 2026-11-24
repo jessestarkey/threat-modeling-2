@@ -1,82 +1,60 @@
 # ==============================================================================
 # CUSTOM IL5 RISK DEFINITIONS: 09-custom-risks-lib.yml
 # ==============================================================================
-# Authoritative content for every custom (non-Threagile-native) risk category
-# that inject_risks.py can inject into a model's individual_risk_categories,
-# keyed by the same tag triggers documented in 03-tags-lib.yml.
+# This library holds every custom risk category that inject_risks.py can add
+# to a model, triggered by the tags documented in 03-tags-lib.yml.
 #
 # USAGE:
-#   inject_risks.py loads this file and scans each technical asset's `tags`
-#   list against its own hardcoded if-chain, injecting a deep copy of the
-#   matching entry below into individual_risk_categories, then recording one
-#   risks_identified entry per matching asset.
-#
-#   Each entry MUST include an (empty) `risks_identified: {}` map — the
-#   loader hard-fails at startup if any entry is missing it.
+#   inject_risks.py loads this file, checks each technical asset's tags in its
+#   own code, and adds a copy of each matching entry to the model's
+#   custom_risk_categories, with one risks_identified entry per matching
+#   asset. Each entry must include an empty `risks_identified: {}` map, since
+#   the loader fails at startup without it.
 #
 # ADDING A NEW RISK:
-#   1. Add an entry below with: id, baseline_likelihood, baseline_impact,
+#   1. Add an entry with id, baseline_likelihood, baseline_impact,
 #      finding_class (weakness-shown or control-not-evidenced), description,
 #      impact, asvs, cheat_sheet, action, mitigation, references,
-#      risk_assessment (starting with the calibrated scoring sentence; see
+#      risk_assessment (opening with the calibrated scoring sentence, see
 #      test_calibration.py), false_positives, function, stride, cwe,
-#      detection_logic, risks_identified: {}
-#   2. If it's triggered by a new tag, document that tag in 03-tags-lib.yml.
-#   3. Wire an `if 'tag:name' in tags: inject("<this entry's key>", "<short
-#      title>")` line into the tag-scanning loop in inject_risks.py. inject()'s
-#      optional third argument is an integer likelihood step (likelihood_delta),
-#      not a severity.
+#      detection_logic, and risks_identified: {}.
+#   2. Document any new trigger tag in 03-tags-lib.yml.
+#   3. Add an `if 'tag:name' in tags: inject("<entry key>", "<short title>")`
+#      line to inject_risks.py's tag loop. inject()'s optional third argument
+#      is a one-level likelihood step, not a severity.
 #   4. Add the category to the calibration table in docs/risk-methodology.md
 #      and to test_calibration.py's APPROVED and APPROVED_DIMENSION maps.
 #
 # STRUCTURE:
-#   Entries are grouped into sections numbered `D.S` (focus area D, section S
-#   within it, `# --- D.S NAME ---`), under 10 numbered `# FOCUS AREA D: NAME`
-#   banners — purely for human navigation, in both cases: neither the
-#   numbering nor the focus area grouping has any runtime effect; Threagile
-#   and inject_risks.py only ever look up an entry by its dict key, never
-#   by position. Focus areas are named, ORDERED, and NESTED after SABER
-#   (github.com's security-framework repo, an internal DoD-oriented
-#   reference we ran a gap analysis against): its chapter sequence is
-#   Identity, Device and Infrastructure, Network and Environment,
-#   Application, AI, Data, Detection, Response, Recovery, Governance,
-#   Risk, Compliance, and ours tracks it focus area-for focus-area in the same
-#   order, with one deliberate omission: SABER's own org-level Compliance
-#   chapter, and most of its Governance chapter, are absent (that content
-#   is org-level, not per-asset, and was screened out during the gap
-#   analysis rather than represented as a near-empty focus area here) --
-#   focus area 10 below is still named Governance, matching SABER's own short
-#   name, but is scoped narrowly to the one governance-flavored slice that
-#   *is* per-asset and did survive the gap analysis: risk acceptance and
-#   policy exceptions. Cross-Domain Solutions and Software Supply Chain
-#   are sections, not focus areas of their own — nested inside Network and
-#   Environment and Application respectively, matching exactly where
-#   SABER's own document nests them (CDS as outcome NE-2.10 inside
-#   04-saber-network-and-environment.md; supply-chain content inside
-#   05-saber-application.md) rather than being pulled out as standalone
-#   focus areas the way an earlier pass here had them. Secrets and
-#   Cryptography sits under Data (6.2), not Application, for the same
-#   reason: SABER's own encryption/key-management content (DA-2/DA-3)
-#   lives in 07-saber-data.md, not its Application chapter, even though
-#   an earlier pass here had filed it under Application by habit:
+#   Entries are grouped into sections (`# --- D.S NAME ---`) under ten
+#   `# FOCUS AREA D: NAME` banners. The numbering is for navigation, since
+#   inject_risks.py looks entries up by key, although generate_report.py reads
+#   the banners to group the report by focus area.
+#
+#   The focus areas follow SABER's chapters, in order: Identity, Device and
+#   Infrastructure, Network and Environment, Application, AI, Data, Detection,
+#   Response, Recovery, and Governance. SABER's Compliance chapter and most of
+#   its Governance chapter are organization-level rather than per asset, so
+#   they are left out, and Governance here covers only risk acceptance and
+#   policy exceptions. Sections sit where SABER nests their content: the CDS
+#   under Network and Environment (NE-2.10), software supply chain under
+#   Application, and secrets and cryptography under Data (DA-2, DA-3).
 #     1  Identity ........................... 1.1-1.2
 #     2  Device and Infrastructure ........... 2.1-2.2
 #     3  Network and Environment ............. 3.1-3.2 (3.1 self-managed segmentation, 3.2 CDS)
-#     4  Application .......................... 4.1-4.5 (4.5 software supply chain / CI-CD)
+#     4  Application .......................... 4.1-4.5 (4.5 software supply chain and CI/CD)
 #     5  Artificial Intelligence .............. 5.1-5.3
-#     6  Data ................................ 6.1-6.2 (6.1 governance/lifecycle, 6.2 secrets/crypto)
+#     6  Data ................................ 6.1-6.2 (6.1 governance and lifecycle, 6.2 secrets and crypto)
 #     7  Detection ............................ 7.1
 #     8  Response ............................. 8.1
 #     9  Recovery ............................. 9.1
 #     10 Governance ........................... 10.1 (risk acceptance and policy exceptions only)
 #
-#   Sections 1.1, 1.2, 2.2, and 3.1 each carry a small cluster of entries
-#   triggered by an mgmt:self-managed-* tag rather than firing on every
-#   app: identity/PAM/hardware/network content that's a platform-inherited
-#   control for an app in the enterprise-managed landing zone (excluded
-#   from firing by default) but a real per-asset gap for an app that
-#   manages that infrastructure itself. See 03-tags-lib.yml's
-#   "SELF-MANAGED INFRASTRUCTURE TAGS" section for the full mgmt:* family.
+#   Sections 1.1, 1.2, 2.2, and 3.1 each hold a few entries triggered by an
+#   mgmt:self-managed-* tag. For an app in the enterprise landing zone, those
+#   identity, PAM, hardware, and network controls are inherited, while for an
+#   app that runs that infrastructure itself they are real per-asset gaps (see
+#   03-tags-lib.yml, "SELF-MANAGED INFRASTRUCTURE TAGS").
 # ==============================================================================
 
 custom_risk_definitions:
@@ -163,13 +141,6 @@ custom_risk_definitions:
     cwe: 347
     detection_logic: 'Test for XSW vulnerabilities with SAMLRaider (a Burp Suite extension) against every SAML assertion endpoint. Additionally, test for XXE by injecting a DOCTYPE declaration into a SAML request and monitoring for outbound DNS or HTTP requests. Finally, verify that the asset rejects assertions with an invalid Recipient, an expired timestamp, or a mismatched AudienceRestriction.'
     risks_identified: {}
-
-  # Insecure Session Management and Hardcoded Credentials and Secrets Sprawl have been ported
-  # into the jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml):
-  # Insecure Session Management via the frontend_related technology attribute, Secrets Sprawl
-  # on any non-vault asset with an outgoing link whose authentication is credentials or
-  # client-certificate (a static secret the asset must hold; it read the data:credential tag until
-  # 2026-11-17). Removed here rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   Missing Token Binding on Session and Refresh Tokens:
     id: missing-token-binding
@@ -267,12 +238,6 @@ custom_risk_definitions:
     risks_identified: {}
 
   # --- 1.2 AUTHORIZATION ---
-  # Broken Object-Level Authorization (BOLA/IDOR), Broken Function-Level Authorization (BFLA),
-  # Broken Object Property Level Authorization (Mass Assignment), and Multi-Tenant Data Isolation
-  # Failure have been ported into the jessestarkey/threagile fork as native script rules
-  # (pkg/risks/scripts/*.yaml): the first three via the request_serving_api technology
-  # attribute, multi-tenant isolation via the native TechnicalAsset.MultiTenant field. Removed
-  # here rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   Exposed Administrative Interface Without Hardened Access Controls:
     id: exposed-admin-panel
@@ -395,15 +360,6 @@ custom_risk_definitions:
   # #############################################################################
 
   # --- 2.1 INFRASTRUCTURE: CONTAINERS ---
-  # Untrusted Container Image Supply Chain, Mutable Container Filesystem,
-  # Missing Network Micro-Segmentation, Dangerous Container Linux
-  # Capabilities, and Container Orchestrator Control-Plane Audit Logging
-  # Gap (further below) have been ported into the jessestarkey/threagile
-  # fork as native script rules (pkg/risks/scripts/*.yaml), triggered off
-  # the native `machine` field instead of a tag. Removed here rather than
-  # left duplicated. See docs/risk-methodology.md for the full rationale.
-  # Container Runs as Root (Policy Exception) stays here -- it's a
-  # tag-presence-triggered policy waiver, a different shape of content.
 
   Container Runs as Root (Policy Exception):
     id: container-runs-as-root
@@ -426,14 +382,6 @@ custom_risk_definitions:
     risks_identified: {}
 
   # --- 2.2 INFRASTRUCTURE: VIRTUAL MACHINES AND PHYSICAL HARDWARE ---
-  # Missing Endpoint Security Agents, Unhardened OS / Missing Patch
-  # Management, Unencrypted Virtual Disk, and Media Sanitization
-  # Procedure Gap have been ported into the jessestarkey/threagile fork
-  # as native script rules (pkg/risks/scripts/*.yaml), triggered off the
-  # native `machine` field instead of a tag. Removed here rather than
-  # left duplicated. See docs/risk-methodology.md for the full rationale.
-  # 'Policy Exception: Direct Admin Access' stays here -- it's a
-  # tag-presence-triggered policy waiver, a different shape of content.
 
   'Policy Exception: Direct Admin Access':
     id: policy-exception-direct-admin-access
@@ -517,14 +465,9 @@ custom_risk_definitions:
   # #############################################################################
 
   # --- 3.1 NETWORK SEGMENTATION AND PERIMETER (SELF-MANAGED) ---
-  # Applies only to assets tagged mgmt:self-managed-network -- for an
-  # asset in the enterprise-managed landing zone, macro/micro
-  # segmentation, wireless admission, and external routing are inherited
-  # platform controls, not something a per-app model can meaningfully
-  # answer differently (see CLAUDE.md's platform-vs-app-actionable split).
-  # These risks exist for the case that split explicitly carves out: an
-  # asset whose network architecture the application team configures and
-  # owns itself.
+  # Only for assets tagged mgmt:self-managed-network. In the enterprise landing zone, segmentation,
+  # wireless admission, and external routing are inherited platform controls, so these risks cover
+  # an asset whose network the application team configures itself.
   No Macro or Micro-Segmentation of Self-Managed Network:
     id: self-managed-network-no-segmentation
     baseline_likelihood: possible
@@ -1079,11 +1022,6 @@ custom_risk_definitions:
     detection_logic: 'Enable AVD host diagnostics, and forward the WVDConnections and WVDCheckpoints logs to the SIEM. Additionally, alert on sessions that originate from devices that do not meet the Conditional Access compliance requirements. Finally, monitor the Microsoft Defender for Endpoint clipboard telemetry on enrolled GFE endpoints for an anomalous copy volume from VDI process contexts.'
     risks_identified: {}
 
-  # Mishandling of Exceptional Conditions has been ported into the jessestarkey/threagile fork
-  # as a native script rule (pkg/risks/scripts/mishandling-exceptional-conditions.yaml),
-  # triggered off the frontend_related/backend_related technology attributes. Removed here
-  # rather than left duplicated. See docs/risk-methodology.md for the full rationale.
-
   # --- 4.3 API AND SERVICE EXPOSURE ---
   Public API Abuse and Asymmetric DoS:
     id: public-api-abuse
@@ -1185,20 +1123,9 @@ custom_risk_definitions:
     risks_identified: {}
 
   # --- 4.4 LOGGING AND OBSERVABILITY ---
-  # CUI Telemetry Spillage and Insufficient Audit Logging (AU-2 Compliance Gap) have been
-  # ported into the jessestarkey/threagile fork as native script rules
-  # (pkg/risks/scripts/*.yaml), triggered off the frontend_related/backend_related technology
-  # attributes. Removed here rather than left duplicated. See docs/risk-methodology.md for the
-  # full rationale.
 
   # --- 4.5 SOFTWARE SUPPLY CHAIN AND CI/CD PIPELINE INTEGRITY ---
-  # This entire cluster (Dependency Confusion via Unclaimed Internal Package Namespace,
-  # Malicious Package Install-Script Execution on CI Runner, CI/CD Pipeline and
-  # Admission-Policy Tampering Outside Repository Trail) has been ported into the
-  # jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml), triggered
-  # off the native build-pipeline technology attribute instead of the ops:ci-pipeline tag.
-  # Removed here rather than left duplicated. See docs/risk-methodology.md for the full
-  # rationale.
+  # The fork's script rules cover this section, triggered by the build-pipeline technology.
 
   # #############################################################################
   # FOCUS AREA 5: ARTIFICIAL INTELLIGENCE
@@ -1245,29 +1172,6 @@ custom_risk_definitions:
     detection_logic: 'Trace which external documents entered each LLM context window. Additionally, flag tool calls that the human user''s turn did not explicitly initiate. Finally, alert on model outputs that contain base64 strings, external URLs outside an approved allowlist, or markdown image tags.'
     risks_identified: {}
 
-  # 2026-11-17: the fork has since replaced the ATLAS rules named in the port notes below
-  # (atlas-rag-poisoning-exfil, atlas-dataset-ingest-integrity, atlas-unbounded-ai-consumption,
-  # atlas-model-supply-chain, atlas-training-data-poisoning, atlas-dataset-store-attack,
-  # atlas-model-registry-supply-chain) with ai-rag-corpus-poisoning,
-  # ai-training-data-model-poisoning, ai-supply-chain-compromise and ai-unbounded-consumption.
-  # 'ATLAS: RAG Pipeline Poisoning and Data Exfiltration' has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/atlas-rag-poisoning-exfil.yaml), triggered off the new native
-  # rag-pipeline technology instead of the ai:rag-pipeline tag. Removed here rather than left
-  # duplicated. See docs/risk-methodology.md for the full rationale.
-
-  # 'ATLAS: Dataset and RAG Ingest Integrity Erosion' has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/atlas-dataset-ingest-integrity.yaml), triggered off the new native
-  # rag-ingest-pipeline technology instead of the ai:rag-ingest-pipeline tag. Removed here
-  # rather than left duplicated. See docs/risk-methodology.md for the full rationale.
-
-  # 'ATLAS: AI Agent Orchestration Hijack and Persistence' (native) and 'ATLAS: AI Agent Tool and
-  # Plugin Compromise' (this library, ai:plugin-tool-use tag) were both replaced on 2026-11-17 by
-  # the fork's native ai-excessive-agency-tool-misuse rule (OWASP LLM03/ASI02/AST03/DSGAI06). It
-  # fires on an ai-agent-orchestrator or ai-tool-server with an outgoing link that isn't readonly,
-  # so tool reach is modeled as links and the tag is retired. See docs/ai-risk-rework-plan.md #6.
-
   Agent Memory and Context Poisoning:
     id: ai-agent-memory-poisoning
     baseline_likelihood: possible
@@ -1288,74 +1192,15 @@ custom_risk_definitions:
     detection_logic: 'Audit the memory store''s write logs. Additionally, alert on memory entries that are created or modified outside authenticated agent runtime sessions. Finally, monitor for memory entries that contain the syntactic patterns characteristic of prompt injection (for example, instruction-like imperative sentences or role-switch phrases).'
     risks_identified: {}
 
-  # 2026-11-17: the fork has since replaced atlas-inference-api-abuse with ai-inference-data-reconstruction and ai-sensitive-information-disclosure.
-  # 'ATLAS: LLM Inference API Abuse, Cost Harvesting, and Model Extraction' and 'ATLAS:
-  # Unbounded AI Resource Consumption and Denial of Service' (both triggered by
-  # ai:llm-endpoint) have been ported into the jessestarkey/threagile fork as native script
-  # rules (pkg/risks/scripts/atlas-inference-api-abuse.yaml and
-  # atlas-unbounded-ai-consumption.yaml), triggered off the new native llm-endpoint technology
-  # instead. Removed here rather than left duplicated. See docs/risk-methodology.md for the
-  # full rationale.
-
-  # 'ATLAS: AI Model Supply Chain Compromise and Model Manipulation' has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/atlas-model-supply-chain.yaml), triggered off the new native
-  # model-serving technology instead of the ai:model-serving tag. Removed here rather than
-  # left duplicated.
-
-  # 'ATLAS: Training Data Poisoning and Model Backdoor Insertion' has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/atlas-training-data-poisoning.yaml), triggered off the new native
-  # training-pipeline technology instead of the ai:training-pipeline tag. Removed here rather
-  # than left duplicated. See docs/risk-methodology.md for the full rationale.
-
-  # 'ATLAS: AI Training Dataset Exfiltration and Integrity Attack' has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/atlas-dataset-store-attack.yaml), triggered off the new native
-  # dataset-store technology instead of the ai:dataset-store tag. Removed here rather than left
-  # duplicated. See docs/risk-methodology.md for the full rationale.
-
-  # 'ATLAS: AI Model Registry Supply Chain and Reputation Attack' has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/atlas-model-registry-supply-chain.yaml), triggered off the new native
-  # model-registry technology instead of the ai:model-registry tag. Removed here rather than
-  # left duplicated. See docs/risk-methodology.md for the full rationale.
-
-  # 'ATLAS: AI Model Intellectual Property Theft and Proxy Model Creation' has been removed,
-  # not ported -- its own description ("systematic inference queries... reconstruct a
-  # functional proxy of the model or recover details of its training data") describes the
-  # same attack as the already-native atlas-inference-api-abuse.yaml ("systematically
-  # queried to extract a functional copy of the model, infer training data membership"),
-  # confirmed by the overlapping MITRE ATLAS technique references (AML.T0005, AML.T0024)
-  # cited by both. See docs/risk-methodology.md for the full rationale.
-
   # =====================================================================
-  # Threats identified by MAESTRO's 7-layer model not fully addressed
-  # by ATLAS alone. Covers gaps in L3, L5, L6, and L7.
+  # Threats in MAESTRO's 7-layer model that ATLAS alone does not cover.
   # =====================================================================
   #
   # --- 5.2 MAESTRO GAP COVERAGE (L3, L5, L6, L7) ---
-  # 'MAESTRO L3: Agent Framework and Dependency Supply Chain Compromise' (ai:agent-framework
-  # tag) was replaced on 2026-11-17 by the fork's native ai-supply-chain-compromise rule
-  # (OWASP LLM04/ASI04/AST02), which fires on every ai-agent-orchestrator -- framework
-  # dependencies are part of what an orchestrator loads -- so the tag is retired. See
-  # docs/ai-risk-rework-plan.md #23.
-
-  # 'MAESTRO L5: Evaluation Pipeline and Benchmark Poisoning', 'MAESTRO L5: AI Observability
-  # Stack Compromise and Evidence Destruction', 'MAESTRO L6: AI-Powered Security Tooling
-  # Compromise', and 'MAESTRO L7: Agent Ecosystem Identity, Impersonation, and Goal
-  # Manipulation' have all been ported into the jessestarkey/threagile fork as native script
-  # rules (pkg/risks/scripts/*.yaml), triggered off the new native eval-pipeline/
-  # ai-observability-stack/ai-security-agent/multi-agent-gateway technologies instead of the
-  # ai:eval-pipeline/ai:observability-stack/ai:security-agent/ai:multi-agent-boundary tags.
-  # Removed here rather than left duplicated. See docs/risk-methodology.md for the full
-  # rationale. (The MAESTRO L7 rule was since replaced in the fork, 2026-11-17, by
-  # ai-agent-identity-privilege-abuse and ai-insecure-inter-agent-communication.)
 
   # --- 5.3 AI OPERATIONAL AND DEPLOYMENT HARDENING GAPS ---
-  # Beyond standard ATLAS technique coverage and MAESTRO layer generalities
-  # above -- specific operational controls for fielding and running AI
-  # systems that a technique/layer catalog alone does not capture.
+  # Operational controls for fielding and running AI systems that a technique or layer catalog does
+  # not capture.
   AI Output Path to OT or Safety-Critical Actuation Without Human Gate:
     id: ai-ot-actuation-boundary-gap
     baseline_likelihood: possible
@@ -1375,21 +1220,6 @@ custom_risk_definitions:
     cwe: 1426
     risks_identified: {}
 
-  # Ungoverned Production System Prompt Change has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/ungoverned-system-prompt-change.yaml), triggered off the
-  # llm-endpoint/rag-pipeline/agent-orchestrator technology attributes instead of the
-  # ai:user-prompt-input/ai:llm-endpoint/ai:agent-orchestrator tags. Removed here rather than
-  # left duplicated. See docs/risk-methodology.md for the full rationale. (Since replaced in the
-  # fork, 2026-11-17, by ai-change-control-gap.)
-
-  # 2026-11-17: the fork has since replaced on-device-model-extraction-gap with ai-model-exfiltration.
-  # 'On-Device Model Extraction Resistance Gap' has been ported into the jessestarkey/
-  # threagile fork as a native script rule (pkg/risks/scripts/on-device-model-extraction-
-  # gap.yaml), triggered off the native `machine` field plus the ai-model-serving/
-  # ai-llm-endpoint technology attributes instead of the ai:on-device-inference tag. Removed
-  # here rather than left duplicated. See docs/risk-methodology.md for the full rationale.
-
   Offline or Air-Gapped Model Package Integrity Gap:
     id: air-gapped-model-package-integrity-gap
     baseline_likelihood: unlikely
@@ -1408,22 +1238,6 @@ custom_risk_definitions:
     stride: tampering
     cwe: 494
     risks_identified: {}
-
-  # Missing Model Rollback and Kill-Switch Mechanism, No Canary Prompt Testing Against
-  # Production Inference Endpoint, and Untrusted Model Registry Source have all been ported
-  # into the jessestarkey/threagile fork as native script rules (pkg/risks/scripts/*.yaml),
-  # triggered off the native model-serving/llm-endpoint/model-registry technology attributes
-  # instead of the ai:model-serving/ai:llm-endpoint/ai:model-registry tags. Removed here rather
-  # than left duplicated. See docs/risk-methodology.md for the full rationale. (The first two
-  # were since replaced in the fork, 2026-11-17, by ai-change-control-gap and
-  # ai-rogue-agent-containment-gap.)
-
-  # 2026-11-17: the fork has since replaced training-script-ip-exfiltration with ai-model-exfiltration.
-  # 'Training Script and Feature-Engineering Pipeline IP Exfiltration' and 'Hyperparameter
-  # Tampering Without Baseline Diffing' have both been ported into the jessestarkey/threagile
-  # fork as native script rules (pkg/risks/scripts/*.yaml), triggered off the native
-  # training-pipeline technology instead of the ai:training-pipeline tag. Removed here rather
-  # than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   Ungoverned Third-Party Foundation Model API Dependency:
     id: ungoverned-third-party-model-api
@@ -1463,7 +1277,7 @@ custom_risk_definitions:
     cwe: 1426
     risks_identified: {}
 
-  # Step 5 of the AI rework (2026-11-17): OWASP-anchored custom categories that read tags.
+  # OWASP-anchored AI categories that read tags.
   Unexpected Code Execution and Weak Sandbox:
     id: ai-unexpected-code-execution
     baseline_likelihood: likely
@@ -1546,11 +1360,6 @@ custom_risk_definitions:
   # #############################################################################
 
   # --- 6.1 DATA GOVERNANCE AND LIFECYCLE ---
-  # Unclassified or Unscanned Data Store has been ported into the jessestarkey/threagile fork
-  # as a native script rule (pkg/risks/scripts/unscanned-data-store.yaml), triggered off the
-  # native TechnicalAsset.Type == datastore field instead of the storage:persistent tag.
-  # Removed here rather than left duplicated. See docs/risk-methodology.md for the full
-  # rationale.
 
   Missing Privacy Impact Assessment:
     id: missing-privacy-impact-assessment
@@ -1609,12 +1418,6 @@ custom_risk_definitions:
     cwe: 200
     risks_identified: {}
 
-  # Missing Data Retention and Disposition Schedule has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/missing-data-retention-schedule.yaml), triggered off the native
-  # TechnicalAsset.Type == datastore field instead of the storage:persistent tag. Removed here
-  # rather than left duplicated. See docs/risk-methodology.md for the full rationale.
-
   Media Downgrading Procedure Gap:
     id: media-downgrade-procedure-gap
     baseline_likelihood: unlikely
@@ -1672,13 +1475,6 @@ custom_risk_definitions:
     cwe: 311
     risks_identified: {}
 
-  # Data Store Audit Logging and Anomalous Access Detection Gap has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/data-store-audit-detection-gap.yaml), triggered off the native
-  # TechnicalAsset.Type == datastore field instead of the storage:persistent/storage:vault
-  # tags. Removed here rather than left duplicated. See docs/risk-methodology.md for the full
-  # rationale.
-
   # --- 6.2 SECRETS AND CRYPTOGRAPHY ---
   FIPS Non-Compliant Cryptography:
     id: fips-non-compliant-cryptography
@@ -1720,25 +1516,11 @@ custom_risk_definitions:
     detection_logic: 'Run testssl.sh or sslyze against every TLS endpoint in the CI/CD pipeline, and fail the build when it detects deprecated protocols or weak ciphers. Additionally, integrate the Azure Security Center TLS recommendations into the compliance dashboard. Finally, schedule quarterly TLS configuration scans through ACAS or Nessus.'
     risks_identified: {}
 
-  # Key Storage and Ownership Hardening Gap, Key Rotation and Escrow Neglect, and Key
-  # Management Separation-of-Duties Violation have been ported into the jessestarkey/threagile
-  # fork as native script rules (pkg/risks/scripts/*.yaml), triggered off the native vault
-  # technology attribute instead of the storage:vault tag. Removed here rather than left
-  # duplicated. See docs/risk-methodology.md for the full rationale.
-
   # #############################################################################
   # FOCUS AREA 7: DETECTION
   # #############################################################################
 
   # --- 7.1 DETECTION ---
-  # Relocated from API and Service Exposure and Infrastructure:
-  # Containers (now 5.3 and 2.1), where they originally lived alongside
-  # the asset-class entries they extend -- moved here so Detection has
-  # its own focus area, mirroring SABER's split between Detection and
-  # Response (08-saber-detection.md / 09-saber-response.md), which our
-  # earlier merged "Detection and Incident Response" banner didn't
-  # reflect. No id, tag, or trigger logic changed -- inject_risks.py
-  # looks these up by dict key, not file position.
   API Abuse and Enumeration Logging Gap:
     id: api-abuse-enumeration-logging-gap
     baseline_likelihood: possible
@@ -1757,12 +1539,6 @@ custom_risk_definitions:
     stride: repudiation
     cwe: 778
     risks_identified: {}
-
-  # Container Orchestrator Control-Plane Audit Logging Gap has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/cluster-control-plane-audit-gap.yaml, since moved to the built-in pkg/risks/builtin/cluster_control_plane_audit_gap_rule.go), triggered off the native
-  # `machine == container` field instead of a tag. Removed here rather than left duplicated.
-  # See docs/risk-methodology.md for the full rationale.
 
   Network Intrusion Detection and Traffic Anomaly Blind Spot:
     id: network-ids-blind-spot
@@ -1783,12 +1559,6 @@ custom_risk_definitions:
     cwe: 778
     detection_logic: 'Confirm that the NIDS or NDR sensor placement covers every ingress and egress path of the asset, with no unmonitored network segment. Then, validate that alerting is live by running a benign test that triggers a signature, and confirm that an alert visible to the SOC fires.'
     risks_identified: {}
-
-  # Baseline Security Event Logging and SIEM Forwarding Gap has been ported into the
-  # jessestarkey/threagile fork as a native script rule
-  # (pkg/risks/scripts/baseline-security-event-logging-gap.yaml, since merged into insufficient-audit-logging.yaml), triggered off the
-  # frontend_related/backend_related technology attributes instead of APP_TIER_TAGS. Removed
-  # here rather than left duplicated. See docs/risk-methodology.md for the full rationale.
 
   # #############################################################################
   # FOCUS AREA 8: RESPONSE
