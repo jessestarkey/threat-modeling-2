@@ -551,7 +551,7 @@ def feature_checklist(questions: dict) -> list:
     return rows
 
 TAG_LINE_RE = re.compile(r"^\s*-\s*(\S+)\s*(?:#\s*(.*))?$")
-RISK_LIB_DOMAIN_BANNER_RE = re.compile(r"^\s*#\s*DOMAIN\s+\d+:\s*(.+?)\s*$")
+RISK_LIB_DOMAIN_BANNER_RE = re.compile(r"^\s*#\s*FOCUS AREA\s+\d+:\s*(.+?)\s*$")
 RISK_LIB_ENTRY_ID_RE = re.compile(r"^\s*id:\s*(\S+)\s*$")
 SVS_ROW_RE = re.compile(r"^([\w.]+)\s*\|\s*(.+?)\s*\|\s*([123])$")
 

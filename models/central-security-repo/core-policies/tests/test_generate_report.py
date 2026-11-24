@@ -159,6 +159,16 @@ class Scoping(unittest.TestCase):
                 self.assertFalse(any("," in o for o in item["options"]), "options are comma-separated in answers")
 
 
+class CustomFocusAreas(unittest.TestCase):
+    def test_every_custom_category_has_a_focus_area(self):
+        import yaml
+        library = Path(__file__).resolve().parents[2] / "libraries" / "09-custom-risks-lib.yml"
+        ids = {d["id"] for d in yaml.safe_load(library.read_text(encoding="utf-8"))["custom_risk_definitions"].values()}
+        domains = report.load_custom_risk_domains()
+        self.assertEqual(set(domains), ids, "every category sits under a FOCUS AREA banner")
+        self.assertLessEqual(set(domains.values()), set(report.DOMAIN_ORDER))
+
+
 class LinkLabels(unittest.TestCase):
     def test_link_shows_its_source_unless_the_source_is_the_row_asset(self):
         titles = {"gw": "App Gateway", "fw": "Azure Firewall", "law": "Log Workspace"}
