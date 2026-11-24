@@ -77,8 +77,8 @@ class Scoping(unittest.TestCase):
         blocks = yaml.safe_load(library.read_text(encoding="utf-8"))["categories"]
         questions = [q["question"] for block in blocks for q in (block.get("questions") or [])]
         features = [f for block in blocks for f in (block.get("features") or [])]
-        self.assertEqual(len(questions), 31)
-        self.assertEqual(len(features), 31)
+        self.assertEqual(len(questions), 28)
+        self.assertEqual(len(features), 24)
         self.assertTrue(all("asked_when" in q for block in blocks for q in block["questions"]))
         self.assertEqual(sorted(report.QUESTION_DOMAIN_MAP), sorted(questions))
         for item in features:
@@ -101,14 +101,11 @@ class Scoping(unittest.TestCase):
 
     def test_questions_follow_the_checklist(self):
         model = {
-            "Feature: Self-managed identity infrastructure": "None",
             "Feature: OAuth, OIDC, and SAML roles": "",
             "How is each authentication mechanism implemented, enforced, and documented?": "Via Entra ID.",
         }
         rows = report.feature_checklist(model)
         status = {e["question"]: e for e in report.question_status(model, rows)["Identity"]}
-        self.assertEqual(status["How is the self-managed identity infrastructure hardened, and who governs "
-                                "privileged access to it?"]["status"], "not asked")
         self.assertEqual(status["For each OAuth or OIDC role the asset plays, how are tokens validated and scoped, "
                                 "and how are the flows secured?"]["status"], "pending")
         self.assertEqual(status["How are sessions created, timed out, ended, and re-authenticated?"]["status"],

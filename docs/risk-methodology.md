@@ -1035,14 +1035,16 @@ are broad. For example, the Identity block fires on any OAuth or SAML feature, w
 requirements apply only where local passwords exist.
 
 Tailoring is manual, and it rests on a feature checklist. Each focus area in 01-metadata-lib.yml has a
-few checklist items (25 in all), and for a new model the checklist comes first, since it records what
+few checklist items (24 in all), and for a new model the checklist comes first, since it records what
 the application has before any tags exist. An option can name the tags it implies, such as File
 uploads implying feature:file-upload-processing, and the author places each tag on the asset that has
 the feature. The report lists the implied tags next to each item for a reviewer to check, and nothing
-checks them automatically. Tags that record evidence of a control, topology, or a policy waiver stay
-outside the checklist. Each item has a fixed list of options, and the author answers by
+checks them automatically. The checklist covers only what the application's developers know, so
+platform and authorization facts (such as the hosting environment, the impact level, and self-managed
+identity or network infrastructure) stay outside it. Thus, those tags, along with tags that record
+evidence of a control, topology, or a policy waiver, are placed per asset as the model is built. Each item has a fixed list of options, and the author answers by
 selecting the ones that apply. Each item also names the sections it affects and how its selections
-can rule them out, and the report prints the checklist as a table with the selected options marked. The 31 questions that follow are short,
+can rule them out, and the report prints the checklist as a table with the selected options marked. The 28 questions that follow are short,
 since the precise criteria live in the requirement rows, and the checklist also decides which of them
 are asked. Each question has an asked_when list, either "always" or the checklist selections that make
 it apply. The report leaves out a question that the checklist rules out, lists one that depends on an

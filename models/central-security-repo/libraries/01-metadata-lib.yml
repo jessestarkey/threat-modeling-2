@@ -55,10 +55,15 @@
 #   the tags and fields its selections imply. A reviewer checks those against
 #   the model, and nothing checks them automatically.
 #
-#   Tags that record evidence of a control (such as the -hardened, ops:, and
-#   ir: tags), topology (zone:, net:, and path:), and policy waivers
-#   (exception:) are not checklist items. They are placed per asset as the
-#   model is built.
+#   The checklist covers only what the application's developers know.
+#   Platform and authorization facts (such as the hosting environment, the
+#   impact level, self-managed identity and network infrastructure, and
+#   incident reporting duties) are not checklist items. Thus, tags that record
+#   evidence of a control (such as the -hardened, ops:, and ir: tags),
+#   topology (zone:, net:, and path:), platform ownership (such as
+#   mgmt:csp-managed and mgmt:self-managed-network), and policy waivers
+#   (exception:) are placed per asset as the model is built, and the sections
+#   they affect are tailored the same way.
 #
 #   The questions are short on purpose, since the precise criteria live in
 #   the requirement rows rather than in the question. Each question is
@@ -151,23 +156,6 @@ categories:
           that issues or validates the tokens, and feature:saml-sp on each asset in the SAML
           exchange.
 
-      - feature: "Self-managed identity infrastructure"
-        select: multiple
-        options:
-          - option: "Directory"
-            tags: [mgmt:self-managed-identity]
-          - option: "Certificate authority"
-            tags: [mgmt:self-managed-identity]
-          - option: "Hybrid sync"
-            tags: [mgmt:self-managed-identity]
-          - option: "PAM"
-            tags: [mgmt:self-managed-pam]
-          - "None"
-        affects: "AC-2(7), AC-2(6)"
-        scoping: >
-          If None is selected, mark AC-2(7) and AC-2(6) not applicable. Otherwise, AC-2(7)
-          applies to a directory, certificate authority, or hybrid sync, and AC-2(6) to PAM.
-
       - feature: "Administrative and support access"
         select: multiple
         options:
@@ -188,16 +176,12 @@ categories:
           - option: "Application serves multiple tenants"
             fields:
               - "multi_tenant: true on the assets that tenants share"
-          - option: "Shared multi-tenant platform services"
-            fields:
-              - "multi_tenant: true on those platform services"
           - "None"
         affects: "ASVS V8, AISVS C5.3, and the Identity focus area"
         scoping: >
           Multi-tenancy brings in the Identity focus area and the tenant-isolation findings.
-          Mark each shared asset multi_tenant: true. Shared platform services raise those
-          findings on the platform asset, whereas an application that serves several tenants
-          raises them on the application itself.
+          Mark each asset that tenants share multi_tenant: true, so the findings are raised on
+          those assets.
 
     questions:
 
@@ -224,14 +208,6 @@ categories:
           - "OAuth, OIDC, and SAML roles: SAML service provider"
           - "OAuth, OIDC, and SAML roles: Consent management"
 
-      - question: "How is the self-managed identity infrastructure hardened, and who governs privileged access to it?"
-        requirement_ids: "AC-2(7), AC-2(6)"
-        asked_when:
-          - "Self-managed identity infrastructure: Directory"
-          - "Self-managed identity infrastructure: Certificate authority"
-          - "Self-managed identity infrastructure: Hybrid sync"
-          - "Self-managed identity infrastructure: PAM"
-
   - name: "Device and Infrastructure"
     triggers:
       - machine:container
@@ -239,18 +215,6 @@ categories:
       - mgmt:self-managed-hardware
 
     features:
-
-      - feature: "Host hardening and access"
-        select: multiple
-        options:
-          - "Hardening inherited from a managed platform"
-          - "Direct administrator access to hosts"
-          - "None"
-        affects: "AC-17, and any section the platform inherits"
-        scoping: >
-          If Hardening inherited from a managed platform is selected, mark the inherited
-          sections not applicable and name the inherited control in the hardening question.
-          Additionally, AC-17 applies only if Direct administrator access to hosts is selected.
 
       - feature: "Compute and workload identity"
         select: multiple
@@ -264,77 +228,19 @@ categories:
           - option: "Managed or serverless platform services"
             fields:
               - "machine: serverless on each managed service"
-          - option: "Physical hosts the team administers"
-            tags: [mgmt:self-managed-hardware]
-            fields:
-              - "machine: physical on each such host"
           - option: "Workload identity for cloud or platform APIs"
             tags: [mgmt:workload-identity-assigned]
-        affects: "PE-3 / SI-7, AC-6, and the Device and Infrastructure focus area"
+        affects: "AC-6, and the Device and Infrastructure focus area"
         scoping: >
           Containers and virtual machines bring in the Device and Infrastructure focus area.
-          PE-3 / SI-7 applies only if Physical hosts the team administers is selected, and a
-          workload identity brings in the over-privileged workload identity finding for each
-          asset that holds one.
-
-      - feature: "Hosting environment"
-        select: multiple
-        options:
-          - option: "Azure Government"
-            tags: [mgmt:csp-managed]
-          - option: "AWS GovCloud"
-            tags: [mgmt:csp-managed]
-          - option: "Commercial cloud"
-            tags: [mgmt:csp-managed]
-          - "On-premises data center"
-          - "Edge or tactical environment"
-        affects: "Inherited platform controls"
-        scoping: >
-          A cloud environment brings in the controls inherited from the provider. Place
-          mgmt:csp-managed on the trust boundaries where the provider owns the underlying
-          controls, and name each inherited control where a section is marked not applicable.
-
-      - feature: "Impact level"
-        select: one
-        options:
-          - "IL2"
-          - "IL4"
-          - "IL5"
-          - "IL6"
-        affects: "Inherited platform controls, and the key ownership requirements in the Data focus area"
-        scoping: >
-          The impact level decides which provider authorizations the inherited controls rest on,
-          and whether customer-managed keys are required. It does not rule any section out on
-          its own.
-
-      - feature: "Approved policy exceptions"
-        select: multiple
-        options:
-          - option: "Local authentication fallback"
-            tags: [exception:local-auth-fallback]
-          - option: "Container runs as root"
-            tags: [exception:runs-as-root]
-          - option: "Direct administrative access"
-            tags: [exception:direct-admin-access]
-          - option: "End-of-life component"
-            tags: [exception:eol-component]
-          - "None"
-        affects: "The matching policy exception findings"
-        scoping: >
-          Each approved exception brings in its own finding, which records the waiver and its
-          compensating controls. Place the tag on the asset that the waiver covers, and record
-          the AO acceptance in risk_tracking.
+          Additionally, a workload identity brings in the over-privileged workload identity
+          finding for each asset that holds one.
 
     questions:
 
       - question: "How are the containers and VMs hardened, patched, monitored, and administered?"
         requirement_ids: "CM-14, CM-7, SC-7(21), SC-5, AC-6, CM-6, SI-2, SI-4, AC-17, SC-28"
         asked_when: always
-
-      - question: "How is the self-managed hardware hardened, including its BMC credentials, firmware patching, and secure boot?"
-        requirement_ids: "PE-3 / SI-7"
-        asked_when:
-          - "Compute and workload identity: Physical hosts the team administers"
 
   - name: "Network and Environment"
     triggers:
@@ -372,32 +278,15 @@ categories:
           out-of-scope assets. That way, the rules can tell an internet-side caller from an
           in-scope gateway.
 
-      - feature: "Self-managed network"
-        select: multiple
-        options:
-          - option: "Self-managed segmentation"
-            tags: [mgmt:self-managed-network]
-          - option: "Self-managed wireless"
-            tags: [mgmt:self-managed-network]
-          - option: "Self-managed external routing"
-            tags: [mgmt:self-managed-network]
-          - "None"
-        affects: "SC-7, AC-18"
-        scoping: >
-          SC-7 applies only if Self-managed segmentation is selected, and AC-18 only if
-          Self-managed wireless is selected. Self-managed external routing brings in the route
-          origin validation finding.
-
       - feature: "Authorization boundary crossings"
         select: multiple
         options:
-          - "Data crosses the authorization boundary"
-          - "Media or datasets downgraded to a lower classification"
+          - "Exchanges data with systems outside the program"
           - "None"
         affects: "AU-9, AC-3, SC-31, MP-8, CA-3"
         scoping: >
-          If None is selected, mark these sections not applicable. Additionally, MP-8 applies
-          only if Media or datasets downgraded to a lower classification is selected.
+          If None is selected, mark these sections not applicable. Otherwise, MP-8 applies only
+          where media or datasets are downgraded to a lower classification.
 
       - feature: "Cross-domain solution roles"
         select: multiple
@@ -427,13 +316,6 @@ categories:
         requirement_ids: "ASVS V12.1-ASVS V12.3"
         asked_when: always
 
-      - question: "How is the self-managed network segmented, and how is wireless access controlled?"
-        requirement_ids: "SC-7, AC-18"
-        asked_when:
-          - "Self-managed network: Self-managed segmentation"
-          - "Self-managed network: Self-managed wireless"
-          - "Self-managed network: Self-managed external routing"
-
       - question: "How are classification markings checked, content inspected and sanitized, and releases approved at the cross-domain solution?"
         requirement_ids: "AC-4(19), AC-4(8) / SI-3, AC-4(25) / AC-4(9), SI-7"
         asked_when:
@@ -447,8 +329,7 @@ categories:
       - question: "How is each transfer across the authorization boundary governed and audited?"
         requirement_ids: "AU-9, AC-3, SC-31, MP-8, CA-3"
         asked_when:
-          - "Authorization boundary crossings: Data crosses the authorization boundary"
-          - "Authorization boundary crossings: Media or datasets downgraded to a lower classification"
+          - "Authorization boundary crossings: Exchanges data with systems outside the program"
 
   - name: "Application"
     triggers:
@@ -682,13 +563,12 @@ categories:
         options:
           - "Accelerators the application controls"
           - "Edge or distributed devices"
-          - "Tenants sharing the AI infrastructure"
           - "None"
         affects: "AISVS C4.2, C4.3, C5.3"
         scoping: >
           C4.2 applies only if Accelerators the application controls is selected, C4.3 only if
-          Edge or distributed devices is selected, and C5.3 only if Tenants sharing the AI
-          infrastructure is selected.
+          Edge or distributed devices is selected, and C5.3 only if Application serves multiple
+          tenants is selected under Multi-tenancy.
 
       - feature: "Agent capabilities"
         select: multiple
@@ -846,19 +726,6 @@ categories:
     triggers:
       - zone:dmz
       - sec:secrets-broker
-
-    features:
-
-      - feature: "Incident reporting requirement"
-        select: one
-        options:
-          - "Yes"
-          - "No"
-        affects: "IR-6"
-        scoping: >
-          IR-6 applies only if Yes is selected, meaning a contract or regulation (for example,
-          DFARS 252.204-7012) sets a reporting timeline. The other IR sections apply to every
-          asset in the Response focus area.
 
     questions:
 
