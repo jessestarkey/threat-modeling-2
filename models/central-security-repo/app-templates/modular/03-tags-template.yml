@@ -3,26 +3,26 @@
 # Source library: 03-tags-lib.yml
 # ==============================================================================
 #
-# UNLIKE the other numbered fragments, this file is built LAST -- after you've
-# tagged your technical assets, communication links, trust boundaries, shared
-# runtimes, and data assets in 04-08. Threagile requires every tag used
-# anywhere in the model to appear in this file's tags_available list, or it
-# fails at runtime with "missing referenced tag in overall tag list".
+# Unlike the other fragments, this file is built last, after the tags are
+# placed on technical assets, links, trust boundaries, shared runtimes, and data
+# assets in 04-08. Threagile requires every tag used anywhere in the model to
+# appear in tags_available, or it fails with "missing referenced tag in overall
+# tag list".
 #
 # HOW TO COMPOSE THIS FILE:
 #   1. Finish tagging your assets/links/boundaries/runtimes in 04-08 first.
 #   2. Collect every distinct tag you actually used across those files.
 #   3. For each one, copy its exact line (tag name + trailing comment)
 #      verbatim from 03-tags-lib.yml into the matching section below.
-#   4. Only include tags you actually used -- this is a trimmed subset, not
-#      the full library. Delete any section heading below that ends up empty.
+#   4. Include only the tags you used, not the full library, and delete any
+#      section heading below that ends up empty.
 #   5. Whenever you add or remove a tag from any other fragment file, come
 #      back and update this file to match.
 #
-# SECTION QUICK-REFERENCE (mirrors 03-tags-lib.yml -- see that file for the
-# full tag list and every tag's meaning):
+# SECTION QUICK-REFERENCE (mirrors 03-tags-lib.yml, which has the full tag
+# list and every tag's meaning):
 #   CLASSIFICATION TAGS                    data:*, storage:*, auth:*, risk:*,
-#                                           app:*, net:*, sec:*, compliance:*,
+#                                           net:*, sec:*, compliance:*,
 #                                           zone:*, mgmt:*, scope:*
 #   BEHAVIORAL FEATURE TAGS                feature:*
 #   INFRASTRUCTURE HARDENING TAGS          ops:*
@@ -54,7 +54,7 @@ tags_available:
 
   # =============================================================================
   # BEHAVIORAL FEATURE TAGS
-  # These tags describe what an asset DOES — specific capabilities that introduce
+  # These tags describe what an asset DOES, meaning specific capabilities that introduce
   # discrete attack surfaces. Each tag triggers one or more risk injections.
   # =============================================================================
 
@@ -119,8 +119,7 @@ tags_available:
 
   # =============================================================================
   # DIAGRAM ICON TAGS
-  # Purely cosmetic -- select which small icon threagile_dfd_to_html.py draws
-  # in a node or trust boundary's corner on the data-flow diagram. Never used
-  # as an inject_risks.py trigger. At most one per asset/boundary; if several
-  # are present the renderer just uses whichever it finds first.
+  # Cosmetic only: they select the icons threagile_dfd_to_html.py draws, and
+  # inject_risks.py never reads them. A node shows all of its icon: tags side
+  # by side, while a trust boundary's corner badge shows the first.
   # =============================================================================

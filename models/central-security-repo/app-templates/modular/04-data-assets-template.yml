@@ -3,8 +3,8 @@
 # Maintainer: Application Development Team
 #
 # PURPOSE:
-# This file defines the specific business payloads, credentials, and telemetry 
-# processed by your application. It must accurately reflect the data flows 
+# This file defines the specific business payloads, credentials, and telemetry
+# processed by your application. It must accurately reflect the data flows
 # modeled in your '03-tech-assets.yml' file.
 #
 # USAGE INSTRUCTIONS (The "Library Import" Method):
@@ -13,10 +13,10 @@
 # 2. OPEN the relevant file(s) under libraries/04-data-assets-lib/*.yml in the
 #    central security repository.
 # 3. SELECT only the specific data types your application actively processes,
-#    stores, or transmits (e.g., 'structured-mission-data', 'user-credentials').
+#    stores, or transmits (for example, 'structured-mission-data', 'user-credentials').
 # 4. COPY the selected YAML blocks exactly as written from the central library,
 #    INCLUDING the library file's own numbered section header comment above
-#    each block (e.g. "# 3. IDENTITY AND SESSION DATA") -- keep assets grouped
+#    each block (for example, "# 3. IDENTITY AND SESSION DATA"), and keep assets grouped
 #    under the same numbered heading they came from, in the library's own
 #    order, rather than a flat undifferentiated list. See OUTPUT FORMAT below.
 # 5. PASTE the copied blocks below, organized by section.
@@ -47,7 +47,7 @@
 data_assets:
 
   # ============================================================================
-  # <N>. <SECTION NAME FROM THE LIBRARY FILE, e.g. "3. IDENTITY AND SESSION DATA">
+  # <N>. <SECTION NAME FROM THE LIBRARY FILE, for example, "3. IDENTITY AND SESSION DATA">
   # <one-line description copied from the library file's own header comment>
   # Source library: 04-data-assets-lib/<matching-file>.yml
   # ============================================================================

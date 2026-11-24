@@ -16,7 +16,7 @@ technical_assets:
     used_as_client_by_human: true
     out_of_scope: true
     justification_out_of_scope: >
-      This asset represents the physical endpoint (e.g., GFEs, laptops, or mobile devices) 
+      This asset represents the physical endpoint (such as GFEs, laptops, or mobile devices) 
       utilized by mission personnel to access the application. These devices reside outside 
       the formal Accreditation Boundary (ATO) of this specific cloud-hosted system. 
       Security configuration, patch management, endpoint detection and response (EDR), and 
@@ -38,20 +38,20 @@ technical_assets:
       is not authorized to permanently store mission payloads. However, it temporarily 
       processes in-memory session tokens, user credentials, and rendered CUI during 
       active browser sessions. The 'Internal' rating reflects the risk that a compromised 
-      endpoint (e.g., via malware or physical theft) could lead to localized data 
+      endpoint (for example, via malware or physical theft) could lead to localized data 
       exposure, necessitating strong transport encryption (TLS 1.2+) and short-lived 
       session timeouts to mitigate exfiltration risks.
       
       Integrity (Operational): The integrity of the client environment is required 
       to ensure that user commands and data submissions are transmitted unaltered. 
       While the endpoint itself is out of scope for direct DoW management, a loss 
-      of integrity (e.g., via a malicious browser extension or Man-in-the-Browser attack) 
+      of integrity (for example, via a malicious browser extension or Man-in-the-Browser attack) 
       would permit an attacker to hijack the active session and inject unauthorized 
       transactions into the backend application.
       
       Availability (Operational): The functional availability of the client device 
       is necessary for the individual user to participate in the mission. A localized 
-      failure (e.g., a hardware crash or network disconnect) disrupts the specific 
+      failure (such as a hardware crash or network disconnect) disrupts the specific 
       operator's productivity but does not impact the broader availability or 
       resilience of the centralized DoD application platform.
     multi_tenant: false
@@ -69,7 +69,7 @@ technical_assets:
       Keycloak Authentication:
         target: keycloak-application-gateway
         description: >
-          Initial OIDC/SAML authentication flow; transmits raw user credentials
+          Initial OIDC/SAML authentication flow. Transmits raw user credentials
           to the Keycloak Application Gateway to establish a trusted session.
         protocol: https
         authentication: credentials
@@ -89,7 +89,7 @@ technical_assets:
       Confluence Application Gateway Traffic:
         target: confluence-application-gateway
         description: >
-          Authorized HTTPS mission traffic; transmits the user's ephemeral 
+          Authorized HTTPS mission traffic. Transmits the user's ephemeral 
           MFA-verified session token (OIDC/JWT) and interactive commands for 
           WAF inspection and perimeter-level input validation.
         protocol: https
@@ -120,7 +120,7 @@ technical_assets:
     used_as_client_by_human: true
     out_of_scope: true
     justification_out_of_scope: >
-      This asset represents the physical endpoint (e.g., GFEs, laptops) utilizing the AVD client. 
+      This asset represents the physical endpoint (such as GFEs, laptops) utilizing the AVD client. 
       These devices reside outside the formal Accreditation Boundary (ATO) of the cloud system. 
       Security configuration and endpoint management are the responsibility of the parent organization.
     size: component
@@ -208,7 +208,7 @@ technical_assets:
       primary MFA validation for mission users. Runs as a pod in its own
       namespace on the Prod AKS Cluster, reached via the Keycloak
       Application Gateway, Azure Firewall, and the shared Nginx Ingress
-      Controller -- not directly internet-facing itself.
+      Controller. Not directly internet-facing itself.
     type: process
     usage: business
     used_as_client_by_human: false
@@ -314,7 +314,7 @@ technical_assets:
       mass credential compromise, leading to enterprise-wide account takeover.
       
       Integrity (Critical): The integrity of the authentication records is 
-      absolute. Unauthorized tampering (e.g., modifying password hashes or 
+      absolute. Unauthorized tampering (for example, modifying password hashes or 
       user roles) would allow an attacker to lock out legitimate users or 
       elevate their own permissions to gain administrative access.
       
@@ -339,10 +339,10 @@ technical_assets:
       managed by Microsoft Azure. Handles federated authentication
       (OIDC/SAML), conditional access policy enforcement, and directory
       services (user objects, groups, credential hashes) for AVD users --
-      unlike self-hosted Keycloak, there's no separate identity-store asset
-      to model: Microsoft doesn't expose Entra's backing directory as a
-      customer-addressable component. Tenant-scoped and reached directly;
-      no dedicated gateway fronts it the way Keycloak has one, since there's
+      unlike self-hosted Keycloak, there is no separate identity-store asset
+      to model: Microsoft does not expose Entra's backing directory as a
+      customer-addressable component. Tenant-scoped and reached directly.
+      no dedicated gateway fronts it the way Keycloak has one, since there is
       no customer-controlled ingress to put one in front of.
     type: process
     usage: business
@@ -726,12 +726,12 @@ technical_assets:
     availability: important 
     justification_cia_rating: >
       Confidentiality (Confidential): Acts as the primary application processing 
-      engine; processes decrypted CUI, attachments, and active session tokens in memory.
+      engine. Processes decrypted CUI, attachments, and active session tokens in memory.
 
       Integrity (Important): Maintains the integrity of collaborative data and 
       enforces the authoritative Space/Page RBAC permission sets.
 
-      Availability (Important): Core business service required for team operations; 
+      Availability (Important): Core business service required for team operations.
       downtime halts all internal knowledge management workflows.
     multi_tenant: false
     redundant: true
@@ -825,7 +825,7 @@ technical_assets:
   # ============================================================================
   # 7. DATA STORES
   # Persistent datastores for application data.
-  # Source library: 05-tech-assets-lib/01-azure/07-data-stores.yml (currently an empty placeholder -- this content is custom-authored)
+  # Source library: 05-tech-assets-lib/01-azure/07-data-stores.yml (currently an empty placeholder, so this content is custom-authored)
   # ============================================================================
 
   Postgres Database:
@@ -862,7 +862,7 @@ technical_assets:
       unauthorized schema or data modifications. Automated transaction logging 
       and Point-in-Time Restore (PITR) are enabled.
       
-      Availability (Critical): Mission-critical dependency for Confluence; the 
+      Availability (Critical): Mission-critical dependency for Confluence. The 
       application enters a 'CrashLoopBackOff' state if the database is unreachable. 
       Managed via Azure High Availability (HA) with cross-zone redundancy.
     multi_tenant: true
@@ -999,7 +999,7 @@ technical_assets:
       deletion or ransomware-style file modification.
 
       Availability (Critical): Redundant storage (LRS/ZRS) with a 99.9% uptime SLA. Mounted as a 
-      Persistent Volume (PV); health probes are configured to ensure the application restarts if 
+      Persistent Volume (PV). Health probes are configured to ensure the application restarts if 
       the mount becomes stale or disconnected.
     multi_tenant: true
     redundant: true
@@ -1036,7 +1036,7 @@ technical_assets:
   # ============================================================================
   # 8. SECURITY AND SECRETS
   # Secrets management and private connectivity for platform credentials.
-  # Source library: 05-tech-assets-lib/01-azure/08-security-and-secrets.yml (currently an empty placeholder -- this content is custom-authored)
+  # Source library: 05-tech-assets-lib/01-azure/08-security-and-secrets.yml (currently an empty placeholder, so this content is custom-authored)
   # ============================================================================
 
   Azure Key Vault Private Endpoint:
@@ -1137,7 +1137,7 @@ technical_assets:
       Protection are enabled to prevent accidental or malicious data loss.
 
       Availability (Critical): Globally redundant service managed by Microsoft with a 99.99% SLA.
-      Critical for application bootstrap; secrets are cached locally by the CSI Driver to mitigate
+      Critical for application bootstrap. Secrets are cached locally by the CSI Driver to mitigate
       transient network failures.
     multi_tenant: true
     redundant: true
@@ -1173,13 +1173,13 @@ technical_assets:
   # ============================================================================
   # 9. OBSERVABILITY
   # Centralized logging, monitoring, and SIEM aggregation for platform and application telemetry.
-  # Source library: 05-tech-assets-lib/01-azure/09-observability.yml (currently an empty placeholder -- this content is custom-authored)
+  # Source library: 05-tech-assets-lib/01-azure/09-observability.yml (currently an empty placeholder, so this content is custom-authored)
   # ============================================================================
 
   Azure Log Analytics Workspace:
     id: log-analytics-workspace
     description: >
-      Centralized SIEM (e.g., Azure Sentinel) for aggregating, indexing, 
+      Centralized SIEM (such as Azure Sentinel) for aggregating, indexing, 
       and analyzing all system telemetry, security events, and application logs.
     type: datastore 
     usage: devops 
@@ -1213,7 +1213,7 @@ technical_assets:
       ATO boundary and destroy evidence of exploitation.
       
       Availability (Important): Continuous ingestion of security telemetry is mandatory 
-      for real-time SOC monitoring and automated alerting (e.g., Azure Sentinel analytics). 
+      for real-time SOC monitoring and automated alerting (such as Azure Sentinel analytics). 
       While an outage of the logging platform does not immediately halt the primary 
       kinetic or business mission, a prolonged blind spot violates continuous monitoring 
       mandates (NIST SP 800-53 AU-9) and severely degrades defensive cyber operations.
@@ -1266,11 +1266,11 @@ technical_assets:
       Confidentiality (Restricted): Terminate TLS for internal cluster traffic,
       processing decrypted session tokens and CUI in memory.
 
-      Integrity (Important): Performs Layer-7 routing between AKS namespaces; 
+      Integrity (Important): Performs Layer-7 routing between AKS namespaces.
       misconfiguration could lead to unauthorized lateral traffic movement.
 
       Availability (Important): Serves as the primary ingress chokepoint for the 
-      AKS cluster; failure halts all user access to the hosted application pods.
+      AKS cluster. Failure halts all user access to the hosted application pods.
     multi_tenant: true
     redundant: true
     custom_developed_parts: false

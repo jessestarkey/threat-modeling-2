@@ -5,7 +5,7 @@ risk_tracking:
     justification: >
       Investigation pending. The ISSE team is currently coordinating with the 
       Platform Engineering team to determine the exact technical or procedural 
-      controls (e.g., UPM disablement, strict RBAC, or IaC deployments) utilized 
+      controls (such as UPM disablement, strict RBAC, or IaC deployments) utilized 
       to restrict third-party plugin installations within the Confluence JVM. 
       Once the mitigation strategy is confirmed and verified, this finding will 
       be updated.
@@ -16,7 +16,7 @@ risk_tracking:
   cui-telemetry-spillage@*:
     status: in-discussion
     justification: >
-      Finding acknowledged; currently unmitigated. The Confluence application 
+      Finding acknowledged. Currently unmitigated. The Confluence application 
       (Log4j) does not currently employ regex-based data masking or redaction 
       for user-generated content (CUI) or verbose error traces prior to 
       writing to stdout. Consequently, sensitive mission metadata may be 
@@ -35,7 +35,7 @@ risk_tracking:
     status: mitigated
     justification: >
       Platform Inherited Mitigation. Entra ID is a Microsoft-operated SaaS identity
-      provider; network intrusion detection and traffic-anomaly monitoring for its
+      provider. Network intrusion detection and traffic-anomaly monitoring for its
       public sign-in and token endpoints are Microsoft's, under the service's
       FedRAMP authorization, not a control this team deploys or can place a
       sensor for. The tenant-side controls on Entra ID (OAuth/OIDC and SAML
@@ -49,7 +49,7 @@ risk_tracking:
     justification: >
       DNS for Entra ID's own sign-in endpoints (login.microsoftonline.us and
       related Microsoft domains) is Microsoft-operated, under the service's
-      FedRAMP authorization -- an inherited control. Not yet closed: any custom
+      FedRAMP authorization, an inherited control. Not yet closed: any custom
       domains verified in this tenant are this organization's DNS, where a stale
       verification TXT or CNAME record is a real takeover risk. Close as
       mitigated (inherited) once the tenant is confirmed to use no custom

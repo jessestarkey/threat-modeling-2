@@ -3,28 +3,28 @@
 # Maintainer: Application Development Team
 #
 # PURPOSE:
-# This file defines the specific computing nodes, processes, and datastores 
-# that comprise your application's architecture. It explicitly maps the 
-# 'communication_links' (data flows) between components to generate the 
+# This file defines the specific computing nodes, processes, and datastores
+# that comprise your application's architecture. It explicitly maps the
+# 'communication_links' (data flows) between components to generate the
 # final Data Flow Diagram (DFD) and Security Risk Report.
 #
 # USAGE INSTRUCTIONS (The "Hybrid Assembly" Method):
 # 1. OPEN the relevant file(s) under
 #    libraries/05-tech-assets-lib/{provider}/*.yml for your cloud provider.
 # 2. SELECT and COPY the mandatory platform infrastructure components your
-#    application utilizes (e.g., 'Azure Firewall', 'Application Gateway (WAF)',
+#    application utilizes (for example, 'Azure Firewall', 'Application Gateway (WAF)',
 #    'Nginx Ingress Pod', 'Azure Key Vault'), INCLUDING the library file's own
-#    numbered section header comment above each block (e.g.
-#    "# 2. IDENTITY AND ACCESS") -- keep assets grouped under the same
+#    numbered section header comment above each block (for example,
+#    "# 2. IDENTITY AND ACCESS"), and keep assets grouped under the same
 #    numbered heading they came from, in the library's own order, rather than
 #    a flat undifferentiated list. See OUTPUT FORMAT below.
 # 3. PASTE the copied platform components below, organized by section. Do NOT
-#    modify their core security tags (e.g., ops:, net:), 'machine' types, or
+#    modify their core security tags (for example, ops:, net:), 'machine' types, or
 #    CIA justifications.
-# 4. CREATE your own application-specific assets (e.g., your backend API pods,
+# 4. CREATE your own application-specific assets (for example, your backend API pods,
 #    frontend web servers, or standalone VMs) alongside the platform
-#    infrastructure -- group these under a section heading too, even if it's
-#    a custom one not from the library (e.g. "AI APPLICATION WORKLOADS").
+#    infrastructure, and group these under a section heading too, even if it is
+#    a custom one not from the library (for example, "AI APPLICATION WORKLOADS").
 # 5. ADD the required 'data_assets_processed' and 'data_assets_stored' arrays
 #    to ALL components (both platform and custom) to reflect the specific data
 #    your application handles.
@@ -56,7 +56,7 @@
 technical_assets:
 
   # ============================================================================
-  # <N>. <SECTION NAME FROM THE LIBRARY FILE, e.g. "2. IDENTITY AND ACCESS">
+  # <N>. <SECTION NAME FROM THE LIBRARY FILE, for example, "2. IDENTITY AND ACCESS">
   # <one-line description copied from the library file's own header comment>
   # Source library: 05-tech-assets-lib/{provider}/<matching-file>.yml
   # ============================================================================

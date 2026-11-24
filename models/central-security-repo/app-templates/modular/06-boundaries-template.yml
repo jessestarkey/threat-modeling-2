@@ -3,26 +3,26 @@
 # Maintainer: Application Development Team
 #
 # PURPOSE:
-# This file defines the network architecture, subnets, and logical perimeters 
-# (e.g., Kubernetes Namespaces) for your application. It explicitly groups your 
+# This file defines the network architecture, subnets, and logical perimeters
+# (for example, Kubernetes Namespaces) for your application. It explicitly groups your
 # 'technical_assets' to generate accurate cross-boundary security risks.
 #
 # USAGE INSTRUCTIONS (The "Network Nesting" Method):
 # 1. OPEN the relevant file(s) under
 #    libraries/06-boundaries-lib/{provider}/*.yml for your cloud provider.
 # 2. SELECT and COPY the mandatory platform network boundaries your application
-#    utilizes (e.g., 'System Environment', 'Prod VNet', 'Prod AKS Cluster'),
+#    utilizes (for example, 'System Environment', 'Prod VNet', 'Prod AKS Cluster'),
 #    INCLUDING the library file's own numbered section header comment above
-#    each block (e.g. "# 7. AKS CLUSTERS") -- keep boundaries grouped under
+#    each block (for example, "# 7. AKS CLUSTERS"), and keep boundaries grouped under
 #    the same numbered heading they came from, in the library's own order,
 #    rather than a flat undifferentiated list. See OUTPUT FORMAT below.
 # 3. PASTE the copied platform boundaries below, organized by section. Do NOT
-#    modify their core security tags (e.g., zone:, scope:), or 'type'
+#    modify their core security tags (for example, zone:, scope:), or 'type'
 #    definitions.
-# 4. CREATE your own application-specific boundaries (e.g., your dedicated
-#    Kubernetes Namespace) -- group these under a section heading too, even
-#    if it's a custom one not from the library.
-# 5. NEST your application boundaries logically. (e.g., Ensure your custom
+# 4. CREATE your own application-specific boundaries (for example, your dedicated
+#    Kubernetes Namespace), and group these under a section heading too, even
+#    if it is a custom one not from the library.
+# 5. NEST your application boundaries logically. (for example, Ensure your custom
 #    AKS Namespace is listed in the 'trust_boundaries_nested' array of the
 #    'Prod AKS Cluster').
 # 6. ASSIGN your technical assets to the correct boundary by adding their
@@ -51,7 +51,7 @@
 trust_boundaries:
 
   # ============================================================================
-  # <N>. <SECTION NAME FROM THE LIBRARY FILE, e.g. "7. AKS CLUSTERS">
+  # <N>. <SECTION NAME FROM THE LIBRARY FILE, for example, "7. AKS CLUSTERS">
   # <one-line description copied from the library file's own header comment>
   # Source library: 06-boundaries-lib/{provider}/<matching-file>.yml
   # ============================================================================

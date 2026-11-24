@@ -63,13 +63,13 @@ data_assets:
     justification_cia_rating: >
       Confidentiality (Restricted): Unstructured attachments frequently contain
       Controlled Unclassified Information (CUI), proprietary designs, and internal
-      operational procedures. Unauthorized disclosure to external entities—or unauthorized
-      access by users lacking explicit Space permissions—constitutes a severe breach
+      operational procedures. Unauthorized disclosure to external entities, or unauthorized
+      access by users lacking explicit Space permissions, constitutes a severe breach
       of DoD IL5 data protection mandates and compromises operational security.
 
       Integrity (Critical): As a primary collaboration vector, the integrity of uploaded
       files is paramount. Malicious tampering, unauthorized substitution, or the injection
-      of weaponized payloads (e.g., macro-enabled Office documents or Zip bombs) into
+      of weaponized payloads (such as macro-enabled Office documents or Zip bombs) into
       the backend file store could lead to widespread malware distribution among internal
       mission users and a complete loss of trust in the platform's shared assets.
 
@@ -100,7 +100,7 @@ data_assets:
     integrity: critical
     availability: critical
     justification_cia_rating: >
-      Confidentiality (Strictly-Confidential): These credentials (e.g., connection strings,
+      Confidentiality (Strictly-Confidential): These credentials (such as connection strings,
       passwords, or Managed Identity tokens) provide direct, privileged access to the backend
       datastore. Exposure of these secrets to an unauthorized entity, log file, or developer
       workstation would result in a catastrophic, unmitigated breach of all underlying mission
@@ -119,7 +119,7 @@ data_assets:
 
   Blob Storage Credentials:
     id: blob-storage-credentials
-    description: Authentication material (e.g., Storage Account Keys, SAS tokens, or Managed Identity bindings) required by workloads to read, write, or delete data within object/blob storage services
+    description: Authentication material (such as Storage Account Keys, SAS tokens, or Managed Identity bindings) required by workloads to read, write, or delete data within object/blob storage services
     usage: devops
     tags:
       - data:credential
@@ -171,10 +171,10 @@ data_assets:
       and real-time CUI/mission data traversing the network.
 
       Integrity (Critical): Unauthorized modification or replacement of trust anchors
-      (e.g., injecting a rogue Root CA) allows attackers to seamlessly spoof legitimate
+      (for example, injecting a rogue Root CA) allows attackers to seamlessly spoof legitimate
       services and intercept authentication flows.
 
-      Availability (Critical): Loss of access to key material (e.g., Key Vault outage)
+      Availability (Critical): Loss of access to key material (such as a Key Vault outage)
       prevents the establishment of secure TLS tunnels, resulting in an immediate,
       widespread Denial of Service (DoS) for all encrypted endpoints.
 
@@ -187,7 +187,7 @@ data_assets:
   Human Session Credentials:
     id: human-session-credentials
     description: >
-      Browser cookies (e.g., JSESSIONID) and Bearer tokens (SAML/OIDC assertions, JWTs)
+      Browser cookies (such as JSESSIONID) and Bearer tokens (SAML/OIDC assertions, JWTs)
       issued by the Identity Provider to maintain the active, authenticated state of a
       human user interacting with a web frontend or client application.
     usage: business
@@ -195,7 +195,7 @@ data_assets:
       - data:credential
       - storage:ephemeral
       - auth:human
-    origin: Identity Provider (e.g., Entra ID / Keycloak)
+    origin: Identity Provider (such as Entra ID / Keycloak)
     owner: Application Team
     quantity: very-many
     confidentiality: confidential
@@ -203,19 +203,19 @@ data_assets:
     availability: important
     justification_cia_rating: >
       Confidentiality (Confidential): These ephemeral tokens represent the authenticated
-      session of a human mission user. Unauthorized interception, leakage (e.g., via
-      Cross-Site Scripting [XSS]), or improper storage (e.g., lacking HttpOnly flags)
+      session of a human mission user. Unauthorized interception, leakage (for example, via
+      Cross-Site Scripting [XSS]), or improper storage (for example, lacking HttpOnly flags)
       would permit an attacker to hijack the active session, completely bypassing
       Multi-Factor Authentication (MFA) and perimeter conditional access controls.
 
-      Integrity (Critical): The cryptographic signature and internal claims (e.g., user
+      Integrity (Critical): The cryptographic signature and internal claims (such as user
       roles, expiration, issuer) of the session token or cookie must remain pristine and
       be strictly validated by the backend application on every request. Forged assertions
       would allow an attacker to impersonate administrators or execute Horizontal/Vertical
       Privilege Escalation (IDOR).
 
       Availability (Important): If the frontend application is unable to validate or
-      issue new session credentials (e.g., due to an IdP outage or clock-skew issue),
+      issue new session credentials (for example, due to an IdP outage or clock-skew issue),
       active human users will experience immediate, widespread service disruption and
       forced logouts, halting collaboration workflows until the trust relationship is restored.
 
@@ -234,7 +234,7 @@ data_assets:
     integrity: critical
     availability: important
     justification_cia_rating: >
-      Confidentiality (Strictly-Confidential): These raw credentials (e.g., passwords,
+      Confidentiality (Strictly-Confidential): These raw credentials (such as passwords,
       PINs, or smartcard/CAC challenge responses) verify the primary identity of the human
       operator to the Enterprise Identity Provider (IdP). Unauthorized disclosure, interception
       in transit, or logging in plaintext would compromise the user's entire organizational
@@ -264,7 +264,7 @@ data_assets:
       - data:credential
       - storage:ephemeral
       - auth:npe
-    origin: Identity Provider or Internal Service Mesh (e.g., Istio)
+    origin: Identity Provider or Internal Service Mesh (such as Istio)
     owner: Application Team
     quantity: many
     confidentiality: confidential
@@ -272,7 +272,7 @@ data_assets:
     availability: important
     justification_cia_rating: >
       Confidentiality (Confidential): Ephemeral M2M tokens represent the authenticated
-      state of a backend Non-Person Entity (NPE). Unauthorized interception (e.g.,
+      state of a backend Non-Person Entity (NPE). Unauthorized interception (for example,
       via cleartext internal transit) allows an attacker who has breached the perimeter
       to move laterally, impersonating trusted microservices to access backend datastores.
 
@@ -283,7 +283,7 @@ data_assets:
 
       Availability (Important): If a microservice cannot obtain or validate an NPE
       token, the internal API chain breaks. While this degrades specific application
-      features (e.g., an asynchronous reporting job fails), it may not result in a
+      features (such as an asynchronous reporting job fails), it may not result in a
       total, immediate system outage like the loss of a primary database credential.
 
   # ============================================================================
@@ -347,13 +347,13 @@ data_assets:
       Confidentiality (Confidential): This ephemeral data stream encapsulates every
       keystroke, clipboard action, and mouse movement executed by the user during
       their active application or virtual session. Unauthorized interception of this
-      stream (e.g., via a Man-in-the-Middle attack on the WebSocket) would expose
+      stream (for example, via a Man-in-the-Middle attack on the WebSocket) would expose
       in-progress CUI, draft intellectual property, and potentially plaintext
       authentication material as it is actively typed.
 
       Integrity (Critical): The integrity of the interactive stream is paramount to
       maintaining control of the remote session. Malicious tampering or injection
-      (e.g., a "Rubber Ducky" style attack over the network) would allow an attacker
+      (such as a "Rubber Ducky" style attack over the network) would allow an attacker
       to execute unauthorized commands, modify files, or escalate privileges within
       the AVD environment, operating under the established trust of the legitimate user.
 
@@ -387,7 +387,7 @@ data_assets:
 
       Integrity (Important): The visual fidelity of the session must be maintained to
       ensure operational trust. While technically complex, malicious manipulation of the
-      encrypted video stream (e.g., injecting false UI elements or altering displayed
+      encrypted video stream (for example, injecting false UI elements or altering displayed
       data) could deceive the user into taking unauthorized actions or misinterpreting
       critical mission information.
 
