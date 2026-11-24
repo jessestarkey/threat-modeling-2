@@ -25,14 +25,10 @@ ICONS_DIR = Path(__file__).resolve().parent / "icons"
 # ---------------------------------------------------------------------------
 # Design tokens
 # ---------------------------------------------------------------------------
-# Editorial palette: neutral ink-on-paper everywhere, one accent color
-# reserved for external/out-of-scope entities (Threagile's octagon shape) --
-# the diagram's natural focal point -- rather than reusing Threagile's own
-# color-by-asset-type palette. Font stays local (FreeSans, no network fetch)
-# and matches what Graphviz itself resolves "Verdana" to when it computes
-# node box sizes (see the CLAUDE.md/commit history on font substitution) --
-# using a different font here without matching those metrics would overflow
-# the pre-computed label boxes.
+# Editorial palette: neutral ink on paper, with one accent color reserved for external and
+# out-of-scope entities (Threagile's octagon shape), the diagram's natural focal point. The font
+# is local FreeSans, which is what Graphviz resolves "Verdana" to when it sizes node boxes, so
+# another font would overflow the precomputed label boxes.
 PAPER    = "#ffffff"
 INK      = "#1a1a1a"
 MUTED    = "#767676"
@@ -41,30 +37,14 @@ HAIRLINE = 1.25
 RADIUS   = 6
 FONT     = "FreeSans, sans-serif"
 
-# Pastel fill ramps per trust-boundary type (Threagile's own enum -- see
-# 00-threagile-field-reference.yml's trust_boundary_fields.type), solid
-# rather than translucent so nested boundaries simply overpaint their own
-# footprint within a parent's fill instead of the two compounding into a
-# muddier color. Each type gets a shade list, lightest first -- when a
-# boundary is nested inside one or more ancestors of the *same* type, each
-# level one step further in gets the next shade in that type's own list, so
-# the nesting itself stays visible instead of two same-type boundaries
-# collapsing into one indistinguishable block of color. Real models observed
-# nesting two deep for a given type; a 3rd shade is headroom, not tuned to a
-# specific case. Depth is measured by geometric containment in build_svg,
-# not DOT source order, since boundary nesting has no guaranteed text order.
+# Solid pastel fills per trust-boundary type, lightest first. A boundary nested inside others of
+# the same type takes the next shade, so the nesting stays visible, and depth is measured by
+# geometric containment in build_svg, since DOT source order is not guaranteed.
 #
-# These are IL5 models, so the palette is deliberately green-dominant --
-# green reads as "inside our accreditation boundary". network-cloud-provider
-# is the one deliberate exception: its depth-0 shade is grey rather than a
-# lighter green, because depth 0 of that type is always the outermost
-# CSP-owned tenant/subscription (Azure Gov Environment, or an external IdP
-# tenant like Entra ID -- both carry mgmt:csp-managed), which sits outside
-# this system's own ATO boundary. Depth 1 of the same type is where a model
-# actually enters its ATO boundary (System Environment, tagged
-# scope:ato-boundary), so that's where the ramp switches to green -- grey
-# vs. green marks a real trust-model distinction here, not just a nesting
-# step, which is why this type's ramp changes hue instead of just shade.
+# These are IL5 models, so the palette is green, which reads as inside the accreditation
+# boundary. The exception is network-cloud-provider at depth 0, which is grey: that is always
+# the outermost CSP-owned tenant (tagged mgmt:csp-managed), outside this system's ATO boundary.
+# Depth 1 of that type is where the model enters its ATO boundary, so the ramp turns green there.
 BOUNDARY_FILL = {
     "network-cloud-provider": ["#e9e9e6", "#e6f4ea", "#cfe8d6"],
     "network-cloud-security-group": ["#d3ecda", "#b3ddbe", "#8fcc9f", "#6bbb80"],
@@ -74,35 +54,21 @@ BOUNDARY_FILL = {
     "network-virtual-lan": ["#eaf0ea", "#d8e4d8", "#c6d8c6"],
 }
 
-# execution-environment never nests inside another execution-environment
-# (you don't put a VM inside a VM), so the ordinary "depth among same-type
-# ancestors" rule below would always resolve it to shade 0 of its own list --
-# a color that resets rather than continuing the surrounding hierarchy,
-# which read as a disconnected, unrelated hue rather than "one level further
-# in" the way every other nesting step in these diagrams reads. Instead it
-# rides the *network-cloud-security-group* ramp above (the only type it's
-# ever actually nested inside in practice -- a VM/host is always inside some
-# subnet), counting depth among ancestors of that type instead of its own,
-# so its fill is simply the next shade past its immediate parent subnet's
-# own. See render_cluster's shade_depth/fill_type handling and the
-# render_svg loop that computes FOLLOWS_RAMP_OF depth.
+# An execution environment never nests inside another, so its own ramp would always give shade
+# 0, a color that breaks from the hierarchy around it. Instead, it follows the
+# network-cloud-security-group ramp, the type it sits inside, and takes the next shade past its
+# parent subnet (see render_cluster and build_svg).
 FOLLOWS_RAMP_OF = {
     "execution-environment": "network-cloud-security-group",
 }
 
-# ALTERNATE IMPACT-LEVEL PALETTES -- swap in for a higher-classification model
-# by uncommenting exactly one block below (each reassigns BOUNDARY_FILL, so
-# whichever block runs last wins -- uncommenting more than one silently
-# discards all but the last). Every variant keeps the same depth-0 grey for
-# network-cloud-provider (still means "outside our ATO boundary" regardless
-# of classification) and was generated by hue-rotating the tuned IL5 green
-# above at matching lightness/saturation per shade, so the same nesting-
-# depth-by-shade logic still reads correctly -- these are untuned starting
-# points, not visually verified the way the IL5 green above was, so give them
-# a real look (e.g. the same real-Chromium-screenshot check used throughout
-# this file's history) before actually shipping one.
+# Alternate impact-level palettes for a higher-classification model. Uncomment exactly one
+# block, since each reassigns BOUNDARY_FILL and the last one wins. Each keeps the grey depth-0
+# network-cloud-provider shade and hue-rotates the IL5 green at matching lightness, so the
+# nesting still reads. They have not been checked visually, so review one in a browser before
+# using it.
 #
-# IL6 -- red
+# IL6, red
 # BOUNDARY_FILL = {
 #     "network-cloud-provider": ["#e9e6e6", "#f4e6e6", "#e8cfcf"],
 #     "network-cloud-security-group": ["#ecd3d3", "#ddb3b3", "#cc8f8f", "#bb6b6b"],
@@ -110,11 +76,10 @@ FOLLOWS_RAMP_OF = {
 #     "network-on-prem": ["#ece6e6", "#e0d4d4", "#d4c2c2"],
 #     "network-dedicated-hoster": ["#ece6e6", "#e0d4d4", "#d4c2c2"],
 #     "network-virtual-lan": ["#f0eaea", "#e4d8d8", "#d8c6c6"],
-#     # execution-environment intentionally absent -- see FOLLOWS_RAMP_OF
-#     # above; it rides this palette's own network-cloud-security-group list.
+#     # execution-environment follows network-cloud-security-group (see FOLLOWS_RAMP_OF).
 # }
 #
-# IL6+ -- yellow (first of three environments needing a distinct hue)
+# IL6+, yellow (the first of three environments that need a distinct hue)
 # BOUNDARY_FILL = {
 #     "network-cloud-provider": ["#e9e8e6", "#f4f1e6", "#e8e3cf"],
 #     "network-cloud-security-group": ["#ece7d3", "#ddd5b3", "#ccc08f", "#bbab6b"],
@@ -122,10 +87,10 @@ FOLLOWS_RAMP_OF = {
 #     "network-on-prem": ["#ecebe6", "#e0ded4", "#d4d0c2"],
 #     "network-dedicated-hoster": ["#ecebe6", "#e0ded4", "#d4d0c2"],
 #     "network-virtual-lan": ["#f0efea", "#e4e2d8", "#d8d4c6"],
-#     # execution-environment intentionally absent -- see FOLLOWS_RAMP_OF above.
+#     # execution-environment follows network-cloud-security-group (see FOLLOWS_RAMP_OF).
 # }
 #
-# IL6+ -- purple (second environment)
+# IL6+, purple (the second environment)
 # BOUNDARY_FILL = {
 #     "network-cloud-provider": ["#e8e6e9", "#ede6f4", "#dccfe8"],
 #     "network-cloud-security-group": ["#e0d3ec", "#c8b3dd", "#ad8fcc", "#926bbb"],
@@ -133,10 +98,10 @@ FOLLOWS_RAMP_OF = {
 #     "network-on-prem": ["#e9e6ec", "#dad4e0", "#cbc2d4"],
 #     "network-dedicated-hoster": ["#e9e6ec", "#dad4e0", "#cbc2d4"],
 #     "network-virtual-lan": ["#edeaf0", "#ded8e4", "#cfc6d8"],
-#     # execution-environment intentionally absent -- see FOLLOWS_RAMP_OF above.
+#     # execution-environment follows network-cloud-security-group (see FOLLOWS_RAMP_OF).
 # }
 #
-# IL6+ -- orange (third environment)
+# IL6+, orange (the third environment)
 # BOUNDARY_FILL = {
 #     "network-cloud-provider": ["#e9e7e6", "#f4ede6", "#e8dbcf"],
 #     "network-cloud-security-group": ["#ecdfd3", "#ddc7b3", "#ccab8f", "#bb8f6b"],
@@ -144,16 +109,13 @@ FOLLOWS_RAMP_OF = {
 #     "network-on-prem": ["#ece9e6", "#e0dad4", "#d4cac2"],
 #     "network-dedicated-hoster": ["#ece9e6", "#e0dad4", "#d4cac2"],
 #     "network-virtual-lan": ["#f0edea", "#e4ded8", "#d8cec6"],
-#     # execution-environment intentionally absent -- see FOLLOWS_RAMP_OF above.
+#     # execution-environment follows network-cloud-security-group (see FOLLOWS_RAMP_OF).
 # }
 
-# Fill per confidentiality level (Threagile's own enum, shared by data assets
-# and technical assets -- see 00-threagile-field-reference.yml), used only on
-# the data-asset diagram: it has no trust boundaries to shade, so this is its
-# equivalent "what does the color mean" axis. Follows the common data-
-# classification convention (public=green ... strictly-confidential=red)
-# rather than reusing BOUNDARY_FILL's palette, so the two diagrams' colors
-# aren't mistaken for encoding the same thing.
+# Fill per confidentiality level, used only on the data-asset diagram, which has no trust
+# boundaries to shade. It follows the usual classification colors (public green through
+# strictly confidential red), distinct from BOUNDARY_FILL, so the two diagrams' colors are not
+# read as the same encoding.
 CONFIDENTIALITY_FILL = {
     "public": "#eaf7ee",
     "internal": "#eaf1fb",
@@ -162,21 +124,11 @@ CONFIDENTIALITY_FILL = {
     "strictly-confidential": "#fbe0e0",
 }
 
-# Pilot icon set, keyed by the value half of an `icon:*` tag (see
-# 03-tags-lib.yml's "DIAGRAM ICON TAGS" section -- a dedicated tag namespace
-# for this, deliberately separate from the security/hardening tags an asset
-# also carries, since those can be many-per-asset and icon selection needs
-# exactly one unambiguous choice). Values are the official Microsoft Azure
-# architecture icon SVGs, vendored unmodified under icons/ -- Microsoft's
-# terms of use permit this exact use (architecture diagrams) provided the
-# icon isn't cropped, rotated, or distorted and represents the actual Azure
-# product, which is why render_icon() embeds each file's untouched bytes via
-# a data: URI <image> rather than re-drawing/recoloring their paths. Pilot
-# covers only what confluence/llm-chat actually use today -- extend by
-# dropping another vendored SVG into icons/ and adding an entry here.
-# Values are paths relative to ICONS_DIR, one subfolder per cloud provider
-# (icons/azure/, icons/aws/) so the same icon: tag namespace can grow to
-# cover both without filename collisions between providers' own service names.
+# Icons, keyed by the value of an icon: tag (see 03-tags-lib.yml, "DIAGRAM ICON TAGS"), as
+# paths under ICONS_DIR with one folder per source. The Azure and AWS icons are the official
+# architecture icons, vendored unmodified. Their terms permit this use provided an icon is not
+# cropped, rotated, or distorted, which is why render_icon() embeds each file's bytes rather than
+# redrawing it. To add one, drop the SVG into icons/ and add an entry here.
 ICON_FILES = {
     "azure-waf": "azure/azure-waf.svg",
     "azure-ngfw": "azure/azure-ngfw.svg",
@@ -190,16 +142,12 @@ ICON_FILES = {
     "azure-entra-id": "azure/azure-entra-id.svg",
     "azure-private-link": "azure/azure-private-link.svg",
     "azure-subscription": "azure/azure-subscription.svg",
-    # No public/private split in Azure's own icon set (unlike AWS's two
-    # subnet icons below) -- one generic Subnet icon covers both.
+    # Azure has one subnet icon for both public and private subnets.
     "azure-subnet": "azure/azure-subnet.svg",
-    # Network Security Group -- a subnet-level security control, meant to
-    # be tagged alongside icon:azure-subnet (both render as a row via
-    # render_icon/render_cluster's multi-icon support), not instead of it.
+    # A subnet-level security control, tagged alongside icon:azure-subnet rather than instead of
+    # it.
     "azure-nsg": "azure/azure-nsg.svg",
-    # AWS -- same 12-service pilot set, one tag per Azure counterpart above
-    # (aws-vpc <-> azure-vnet, aws-eks <-> azure-aks, etc.), no app models
-    # this yet but 05/06/07-*-lib.yml already have AWS sibling folders.
+    # AWS: one tag per Azure counterpart above (aws-vpc for azure-vnet, aws-eks for azure-aks).
     "aws-waf": "aws/aws-waf.svg",
     "aws-ngfw": "aws/aws-ngfw.svg",
     "aws-vpc": "aws/aws-vpc.svg",
@@ -213,25 +161,13 @@ ICON_FILES = {
     "aws-private-link": "aws/aws-private-link.svg",
     "aws-organizations": "aws/aws-organizations.svg",
     "aws-cloud": "aws/aws-cloud.svg",
-    # AWS's own official icon set splits this into two real, distinct
-    # icons (same padlock glyph, different brand color) rather than one
-    # generic subnet icon -- preserved as two tags rather than flattened
-    # to match Azure's single icon/azure-subnet, since that distinction is
-    # genuine AWS convention, not something invented here.
+    # AWS has separate public and private subnet icons, so both are kept as tags.
     "aws-subnet-public": "aws/aws-subnet-public.svg",
     "aws-subnet-private": "aws/aws-subnet-private.svg",
-    # AWS has no equivalent to Azure NSG at all -- confirmed absent from
-    # AWS's own official icon set (checked both the current and a prior
-    # release). NACL is the real subnet-level analog structurally (both
-    # apply at the subnet, unlike Security Groups which apply per
-    # ENI/instance), even though NACLs are stateless where NSGs and
-    # Security Groups are both stateful -- no single AWS construct matches
-    # NSG on both dimensions, and subnet-level placement is what matters
-    # for a boundary badge. Meant to be tagged alongside
-    # icon:aws-subnet-public/private, not instead of it.
+    # AWS has no NSG icon. A NACL is the closest analog, since both apply at the subnet, so it is
+    # tagged alongside icon:aws-subnet-public or icon:aws-subnet-private.
     "aws-nacl": "aws/aws-nacl.svg",
-    # AWS-only additions beyond the paired pilot set above -- no Azure
-    # counterpart tag, added as apps started modeling these services.
+    # AWS services with no Azure counterpart tag.
     "aws-bedrock": "aws/aws-bedrock.svg",
     "aws-api-gateway": "aws/aws-api-gateway.svg",
     "aws-alb": "aws/aws-alb.svg",
@@ -239,21 +175,13 @@ ICON_FILES = {
     "azure-load-balancer": "azure/azure-load-balancer.svg",
     "azure-openai": "azure/azure-openai.svg",
     "azure-management-groups": "azure/azure-management-groups.svg",
-    # Kubernetes-native, not cloud-provider-specific -- one tag covers a
-    # namespace boundary under either an AKS or EKS cluster (see 03-tags-lib.yml).
+    # Kubernetes icons, independent of the cloud provider, so one tag covers a namespace under AKS
+    # or EKS (see 03-tags-lib.yml).
     "k8s-namespace": "opensource/k8s-namespace.svg",
     "kubernetes": "opensource/kubernetes.svg",
-    # Software running as pods/processes inside an app's own compute,
-    # independent of any cloud provider -- glyph + brand color on a 64x64
-    # square, same visual language as the vendor sets above, built from
-    # Simple Icons (CC0, simpleicons.org) glyphs recolored onto that
-    # background rather than used as-provided (Simple Icons ships them as
-    # bare monochrome glyphs with no fixed background of their own). The
-    # folder is named "opensource" because every entry so far has been --
-    # Confluence (commercial COTS, self-hosted the same way as these) is
-    # the first exception, added to this same set/folder anyway since the
-    # construction and selection logic are identical; only the license
-    # differs, which nothing here keys off of.
+    # Software that runs inside an application's own compute, independent of any cloud provider.
+    # Each is a Simple Icons glyph (CC0) recolored onto a 64x64 brand-colored square, the same
+    # visual language as the vendor sets. Confluence is commercial, but it is built the same way.
     "keycloak": "opensource/keycloak.svg",
     "postgresql": "opensource/postgresql.svg",
     "nginx": "opensource/nginx.svg",
@@ -270,143 +198,59 @@ ICON_FILES = {
     "vault": "opensource/vault.svg",
     "grafana": "opensource/grafana.svg",
     "mcp": "opensource/mcp.svg",
-    # Generic external-actor icons (not product logos) -- see icons/NOTICE.md.
+    # Generic external-actor icons, not product logos (see icons/NOTICE.md).
     "human-web": "opensource/human-web.svg",
     "human-vdi": "opensource/human-vdi.svg",
     "machine-client": "opensource/machine-client.svg",
-    # Generic boundary-type badge (not a product logo) for Threagile's own
-    # execution-environment trust boundary type -- cloud-provider-
-    # independent, same reasoning as kubernetes/k8s-namespace above. See
-    # icons/NOTICE.md.
+    # A generic badge for the execution-environment boundary type, not a product logo (see
+    # icons/NOTICE.md).
     "execution-environment": "opensource/execution-environment.svg",
-    # Open WebUI's own official favicon (a raster PNG embedded in an SVG
-    # wrapper, not a true vector like the Simple Icons ones above -- theirs
-    # is the only logo asset that exists for it, and no separate background
-    # square is added here since the favicon already is one, a white circle
-    # around the black "OI" mark) -- see BRANDING.md in their repo for why
-    # it's vendored unmodified rather than recolored to match the others.
+    # Open WebUI's official favicon, a raster PNG in an SVG wrapper and its only logo asset. It is
+    # vendored unmodified (see BRANDING.md in its repository).
     "open-webui": "opensource/open-webui.svg",
 }
 
 ICON_MARGIN = 3  # inset from the boundary's own corner (render_icon's anchor)
 
-# Security-control icons (NSG/NACL) render in the boundary's top-LEFT corner
-# instead of stacking into the same top-right row as the boundary's own
-# identity icon (subnet, VNet/VPC, cluster, etc.) -- the two are different
-# kinds of fact about a boundary (what it IS vs. what security control
-# governs it), and cramming both into one corner read as clutter once a
-# boundary carried both a subnet icon and its NSG/NACL pair. Keyed by
-# ICON_FILES tag name (checked before resolving to a filename), not the
-# filename itself. See render_cluster.
+# Security-control icons (NSG and NACL) go in the boundary's top-left corner, apart from its
+# identity icon at the top right, since one says what the boundary is and the other what governs
+# it. Keyed by ICON_FILES tag name (see render_cluster).
 BOUNDARY_LEFT_CORNER_ICONS = frozenset({"azure-nsg", "aws-nacl"})
 
 NODE_ICON_GAP  = 4   # vertical gap between a node's icon row and its label's first line
-NODE_ICON_MIN  = 12  # floor to shrink a node's icon(s) to on a short/narrow box before giving up on them entirely -- still legible as a vector at this size
-# Fixed size every node icon renders at, regardless of how much headroom
-# its own box happens to have. This used to be a growth ceiling instead
-# (up to a flat 64px cap, further limited to 0.45x of the box's own
-# height) that let icon_size expand to fill whatever headroom a
-# generously-scaled diagram's box had left over after the label -- which
-# meant the same kind of icon rendered at visibly different sizes across
-# one diagram depending purely on box geometry (a single-icon node vs. a
-# two-icon node sharing a row, or a taller box vs. a shorter one), not on
-# anything meaningful about the asset. Fixed value instead, so every node
-# icon reads at the same visual weight; available_h/available_w below
-# still shrink it (down to NODE_ICON_MIN) on a box too small to fit it.
-# 30 matches what a two-icon node (AWS WAF + ALB sharing one row) already
-# naturally worked out to under the old ratio-based formula on a typical
-# box height in these diagrams -- picked as the new fixed default because
-# it already read right in practice.
+NODE_ICON_MIN  = 12  # the smallest a node icon shrinks to on a short box before it is dropped, still legible as a vector
+# Every node icon renders at this size, so the same kind of icon reads the same across a
+# diagram. render_node still shrinks it (down to NODE_ICON_MIN) on a box too small to fit it.
 NODE_ICON_TARGET_SIZE = 30
 NODE_ICON_ROW_GAP = 6  # horizontal gap between side-by-side icons when a node has more than one
 
-# Trust boundary corner badge size (render_icon) -- intentionally the same
-# size as a node's own primary icon (NODE_ICON_TARGET_SIZE) rather than a
-# separate tuned value, so a boundary's identity/NSG-NACL badges read at
-# the same visual weight as the asset icons inside it. Referencing
-# NODE_ICON_TARGET_SIZE directly (rather than a separate literal) keeps
-# the two from drifting apart, the same reasoning CLUSTER_FONTSIZE below
-# already applies to node vs. boundary label text.
+# Trust boundary corner badges match a node's icon size, so the two read at the same weight.
 ICON_SIZE = NODE_ICON_TARGET_SIZE
 
-# AWS's official icon set ships each glyph on a solid, edge-to-edge
-# colored square (viewBox filled 100% in both dimensions, confirmed by
-# rendering several AWS icons to a fixed size and measuring the actual
-# non-transparent pixel bounding box) -- unlike Azure's, which are mostly
-# transparent-background line art that doesn't reach the viewBox edges
-# (measured ~60-63% fill in the narrower dimension for the same
-# comparison). Both render at the exact same `width`/`height` <image> box
-# (ICON_SIZE), but AWS icons have no built-in breathing room the way
-# Azure's do, so they read as visibly larger/bolder at an identical box
-# size -- most noticeable on trust boundary corner badges specifically,
-# since that's where the icon sits directly against other diagram
-# elements with no label to visually balance it (a node's primary icon
-# always sits above the node's own label text, and so 100%-fill icons
-# were not raised as an issue there). Scaling only render_icon() (the
-# corner-badge call site), not render_icon_centered() (a node's own
-# primary icon), which is the specific complaint this was raised against.
-#
-# Same correction applies to any icons/opensource/*.svg built with this
-# repo's own full-bleed 64x64 background-square construction (see
-# icons/NOTICE.md) when used as a boundary badge -- k8s-namespace.svg is
-# the first, since it's the first opensource/ icon actually used on a
-# trust boundary rather than only as a node's own primary icon. Not every
-# opensource/ icon automatically needs this -- only ones actually placed
-# via render_icon() -- so this is an explicit membership set (matching
-# ICONS_NEEDING_PRINT_RASTER's own "don't add on suspicion alone"
-# discipline), not an attempt to sniff full-bleed-ness from file content.
-#
-# The scale itself is 1.0 (no reduction) -- explicitly requested so a
-# boundary badge always renders at exactly ICON_SIZE, matching a node's
-# own icon size exactly rather than reading smaller for AWS/full-bleed
-# icons specifically. Kept as a named constant (not inlined as 1.0 at the
-# call site) so the visible-size-mismatch reasoning above stays attached
-# to a real, easily-tunable knob if a future icon set brings the same
-# full-bleed-vs-breathing-room mismatch back.
+# AWS icons, and this project's own opensource/ squares, fill their viewBox edge to edge, while
+# Azure's line art leaves a margin, so at the same size a full-bleed icon reads larger. The scale
+# applies only to boundary badges in render_icon(), and only to the icons listed in
+# FULL_BLEED_BOUNDARY_ICONS. It is 1.0, so a badge renders at exactly ICON_SIZE, and it stays a
+# named constant in case a future icon set needs a reduction.
 FULL_BLEED_BOUNDARY_ICON_SCALE = 1.0
 FULL_BLEED_BOUNDARY_ICONS = frozenset({
     "opensource/k8s-namespace.svg",
 })
 
-# Node label font size -- a single shared constant rather than a literal
-# repeated at both the call site that decides line-wrapping (wrap_and_fit,
-# which needs to know it to compute how many characters fit per line) and
-# the one that actually draws the text (render_node). Keeping those two in
-# sync matters: wrapping decisions made against one size and rendered at a
-# different one is exactly the kind of mismatch that overflows a box.
+# Node label font size, shared by wrap_and_fit (which wraps to it) and render_node (which draws
+# at it), since a mismatch between the two overflows a box.
 NODE_FONTSIZE  = 11
-# The data-asset diagram's boxes are sized by Graphviz for the data-flow
-# diagram's denser labels, so they end up generously wide relative to the
-# data-asset diagram's own (often shorter) labels -- it can afford a much
-# bigger node font than the data-flow diagram without wrapping trouble.
+# The data-asset diagram's boxes are wide for its short labels, so it can use a larger font.
 NODE_FONTSIZE_DATA_ASSET = 24
 EDGE_FONTSIZE       = 10  # primary (solid) edges
-EDGE_FONTSIZE_MINOR = 8   # dashed/background edges (telemetry, etc.) -- stays smaller than primary
-CLUSTER_FONTSIZE = NODE_FONTSIZE  # trust-boundary label -- matches node label size (data-flow diagram only, the data-asset diagram has no trust boundaries). Was bumped to 14 at one point and read as oversized next to node text; referencing NODE_FONTSIZE directly (rather than a separate literal) keeps the two from drifting apart again.
+EDGE_FONTSIZE_MINOR = 8   # dashed background edges (such as telemetry), smaller than primary ones
+CLUSTER_FONTSIZE = NODE_FONTSIZE  # trust-boundary label, the same size as node labels (the data-asset diagram has no boundaries)
 
-# NODE_FONTSIZE/NODE_FONTSIZE_DATA_ASSET/CLUSTER_FONTSIZE/NODE_ICON_TARGET_SIZE/
-# ICON_SIZE above are all fixed pixel sizes, but every diagram's own boxes
-# render at a different effective scale (see build_svg's px_per_in): a
-# diagram whose native Graphviz layout happens to come out narrower for its
-# node count gets a larger px_per_in to fill the same target_width, so its
-# boxes render visibly bigger in pixels than an equally-populated but wider
-# diagram's -- confirmed directly comparing confluence (px_per_in ~50, a
-# more compact native layout) against exposed-ai-chat (~32) at otherwise
-# similar node counts. Left alone, that means the same fixed-pixel label
-# text and icons read appropriately sized on one diagram and undersized
-# relative to its own (bigger) boxes on another, purely as a function of
-# each app's layout shape rather than anything to do with legibility.
-# build_svg computes a per-diagram diagram_scale from px_per_in against
-# this baseline and multiplies every one of those constants by it before
-# rendering, so label/icon size tracks each diagram's own box size instead
-# of everyone sharing one fixed pixel value regardless of scale. Baseline
-# picked to equal exposed-ai-chat's own scale (the diagram these fixed
-# sizes were last tuned and verified against), so diagram_scale is ~1.0
-# there and the pixel constants above stay meaningful as "the size at
-# exposed-ai-chat's own scale," not just an arbitrary multiplier base.
-# Clamped so a real outlier (a diagram with only a couple of nodes, whose
-# native graph can come out unusually small) can't blow font/icon size up
-# or down to something absurd.
+# The fixed pixel sizes above are scaled per diagram. A diagram with a narrower native layout
+# gets a larger px_per_in, so its boxes render larger, and fixed-size text and icons would look
+# undersized in them. build_svg multiplies each size by px_per_in divided by this baseline,
+# clamped so a tiny diagram cannot push sizes to extremes. The baseline is the scale the sizes
+# were tuned at.
 DIAGRAM_SCALE_BASELINE_PX_PER_IN = 32.0
 DIAGRAM_SCALE_MIN = 0.6
 DIAGRAM_SCALE_MAX = 1.8
@@ -419,61 +263,32 @@ def _icon_data_uri(filename: str) -> str:
     return f"data:image/svg+xml;base64,{b64}"
 
 
-# Vendored icons confirmed (via an isolated minimal WeasyPrint render of
-# each icon alone) to silently drop their gradient-filled background in
-# WeasyPrint specifically -- browsers and cairosvg render every one of
-# these correctly, so this is purely a WeasyPrint limitation, not a
-# malformed file. Hardcoded to exactly what's been tested rather than
-# sniffed from the SVG content: the first guess -- any icon whose
-# gradientTransform includes rotate() -- was disproved by testing all 7
-# vendored icons using gradientTransform individually (a from-scratch
-# WeasyPrint render of each in isolation, one per icon, rasterized to PNG
-# and visually inspected): azure-app-gateway.svg (rotate(45)) was the only
-# one broken -- azure-vnet.svg's gradientTransform rotate(-0.08) (an
-# effectively-zero rotation, likely a design-tool export artifact) and 5
-# others all rendered correctly despite also using gradientTransform, so
-# mere presence of the attribute -- or even of a rotate() inside it --
-# isn't the real trigger. Re-test a new icon here individually (see this
-# file's git history for the test harness) rather than assuming a pattern
-# generalizes; don't add to this set on suspicion alone.
+# Icons that WeasyPrint renders without their gradient background, though browsers and cairosvg
+# draw them correctly, so the PDF uses a raster copy. The list holds only icons tested alone in
+# WeasyPrint, since the attribute that looks responsible (a rotate() in gradientTransform) also
+# appears in icons that render fine. Test a new icon the same way before adding it.
 ICONS_NEEDING_PRINT_RASTER = frozenset({
     "azure/azure-app-gateway.svg",
-    # azure-openai.svg shares azure-app-gateway.svg's own gradientTransform
-    # rotate(45) pattern and was confirmed broken the same way (isolated
-    # WeasyPrint render: 0% non-white pixels, fully blank) -- not added on
-    # the rotate(45) pattern alone, per this set's own discipline above,
-    # but on a real isolated test matching that one's actual result.
+    # Confirmed blank in an isolated WeasyPrint render, like azure-app-gateway.svg.
     "azure/azure-openai.svg",
 })
 
 
 def _icon_needs_print_raster(filename: str) -> bool:
-    """See _icon_data_uri_raster and build_svg's for_print -- this never
-    applies to the standalone SVG/HTML files, only the PDF-embedded copy."""
+    """Whether an icon needs the raster copy in the PDF (see _icon_data_uri_raster). The standalone
+    SVG and HTML files never use it."""
     return filename in ICONS_NEEDING_PRINT_RASTER
 
 
 @functools.lru_cache(maxsize=None)
 def _icon_data_uri_raster(filename: str) -> str:
-    """PNG-rasterized fallback for _icon_needs_print_raster() icons, used
-    only for the PDF-embedded diagram (see build_svg's for_print) -- the
-    vendored SVG itself is never modified (icons/NOTICE.md's terms are
-    about that file, not what we choose to embed it as), and the
-    standalone SVG/HTML files keep embedding the original SVG unchanged,
-    since only WeasyPrint has trouble with it.
+    """The raster fallback for _icon_needs_print_raster() icons, used only in the PDF copy of the
+    diagram, since only WeasyPrint mishandles them. The vendored SVG is never modified.
 
-    Reads a pre-rasterized <name>-print.png sitting next to the source
-    SVG (fixed 256x256 -- every vendored icon is a square viewBox; final
-    on-page size is always well under that, so this stays crisp at any
-    size actually used) rather than calling cairosvg at report-render
-    time. This used to rasterize on the fly via `cairosvg.svg2png(...)`,
-    but the input (this one specific icon) and the output size never
-    change, so the conversion only ever needs to happen once -- baking it
-    in ahead of time removes cairosvg as a runtime dependency entirely,
-    which matters on an air-gapped build where it may not be mirrored.
-    Regenerate the PNG (`cairosvg.svg2png(url=..., output_width=256,
-    output_height=256)` against the source SVG) only if that source SVG
-    itself is ever replaced -- see icons/NOTICE.md."""
+    It reads a prebuilt <name>-print.png (256x256, larger than any size used) next to the source SVG,
+    so the report needs no cairosvg at run time, which matters on an air-gapped build. Regenerate the
+    PNG only when its source SVG is replaced (cairosvg.svg2png(url=..., output_width=256,
+    output_height=256), see icons/NOTICE.md)."""
     svg_path = ICONS_DIR / filename
     png_path = svg_path.with_name(svg_path.stem + "-print.png")
     png_bytes = png_path.read_bytes()
@@ -494,27 +309,14 @@ def _resolve_icon_file(tag: str) -> str:
 
 
 def _icon_source(filename: str) -> str:
-    """First path segment of a resolved ICON_FILES value, e.g. "azure" from
-    "azure/azure-vnet.svg" -- looked up against ICON_SOURCE_SCALE."""
+    """The first path segment of an ICON_FILES value (such as "azure" from "azure/azure-vnet.svg"),
+    looked up in ICON_SOURCE_SCALE."""
     return filename.split("/", 1)[0]
 
 
-# The vendored aws/ and opensource/ icons both fill their full viewBox
-# edge-to-edge with a solid colored square (confirmed: 13/14 aws/*.svg and
-# 6/7 opensource/*.svg have an explicit <rect> spanning the whole canvas);
-# azure/*.svg has none -- it's a transparent-canvas glyph with real margin
-# around the artwork, by Microsoft's own icon design language. At the same
-# ICON_SIZE, that used to read as visibly smaller/lighter next to an aws or
-# opensource icon in the same node or diagram -- azure carried a 1.15x
-# compensation here for exactly that. Once node icon size (and everything
-# else pixel-sized) started scaling per-diagram against each diagram's own
-# box size (see DIAGRAM_SCALE_BASELINE_PX_PER_IN), that visual mismatch
-# stopped showing up in practice -- confirmed by the user's own visual
-# review of confluence's regenerated diagram (all azure icons) right after
-# that change landed -- so the compensation is no longer needed and every
-# source now renders at its natural 1.0x. Kept as a dict (not deleted
-# outright) in case a future icon set needs the same kind of per-vendor
-# placement-size correction.
+# Per-source size correction for node icons. Every source renders at 1.0, since the per-diagram
+# scaling (see DIAGRAM_SCALE_BASELINE_PX_PER_IN) removed the visible size difference between
+# Azure's margined icons and the full-bleed ones. It stays a dict for a future icon set.
 ICON_SOURCE_SCALE = {}
 
 
@@ -531,23 +333,12 @@ def _icon_href(filename: str, for_print: bool) -> str:
 def render_icon(corner_x: float, top_y: float, tags, color: str,
                  for_print: bool = False, anchor: str = "right",
                  icon_size: float = ICON_SIZE) -> str:
-    """Places a small row of vendored icons/ICON_FILES[tag] SVGs inset from
-    (corner_x, top_y) -- one of a trust boundary/cluster's own top corners
-    -- as a supplementary corner badge row: one icon per tag in `tags`.
-    anchor="right" (default) treats corner_x as the boundary's top-right
-    corner, flush-right with additional icons extending leftward (e.g. a
-    subnet's own identity icon). anchor="left" treats corner_x as the
-    top-left corner instead, flush-left with additional icons extending
-    rightward -- used for security-control icons (NSG/NACL), kept in the
-    opposite corner from the identity icon rather than stacked into the
-    same row with it (see BOUNDARY_LEFT_CORNER_ICONS). `tags` may be a
-    single string (kept for callers with just one) or a list/tuple for
-    more. `color` is unused (kept so call sites don't need to know whether
-    the active icon set is hand-drawn or vendored artwork) -- these icons
-    carry Microsoft's/AWS's own official per-service colors, and
-    recoloring them would run afoul of the "don't distort" terms of use.
-    icon_size defaults to the flat ICON_SIZE but build_svg passes its own
-    per-diagram scaled value instead (see DIAGRAM_SCALE_BASELINE_PX_PER_IN)."""
+    """Places a trust boundary's corner badge, one icon per tag in `tags` (a string or a list),
+    inset from (corner_x, top_y). With anchor="right", the row starts at the top-right corner and
+    extends left. With anchor="left", it starts at the top-left corner and extends right, which is
+    used for the security-control icons (see BOUNDARY_LEFT_CORNER_ICONS). `color` is unused, since
+    the vendored icons keep their official colors, and the terms of use forbid recoloring them.
+    build_svg passes a per-diagram icon_size (see DIAGRAM_SCALE_BASELINE_PX_PER_IN)."""
     if isinstance(tags, str):
         tags = [tags]
     filenames = [f for f in (_resolve_icon_file(t) for t in tags) if f]
@@ -556,15 +347,8 @@ def render_icon(corner_x: float, top_y: float, tags, color: str,
     out = []
     cursor = corner_x + ICON_MARGIN if anchor == "left" else corner_x - ICON_MARGIN
     for filename in filenames:
-        # See FULL_BLEED_BOUNDARY_ICON_SCALE's own comment: AWS's icons
-        # (and FULL_BLEED_BOUNDARY_ICONS) fill their own viewBox
-        # edge-to-edge with no built-in margin the way Azure's do, so they
-        # read as visibly larger at an identical box size. Scaled (not
-        # just repositioned) so the badge itself shrinks, computed per
-        # icon (not once for the whole row) so a mixed row -- e.g. an
-        # unscaled icon:azure-nsg next to an unscaled icon:azure-subnet --
-        # doesn't force every icon in the row down to whichever one
-        # happens to need scaling.
+        # Full-bleed icons scale per icon (see FULL_BLEED_BOUNDARY_ICON_SCALE), so one such icon
+        # in a mixed row does not shrink the others.
         needs_scale = filename.startswith("aws/") or filename in FULL_BLEED_BOUNDARY_ICONS
         size = icon_size * FULL_BLEED_BOUNDARY_ICON_SCALE if needs_scale else icon_size
         x = cursor if anchor == "left" else cursor - size
@@ -577,14 +361,9 @@ def render_icon(corner_x: float, top_y: float, tags, color: str,
 
 
 def render_icon_centered(cx: float, top_y: float, tag: str, size: float = NODE_ICON_TARGET_SIZE, for_print: bool = False) -> str:
-    """Places the vendored icons/ICON_FILES[tag] SVG horizontally centered
-    on cx with its top edge at top_y, at the given size (defaulting to
-    NODE_ICON_TARGET_SIZE) -- used for a node's own primary icon (see
-    render_node), as opposed to a boundary's corner badge (render_icon).
-    render_node's only caller always passes size explicitly (shrunk below
-    the default on a short box rather than let the icon+label block
-    overflow it); the default here exists only as a safe fallback for any
-    other caller."""
+    """Places a node's primary icon centered on cx with its top edge at top_y, as opposed to a
+    boundary's corner badge (render_icon). render_node always passes the size, shrinking it on a
+    short box, so the default is only a fallback."""
     filename = _resolve_icon_file(tag)
     if not filename:
         return ""
@@ -669,16 +448,10 @@ def strip_html(s: str) -> str:
 
 
 def extract_bold_text(s: str) -> str:
-    """Extract the asset name from a Threagile HTML table label.
-    Threagile uses: <b><font color=...>Asset Name</font></b>
+    """Extracts the asset name from a Threagile HTML label, <b><font color=...>Asset Name</font></b>.
 
-    Threagile HTML-escapes the label text itself (e.g. an asset titled
-    "... & ..." becomes "... &amp; ..." in the DOT source), so the raw
-    regex match needs unescaping -- otherwise it round-trips as literal
-    "&amp;" both when matching this text against the model YAML's asset
-    titles (confidentiality_by_label) and when it gets re-escaped for SVG
-    output, doubling up into a visibly wrong "&amp;amp;".
-    """
+    Threagile HTML-escapes the label (an "&" becomes "&amp;"), so the match is unescaped, both for
+    matching against the model's asset titles and to avoid a doubled "&amp;amp;" in the SVG."""
     s = s.strip()
     if s.startswith('<') and s.endswith('>'):
         s = s[1:-1]
@@ -775,15 +548,9 @@ def parse_plain(plain: str) -> dict:
 def parse_dot_node_attrs(dot_source: str) -> dict:
     """Extract per-node attributes directly from DOT source."""
     attrs = {}
-    # Match node blocks: ID [ ... ]; handling multiline. Anchored to the
-    # start of a line (after only whitespace) -- an unanchored \d+\[...\];
-    # also matches an edge's *head* id ("4069313389 -> 735278355 [ ... ];"
-    # -- "735278355" isn't at the start of that line, but the pattern
-    # doesn't care), and since a node id can coincide with some edge's head
-    # id elsewhere in the file, an unanchored match can silently clobber
-    # this dict's entry for that node with the edge's own attrs instead
-    # (confirmed: happened for a real node in exposed-ai-chat's diagram,
-    # corrupting the "better bold label" override this feeds elsewhere).
+    # Node blocks, "ID [ ... ];", across lines. Anchored to the start of a line, since an
+    # unanchored match also catches an edge's head id ("A -> B [ ... ];") and would overwrite that
+    # node's attributes with the edge's.
     pattern = re.compile(r'^[ \t]*(\d+)\s*\[\s*\n?(.*?)\s*\]\s*;', re.DOTALL | re.MULTILINE)
     for m in pattern.finditer(dot_source):
         nid  = m.group(1)
@@ -892,11 +659,8 @@ def parse_dot_cluster_attrs(dot_source: str) -> list:
         if "invis" in style:
             continue
 
-        # Extract label and, separately, the trust-boundary type suffix --
-        # Threagile renders it as plain text after the closing </b>, e.g.
-        # "<b>DMZ VNet</b> (network-cloud-security-group)", so it's never
-        # part of the bold-name match below and has to be pulled out on its
-        # own rather than stripped off the end of label.
+        # The trust-boundary type follows the closing </b> as plain text (such as
+        # "<b>DMZ VNet</b> (network-cloud-security-group)"), so it is extracted separately.
         label = ""
         boundary_type = ""
         lm = re.search(r'label\s*=\s*(<)', graph_block)
@@ -906,10 +670,8 @@ def parse_dot_cluster_attrs(dot_source: str) -> list:
                 type_m = re.search(r'</b>\s*\(([a-z][a-z-]*)\)', raw)
                 if type_m:
                     boundary_type = type_m.group(1)
-                # Match <b><font ...>NAME</font></b>. Threagile HTML-escapes
-                # the label text (see extract_bold_text), so unescape here
-                # too -- otherwise a boundary name containing e.g. "&" would
-                # round-trip as literal "&amp;" once re-escaped for SVG output.
+                # <b><font ...>NAME</font></b>. Threagile HTML-escapes the label, so it is unescaped
+                # here, or an "&" would be escaped twice in the SVG.
                 bm = re.search(r'<b[^>]*><font[^>]*>([^<]+)</font></b>', raw)
                 if bm:
                     label = html.unescape(bm.group(1).strip())
@@ -1043,14 +805,9 @@ def svg_rect(cx, cy, w, h, fill, stroke, sw, rx=6, dash=""):
             f'rx="{rx}" fill="{fill}" stroke="{stroke}" stroke-width="{sw:.1f}"{da}/>')
 
 def wrap_label(text: str, max_width: float, fontsize: float) -> list:
-    """Greedy word-wrap to fit max_width, estimating FreeSans's average
-    character width rather than measuring exactly (no font-metrics library
-    in play here) -- 0.6x fontsize is a safe-ish upper bound for mixed-case
-    text in this font. Needed because a node's *native* Graphviz box size
-    can be generous while still rendering small after the whole diagram is
-    scaled down to fit the page, at which point a fixed font-size can
-    overflow it (confirmed: e.g. a 4in-wide native box that's still too
-    narrow for one line of an unwrapped 24-character label once scaled)."""
+    """Greedy word wrap to fit max_width, estimating FreeSans's average character width at 0.6x
+    the font size, a safe upper bound for mixed-case text. A node's native box can still be too
+    narrow for an unwrapped label once the diagram is scaled to the page."""
     max_chars = max(4, int(max_width / (fontsize * 0.6)))
     words = text.split()
     lines, cur = [], ""
@@ -1067,21 +824,11 @@ def wrap_label(text: str, max_width: float, fontsize: float) -> list:
 
 
 def wrap_and_fit(label: str, native_w: float, fontsize: float) -> tuple:
-    """Word-wraps label against the node's native Graphviz width. Returns
-    (lines, native_w) -- the width is intentionally left untouched.
+    """Word-wraps label against the node's native Graphviz width. Returns (lines, native_w).
 
-    An earlier version of this function shrank the returned width to fit
-    the wrapped content, on the theory that Graphviz's box (sized for its
-    own native, larger-font label) was often wider than our smaller
-    restyled text needed. That's true, but Graphviz's *edge routing* --
-    the actual spline points, not just the final clip point -- was
-    computed against the original wide silhouette. Shrinking the box out
-    from under an already-routed edge left _clip_and_shift dragging the
-    endpoint to a boundary the rest of the path was never drawn to reach,
-    producing visibly disconnected ("floating") arrows on edges that
-    approached from the side rather than square-on. Node height was never
-    part of that problem (see NODE_ICON_* / the content-block centering in
-    render_node) since nothing there moves where a node's boundary is."""
+    The width is deliberately left as it is. Graphviz routed every edge against the original box,
+    so shrinking the box would leave _clip_and_shift pulling endpoints to a boundary the path never
+    reached, which shows as floating arrows on edges that approach from the side."""
     lines = wrap_label(label, native_w * 0.85, fontsize)
     return lines, native_w
 
@@ -1090,13 +837,8 @@ def render_node(node: dict, cx: float, cy: float, w: float, h: float,
                 dot_attrs: dict, lines: list, fill_override: str = None, icon_tags: list = None,
                 fontsize: float = NODE_FONTSIZE, for_print: bool = False,
                 icon_target_size: float = NODE_ICON_TARGET_SIZE) -> str:
-    """lines is the label already word-wrapped by the caller (see
-    _wrap_and_measure) -- computed once against the node's *original*
-    Graphviz width so wrapping decisions stay stable even when w here has
-    since been tightened to a smaller, content-fit value (see build_svg's
-    node-sizing pass). Re-wrapping against the already-shrunk w here would
-    risk wrapping the same label differently than what that shrink amount
-    was actually computed for."""
+    """lines is the label already wrapped by the caller against the node's native Graphviz width
+    (see wrap_and_fit), so the wrapping stays stable."""
     nid   = node["id"]
     extra = dot_attrs.get(nid, {})
 
@@ -1104,14 +846,9 @@ def render_node(node: dict, cx: float, cy: float, w: float, h: float,
     style  = extra.get("style", node["style"]).lower()
     periph = int(extra.get("peripheries", "1"))
 
-    # Accent reserved for external/out-of-scope entities (Threagile's own
-    # octagon convention) -- the diagram's natural focal point, signaled via
-    # a bold accent-colored border rather than a solid accent fill (solid
-    # navy read as visually heavier than intended and made the node's own
-    # label/icon harder to read against it). Everything else is neutral
-    # ink-on-paper regardless of Threagile's own color-by-asset-type fill,
-    # per the one-accent-color principle. fill_override (confidentiality-
-    # level fill, data-asset diagram only) takes the paper slot when given.
+    # External and out-of-scope entities (Threagile's octagons) get an accent-colored border
+    # rather than a fill, which kept their labels readable. Everything else is ink on paper.
+    # fill_override (the data-asset diagram's confidentiality fill) replaces the paper color.
     is_accent = shape == "octagon"
     fill      = fill_override or PAPER
     stroke    = ACCENT if is_accent else INK
@@ -1119,13 +856,8 @@ def render_node(node: dict, cx: float, cy: float, w: float, h: float,
 
     dash = "5,3" if "dotted" in style else ("8,4" if "dashed" in style else "")
 
-    # Every node draws as a plain rect regardless of Threagile's own shape
-    # (ellipse/cylinder/octagon) -- a flat arrowhead meeting a flat,
-    # perpendicular boundary sits flush with no overlap, sidestepping the
-    # curve-vs-flat-marker mismatch entirely rather than continuing to
-    # tune clip/gap math against it. `shape` (Threagile's original) is
-    # still consulted below for the external/out-of-scope accent color,
-    # which is a semantic distinction independent of the drawn geometry.
+    # Every node is a plain rect, whatever Threagile's shape, so a flat arrowhead meets a flat
+    # edge with no overlap. `shape` still decides the external-entity accent.
     shape_svg = svg_rect(cx, cy, w, h, fill, stroke, sw, rx=RADIUS, dash=dash)
 
     # Double border (peripheries=2) — draw a second slightly smaller rect
@@ -1138,24 +870,12 @@ def render_node(node: dict, cx: float, cy: float, w: float, h: float,
     line_h   = fontsize * 1.4
     total_h  = line_h * len(lines)
 
-    # A node's icon(s) (when tagged) are its primary visual identifier, not
-    # a supplementary corner badge -- stack them above the label and center
-    # the whole thing as one block, so it never competes with the label for
-    # space regardless of box size or how many lines the label wraps to.
-    # More than one icon tag (e.g. an ALB tagged both icon:aws-waf and
-    # icon:aws-alb) sits as a single side-by-side row, in tag order. Nodes
-    # without an icon keep the plain vertically-centered label.
+    # A node's icons are its primary identifier, so they sit in one row above the label, centered
+    # with it as one block. Nodes without an icon keep a vertically centered label.
     #
-    # Graphviz's own box height is sized for its native (larger-font,
-    # multi-row) label, not our own restyled single-line-per-row text at a
-    # much smaller font -- on a short box a 2-line wrapped label alone can
-    # already use most of that height, leaving no room for a full-size
-    # icon row on top. Shrink the icon row (down to NODE_ICON_MIN per icon)
-    # to whatever fits above the text rather than let the block overflow
-    # the box, and drop it entirely if even the floor size doesn't fit --
-    # checked against both the box's remaining height (as before) and, for
-    # more than one icon, its width too, so a row of icons can't run wider
-    # than the box just because there happened to be room vertically.
+    # Graphviz sizes each box for its own larger native label, so on a short box a wrapped label
+    # can leave little room. The icon row shrinks (down to NODE_ICON_MIN per icon) to fit the
+    # remaining height, and the width for several icons, and is dropped if even that does not fit.
     node_icon_svg = ""
     icon_tags = [t for t in (icon_tags or []) if _resolve_icon_file(t)]
     if icon_tags:
@@ -1172,12 +892,8 @@ def render_node(node: dict, cx: float, cy: float, w: float, h: float,
             row_left  = cx - row_w / 2
             for i, tag in enumerate(icon_tags):
                 icon_cx    = row_left + i * (icon_size + NODE_ICON_ROW_GAP) + icon_size / 2
-                # icon_size above is the reserved layout footprint (drives
-                # block_h/row_w/the gap to the label) and stays fixed
-                # regardless of source, so wrapping/box-fit math above is
-                # unaffected -- only the drawn image is scaled per
-                # ICON_SOURCE_SCALE, inset so it's still centered in that
-                # same reserved cell rather than shifted toward one edge.
+                # icon_size is the reserved footprint, so the layout above is unaffected, and only the
+                # drawn image is scaled per ICON_SOURCE_SCALE, centered in that cell.
                 scale      = ICON_SOURCE_SCALE.get(_icon_source(_resolve_icon_file(tag)), 1.0)
                 drawn_size = icon_size * scale
                 icon_top   = block_top + (icon_size - drawn_size) / 2
@@ -1211,20 +927,10 @@ def _pts_close(a: tuple, b: tuple, eps: float = 0.01) -> bool:
 
 def _clip_to_box(qx: float, qy: float, px: float, py: float,
                   cx: float, cy: float, hw: float, hh: float) -> tuple:
-    """Where the ray from Q=(qx,qy) through P=(px,py) crosses the boundary
-    of the axis-aligned box centered at (cx,cy) with half-width/height
-    hw/hh -- used to snap an edge's endpoint exactly onto its node's
-    boundary. Needed because dot -Tplain's own spline endpoints sometimes
-    fall short of (or past) the actual node boundary by a visible amount --
-    confirmed directly in Graphviz's raw plain-text output for one such
-    edge, not something introduced by our own coordinate handling -- so we
-    do the clipping ourselves rather than trusting that point as-is.
-
-    Every node renders as a plain rect (see render_node), so this is the
-    only clip shape needed -- a flat marker meeting this boundary head-on
-    sits flush with no overlap, unlike the curved shapes this used to also
-    have to handle.
-    """
+    """Where the ray from Q=(qx,qy) through P=(px,py) crosses the boundary of the axis-aligned box
+    centered at (cx,cy) with half-width and half-height hw and hh. dot -Tplain's spline endpoints
+    sometimes fall visibly short of or past the node boundary, so edges are clipped here. Every node
+    is a plain rect (see render_node), so this is the only clip shape needed."""
     dx, dy = px - qx, py - qy
     if dx == 0 and dy == 0:
         return px, py
@@ -1243,20 +949,15 @@ def _clip_to_box(qx: float, qy: float, px: float, py: float,
                 candidates.append(t)
     if not candidates:
         return px, py
-    # P itself is at t=1 by construction (P = Q + 1*(dx,dy)) -- the
-    # boundary crossing nearest that is the one Graphviz was already
-    # aiming for, whether its own point fell just short of or past it.
+    # P is at t=1 by construction, so the crossing nearest t=1 is the one Graphviz aimed for.
     t = min(candidates, key=lambda tv: abs(tv - 1.0))
     return qx + t * dx, qy + t * dy
 
 
 def _direction_ref(pts: list, from_end: bool) -> tuple:
-    """Walks in from one end of an edge's point list to find the first
-    point that differs from the terminal point at that end -- dot -Tplain
-    sometimes repeats the same coordinate for the last 2+ points of a spline
-    (a fully degenerate final segment, zero-length even before any
-    transform), which leaves no direction to clip that endpoint against if
-    only the immediately-adjacent point is consulted."""
+    """Walks in from one end of an edge's point list to the first point that differs from the
+    endpoint, since dot -Tplain sometimes repeats the last coordinate, which leaves no direction to
+    clip against."""
     seq = list(reversed(pts)) if from_end else pts
     terminal = seq[0]
     for p in seq[1:]:
@@ -1272,19 +973,9 @@ def bezier_path(pts: list) -> str:
     i = 1
     while i + 2 < len(pts):
         c1, c2, end = pts[i], pts[i+1], pts[i+2]
-        # dot -Tplain occasionally emits a curve whose final control point
-        # c2 sits close to (not always exactly on) its own endpoint --
-        # confirmed a real case ~0.8 units apart. That makes the exit
-        # tangent (end - c2) a near-zero vector; marker-end's orient="auto"
-        # reads that tangent to rotate the arrowhead, and a near-zero
-        # vector is numerically unstable to normalize -- confirmed via a
-        # real browser screenshot that this renders with no visible
-        # arrowhead at all (not just a misrotated one). This eps only needs
-        # to catch dot's own genuine near-duplicates; build_svg's endpoint
-        # clipping separately shifts c2 by the same delta it moves the
-        # endpoint by (see build_svg), which is the general fix for
-        # *that* source of near-zero tangents -- this eps isn't meant to
-        # (and shouldn't need to) absorb clip-introduced ones too.
+        # dot -Tplain sometimes emits a final control point almost on the endpoint. The exit
+        # tangent is then near zero, and the browser draws no arrowhead at all, so that segment is
+        # drawn as a straight line instead. build_svg separately moves c2 with any endpoint it clips.
         if _pts_close(c2, end, eps=2.0):
             d += f" L {end[0]:.2f},{end[1]:.2f}"
         else:
@@ -1306,10 +997,8 @@ def render_edge(edge: dict) -> str:
     style = edge.get("style", "solid").lower()
     dash  = ' stroke-dasharray="8,4"' if "dashed" in style else ""
 
-    # Threagile marks lesser/background links (e.g. telemetry & audit
-    # logging) as dashed -- render them distinctly smaller/fainter than
-    # primary data flows instead of at equal visual weight. Primary links
-    # are ink/black for stronger contrast; lesser ones stay muted gray.
+    # Threagile dashes background links (such as telemetry and audit logging), so they render
+    # thinner and muted, while primary links are ink.
     is_minor = "dashed" in style
     sw       = HAIRLINE * (0.7 if is_minor else 1.0)
     fontsize = EDGE_FONTSIZE_MINOR if is_minor else EDGE_FONTSIZE
@@ -1347,17 +1036,10 @@ def render_cluster(cl: dict, bb: list, px_per_pt: float,
     w   = (x1 - x0) * px_per_pt
     h   = (y1 - y0) * px_per_pt
 
-    # Boundaries recede -- pastel fill (by boundary type) and a hairline
-    # dashed border -- so they read as context rather than competing
-    # visually with the nodes inside. The border and label share the
-    # accent color (distinct from the muted edge lines) so a boundary
-    # reads as one visual unit at a glance. shade_depth (how many
-    # same-type ancestors this boundary is nested inside, from build_svg's
-    # containment check) steps one shade darker per level. fill_type
-    # defaults to this boundary's own type, but a type in FOLLOWS_RAMP_OF
-    # (see that dict) passes its ramp type's key here instead, so its
-    # shade_depth (already computed against that other type's ancestors by
-    # the caller) is looked up in that type's own list rather than its own.
+    # Boundaries recede, with a pastel fill and a hairline dashed border, while the border and
+    # label share the accent color so a boundary reads as one unit. shade_depth steps one shade
+    # darker per same-type ancestor, and fill_type selects another type's ramp for a type in
+    # FOLLOWS_RAMP_OF.
     shades = BOUNDARY_FILL.get(fill_type or cl.get("boundary_type", ""), [PAPER])
     fill = shades[min(shade_depth, len(shades) - 1)]
     out = [
@@ -1367,19 +1049,11 @@ def render_cluster(cl: dict, bb: list, px_per_pt: float,
 
     label = cl["label"]
     if label:
-        # Label and icon share the same top strip (icon inset from the
-        # top-right corner, label centered at the same y) -- centered across
-        # the full cluster width regardless of whether an icon is present,
-        # since in practice the icon sits clear of the label at this size.
+        # The label is centered across the full width in the same strip as the corner icon,
+        # which sits clear of it at this size.
         label_cx = sx0 + w / 2
-        # Baseline offset from the box's own top edge -- proportional to
-        # label_fontsize rather than a flat pixel value, so every diagram
-        # keeps the same visual clearance regardless of its own scale (see
-        # DIAGRAM_SCALE_BASELINE_PX_PER_IN). 1.3, not render_node's 1.4
-        # line-height multiplier -- 1.4 read as slightly too much
-        # clearance for a single-line boundary label specifically (a
-        # multi-line node label block has a different vertical rhythm to
-        # match), confirmed by a direct visual pass after trying 1.4 first.
+        # The baseline offset scales with the font, so clearance is the same at every diagram
+        # scale. 1.3 suits a single-line boundary label better than render_node's 1.4.
         label_y = sy0 + label_fontsize * 1.3
         out.append(
             f'<text x="{label_cx:.2f}" y="{label_y:.2f}" '
@@ -1437,11 +1111,8 @@ svg.dfd.hl-active .node.hl-selected rect:first-of-type { stroke: #1a3a5c; stroke
 svg.dfd .edge.dimmed { opacity: 0.06 !important; }
 """
 
-# Two fixed-color markers rather than one shared marker with
-# stroke="context-stroke" (SVG2) -- confirmed via a minimal test render that
-# WeasyPrint doesn't support context-stroke and always paints such a marker
-# black, which is wrong for MUTED (dashed/minor) edges. render_edge picks
-# the id matching its own edge color.
+# Two fixed-color markers, since WeasyPrint does not support context-stroke and would paint a
+# shared marker black on muted edges.
 ARROW_DEFS = """<defs>
   <marker id="arr-ink" viewBox="0 0 10 10" refX="9" refY="5"
           markerWidth="6" markerHeight="6" orient="auto">
@@ -1512,14 +1183,9 @@ _JS = """
 })();
 """
 
-# Click an asset to highlight it and everything it's directly connected to
-# (its own communication links, both as source and target); dims everything
-# else. Click the same asset again, or click empty canvas, to clear it.
-# Keyed off the .node/.edge classes and data-id/data-tail/data-head
-# attributes build_svg's node- and edge-drawing loops attach to every <g> --
-# opaque Graphviz-assigned ids (e.g. "4069313389"), not Threagile's own
-# technical-asset ids, but stable and unique per node either way, which is
-# all this needs to join edges back to their two endpoint nodes.
+# Clicking an asset highlights it and its direct links and dims everything else, and clicking it
+# again or the empty canvas clears it. It joins edges to nodes through the data-id, data-tail, and
+# data-head attributes that build_svg sets, which hold Graphviz's ids.
 _HIGHLIGHT_JS = """
 (function () {
   const svg = document.querySelector('svg.dfd');
@@ -1567,14 +1233,9 @@ _HIGHLIGHT_JS = """
 })();
 """
 
-# Filter-links bar: picking a chip dims every edge whose data-category
-# (see classify_edge) doesn't include it, back to "all" un-dims everything.
-# data-category is a space-separated list, not always a single value -- a
-# link can be tagged into more than one category at once (e.g. a shared
-# perimeter hop carrying both authentication and ordinary chat traffic),
-# so this checks membership, not equality. Only touches .edge elements --
-# deliberately leaves nodes alone (see _CSS) so the asset layout stays
-# legible while tracing one kind of flow.
+# The filter bar dims every edge whose data-category list lacks the chosen category, and "all"
+# clears it. A link can be in several categories, so this checks membership. Nodes are left
+# alone, so the layout stays legible.
 _FILTER_JS = """
 (function () {
   const svg = document.querySelector('svg.dfd');
@@ -1604,37 +1265,20 @@ def classify_edge(tail_label: str, head_label: str,
                    vpc_by_label: dict = None,
                    devops_link_pairs: set = None,
                    path_tags_by_pair: dict = None) -> set:
-    """Buckets one edge into one or more of "mission", "telemetry",
-    "identity", "network" for the filter-links bar (see FILTER_CATEGORIES)
-    -- a link can be more than one at once (e.g. a shared perimeter hop
-    that carries both authentication and ordinary chat traffic is both
-    Identity Path and Network Path), so this returns a set, checked in
-    this priority order (not independent conditions -- later checks are
-    skipped once something above them already matched):
+    """Classifies an edge for the filter bar (see FILTER_CATEGORIES) as one or more of "mission",
+    "telemetry", "identity", and "network". The checks run in priority order, and a later check is
+    skipped once an earlier one matches:
 
-    1. Explicit path:<category> tag(s) on the communication_link itself
-       (03-tags-lib.yml's "COMMUNICATION LINK PATH-FILTER TAGS") --
-       deterministic, authored intent, always wins when present, and is
-       the only way an edge ends up in more than one category. This is
-       the ONLY way a link becomes "identity" -- Threagile has no
-       first-class field to infer it from (an earlier version guessed
-       from endpoint `technology`, e.g. identity-provider, but that's a
-       real inference, not a structural fact, and both modeled apps were
-       already fully tagged anyway -- an untagged identity link now shows
-       up as mission/network via the checks below instead of silently
-       guessing, which is a more honest failure mode: obviously
-       incomplete rather than confidently wrong).
-    2. Failing an explicit tag, a usage:devops link (confirmed, across
-       every modeled app so far, to always be a "Log Forwarding" hop to a
-       logging/SIEM sink) is telemetry even if one endpoint is also
-       network-typed infrastructure (e.g. a firewall's own telemetry hop)
-       -- that specific hop is about shipping logs, not about the
-       firewall's routing role.
-    3. Failing that, Network Path is inferred structurally: the two
-       endpoints resolve (via vpc_by_label, see compute_vpc_by_asset_id)
-       to different enclosing VPC/VNet trust boundaries, i.e. the link
-       actually crosses one -- a real structural fact, not a guess.
-    4. "mission" is the default when nothing above matched."""
+    1. The link's own path: tags (see 03-tags-lib.yml, "COMMUNICATION LINK PATH-FILTER TAGS"). They
+       record the author's intent, so they always win, and they are the only way an edge gets more
+       than one category or becomes "identity", since no model field shows an identity path. An
+       untagged identity link therefore shows as mission or network, which is visibly incomplete
+       rather than confidently wrong.
+    2. A usage: devops link is telemetry, since such links are log forwarding, even when an endpoint
+       is network infrastructure such as a firewall.
+    3. A link whose endpoints resolve to different VPC or VNet boundaries (via vpc_by_label, see
+       compute_vpc_by_asset_id) is a Network Path.
+    4. Anything else is "mission"."""
     if path_tags_by_pair:
         tagged = path_tags_by_pair.get((tail_label, head_label))
         if tagged:
@@ -1648,9 +1292,8 @@ def classify_edge(tail_label: str, head_label: str,
     return {"mission"}
 
 
-# (css value suffix, filter-bar button label) -- "all" is handled separately
-# in the filter-bar HTML/JS since it's "show everything", not a category any
-# edge is ever classified as.
+# (CSS suffix, button label). "all" is handled in the filter bar itself, since no edge is
+# classified as it.
 FILTER_CATEGORIES = [
     ("mission",   "MISSION FLOWS"),
     ("telemetry", "LOG/TELEMETRY"),
@@ -1658,16 +1301,9 @@ FILTER_CATEGORIES = [
     ("network",   "NETWORK PATH"),
 ]
 
-# The data-asset diagram's edges are data-asset<->technical-asset "stored
-# by"/"processed by" relationships, not communication links between two
-# technical assets -- classify_edge's mission/telemetry/identity/network
-# buckets have no real signal to work from there (vpc_by_label only ever
-# resolves technical-asset labels, so one endpoint of every such edge
-# looks up as None, which used to make nearly every edge misclassify as
-# "network" purely because None != some real VPC id). This diagram has
-# its own real structural fact instead -- solid ("stored") vs dashed
-# ("processed/transits", see render_edge) -- already the exact
-# distinction the report text below this diagram describes.
+# The data-asset diagram's edges are "stored by" and "processed by" relationships, not links, so
+# classify_edge's categories have no signal there. Instead, its filter uses the edge's solid
+# (stored) or dashed (processed) style, the distinction the report text describes.
 FILTER_CATEGORIES_DATA_ASSET = [
     ("stored",    "STORED"),
     ("processed", "PROCESSED / TRANSITS"),
@@ -1683,47 +1319,20 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
               devops_link_pairs: set = None,
               path_tags_by_pair: dict = None,
               for_print: bool = False) -> str:
-    """Returns a bare <svg>...</svg> fragment (no XML declaration, no HTML
-    wrapper) laid out at Graphviz's own coordinates via `dot -Tplain`, with
-    our own restyled shapes/palette drawn on top instead of Threagile's.
+    """Returns a bare <svg>...</svg> fragment (no XML declaration or HTML wrapper), laid out at
+    Graphviz's own coordinates via `dot -Tplain`, with this project's shapes and palette.
 
-    print_size_in, if given, is (max_width_in, max_height_in): the root
-    <svg> gets explicit width/height in those units (fit-to-box, aspect
-    preserved) instead of raw pixel dimensions, for direct embedding at a
-    known print size -- this SVG carries no Graphviz-dpi-derived internal
-    transform the way Threagile's own output does, so plain viewBox-driven
-    scaling is safe here (see generate_report.py's own header for how the .gv source is obtained).
-
-    confidentiality_by_label, if given, maps a node's rendered label text to
-    a confidentiality level (see CONFIDENTIALITY_FILL) -- the data-asset
-    diagram's stand-in for the data-flow diagram's boundary-type shading,
-    since it has no trust boundaries of its own to color by. The .gv source
-    alone doesn't carry this (Threagile's own per-node fillcolor there is
-    uniform, not confidentiality-derived), so the caller must supply it from
-    the model YAML.
-
-    icon_by_label, if given, maps a node or trust-boundary's rendered label
-    text to a list of ICON_FILES keys, in tag order (see that dict and
-    03-tags-lib.yml's "DIAGRAM ICON TAGS") -- a node renders all of them as
-    a side-by-side row (see render_node), a trust boundary's corner badge
-    only ever shows the first. Same reasoning as confidentiality_by_label:
-    an asset's icon: tag(s) live in the model YAML, not the .gv source, so
-    the caller supplies this lookup rather than it being inferred here.
-
-    vpc_by_label, devops_link_pairs, and path_tags_by_pair, if given, feed
-    each edge's data-category attribute (see classify_edge()) for the
-    standalone HTML diagrams' filter-links bar -- same reasoning again,
-    since each asset's enclosing VPC/VNet, a link's `usage`, and a link's
-    own path: tag(s) all live in the model YAML, not the .gv source. All
-    three are optional and independent of each other; all being None just
-    means every edge classifies as "mission".
-
-    for_print, if True, swaps any icon needing the WeasyPrint gradient
-    workaround (see _icon_needs_print_raster) for a rasterized PNG version
-    instead of the vendored SVG -- pass this only for the copy actually
-    handed to WeasyPrint (generate_report.py's PDF embedding), never for
-    the standalone SVG/HTML files, which render the affected icon's SVG
-    correctly as-is."""
+    The optional arguments all come from the model YAML, since the .gv source does not carry them:
+    1. print_size_in, as (max_width_in, max_height_in), gives the root <svg> a width and height in
+       inches (aspect preserved) for embedding at a known print size.
+    2. confidentiality_by_label maps a node's label to a confidentiality level (see
+       CONFIDENTIALITY_FILL), the data-asset diagram's shading.
+    3. icon_by_label maps a node's or boundary's label to its ICON_FILES keys, in tag order. A node
+       shows them all in a row, while a boundary's badge shows the first.
+    4. vpc_by_label, devops_link_pairs, and path_tags_by_pair feed each edge's data-category for the
+       filter bar (see classify_edge()). Without them, every edge is "mission".
+    5. for_print swaps in raster copies of the icons that WeasyPrint mishandles (see
+       _icon_needs_print_raster). Pass it only for the PDF copy."""
 
     plain        = run_dot_plain(dot_source)
     layout       = parse_plain(plain)
@@ -1744,10 +1353,7 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
     canvas_h     = gh_in * px_per_in + 2 * padding
     gh_pts       = gh_in * PPI  # graph height in points for Y-flip
 
-    # See DIAGRAM_SCALE_BASELINE_PX_PER_IN's own comment -- keeps label
-    # text and icons sized proportionally to this diagram's own boxes
-    # rather than everyone sharing the same fixed pixel constants
-    # regardless of how big or small this diagram's boxes happen to render.
+    # Scales text and icons to this diagram's boxes (see DIAGRAM_SCALE_BASELINE_PX_PER_IN).
     diagram_scale = px_per_in / DIAGRAM_SCALE_BASELINE_PX_PER_IN
     diagram_scale = max(DIAGRAM_SCALE_MIN, min(DIAGRAM_SCALE_MAX, diagram_scale))
     cluster_fontsize    = CLUSTER_FONTSIZE * diagram_scale
@@ -1758,9 +1364,8 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
     def ty(y): return (gh_in - y) * px_per_in + padding
 
     if print_size_in:
-        # px_per_in SVG user-units == 1 real inch by construction (that's
-        # what it was derived to do above), so canvas_w/h divided by it is
-        # already the true print size in inches -- no DPI assumption needed.
+        # px_per_in user units are one inch by construction, so this is the print size in
+        # inches.
         max_w_in, max_h_in = print_size_in
         native_w_in, native_h_in = canvas_w / px_per_in, canvas_h / px_per_in
         scale = min(max_w_in / native_w_in, max_h_in / native_h_in)
@@ -1777,13 +1382,9 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
         f'<rect width="{canvas_w:.2f}" height="{canvas_h:.2f}" fill="{PAPER}"/>',
     ]
 
-    # Clusters (trust boundaries) — sorted by area descending so outer ones
-    # render first. Shade depth (for same-type nesting, e.g. a
-    # network-cloud-provider boundary inside another network-cloud-provider
-    # boundary) is derived from actual geometric containment against
-    # already-placed (necessarily larger-or-equal-area, i.e. more outer)
-    # clusters, not DOT source order -- boundary nesting in the source has
-    # no guaranteed outer-before-inner ordering.
+    # Trust boundaries, sorted by area so outer ones render first. Same-type shade depth comes
+    # from geometric containment in the boundaries already placed, since DOT source order does not
+    # guarantee outer before inner.
     cl_map = {cl["id"]: cl for cl in cluster_defs}
     bb_items = []
     for cid, bb in cluster_bbs.items():
@@ -1799,39 +1400,28 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
     placed = []  # (cid, bb) already rendered, outer-to-inner so far
     for _, cid, bb in bb_items:
         cl = cl_map[cid]
-        # fill_type: see FOLLOWS_RAMP_OF -- a type there (execution-environment)
-        # rides another type's own color ramp instead of having its own, so
-        # depth is counted among ancestors of *that* type instead of its own
-        # (which would always be 0, since e.g. a VM never nests inside another
-        # VM), landing it on the next shade past its immediate parent's own.
+        # A type in FOLLOWS_RAMP_OF counts depth among ancestors of the type it follows (see
+        # FOLLOWS_RAMP_OF).
         fill_type = FOLLOWS_RAMP_OF.get(cl.get("boundary_type", ""), cl.get("boundary_type", ""))
         depth = sum(
             1 for pcid, pbb in placed
             if cl_map[pcid].get("boundary_type") == fill_type
             and _bb_contains(pbb, bb)
         )
-        # A boundary's corner badge now shows one icon per tag, in tag
-        # order, as a row extending leftward from the corner -- same
-        # side-by-side approach a node's own icon row already used below,
-        # ported to render_icon/render_cluster (see those functions).
+        # A boundary's corner badge shows one icon per tag, in tag order, as a row extending left
+        # from the corner.
         cl_icons = (icon_by_label.get(cl["label"]) or []) if icon_by_label else []
         parts.append(render_cluster(cl, bb, px_per_pt, gh_pts, padding, shade_depth=depth, icon_tags=cl_icons, for_print=for_print,
                                      label_fontsize=cluster_fontsize, icon_size=boundary_icon_size, fill_type=fill_type))
         placed.append((cid, bb))
 
-    # confidentiality_by_label is only ever passed for the data-asset
-    # diagram (see its docstring above) -- reuse it as the signal to pick
-    # that diagram's own, larger node font and its own edge-filter
-    # categories (see the edge loop below) instead of adding a separate
-    # caller-facing flag for the same distinction.
+    # confidentiality_by_label is passed only for the data-asset diagram, so it also selects that
+    # diagram's larger font and its own filter categories.
     is_data_asset = confidentiality_by_label is not None
     node_fontsize = (NODE_FONTSIZE_DATA_ASSET if is_data_asset else NODE_FONTSIZE) * diagram_scale
 
-    # Per-node render info (resolved label and its wrapped lines) computed
-    # once, ahead of both the edge loop and the node-drawing loop below, so
-    # node_boxes (used to clip edge endpoints) and the actual drawn boxes
-    # stay derived from the exact same node dimensions -- Graphviz's own
-    # native w/h, never resized (see wrap_and_fit).
+    # Each node's label and wrapped lines, computed once so that edge clipping and the drawn boxes
+    # use the same dimensions (Graphviz's own, never resized, see wrap_and_fit).
     node_render_info = {}
     for node in layout["nodes"]:
         nid = node["id"]
@@ -1847,23 +1437,10 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
         lines, fitted_w = wrap_and_fit(label, native_w, fontsize=node_fontsize)
         native_h = node["h"] * px_per_in
 
-        # A tagged icon is dropped entirely by render_node's own fit check
-        # below NODE_ICON_MIN if the box is too short -- rather than let
-        # that happen silently, grow the box height here (before node_boxes
-        # and edge clipping are derived from it, so both stay consistent --
-        # see wrap_and_fit's docstring on why a *shrink* done after the fact
-        # breaks edge routing; growing before anything downstream reads
-        # this value doesn't have that problem). Target NODE_ICON_TARGET_SIZE
-        # (the fixed size every node icon now renders at), not just
-        # NODE_ICON_MIN -- solving for the bare floor technically keeps the
-        # icon visible but renders it at 12px against neighboring icons all
-        # at the fixed default in the same diagram, which reads as broken
-        # rather than intentional. Confirmed necessary in practice: Threagile
-        # natively draws a human external entity (used_as_client_by_human:
-        # true, octagon shape) taller than a machine one (box shape) -- a
-        # deliberate distinction on Threagile's part, not something to paper
-        # over by misrepresenting that field, but its shorter native box
-        # otherwise silently drops or shrinks that machine-actor's own icon.
+        # Grow a short box to fit a node icon at NODE_ICON_TARGET_SIZE, before node_boxes and edge
+        # clipping read its height, so they stay consistent. Otherwise render_node would shrink or
+        # drop the icon. Threagile draws a machine external entity shorter than a human one, which
+        # is the usual case.
         if icon_tags:
             line_h = node_fontsize * 1.4
             total_h = line_h * len(lines)
@@ -1878,26 +1455,18 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
             "h": native_h,
         }
 
-    # Node bounding boxes in px, keyed by id -- built ahead of the edge loop
-    # (nodes themselves are still drawn after edges, below) purely so edges
-    # can clip their own endpoints onto them; see _clip_to_box.
+    # Node boxes in pixels, built before the edge loop so edges can clip their endpoints to them
+    # (see _clip_to_box).
     node_boxes = {}
     for node in layout["nodes"]:
         info = node_render_info[node["id"]]
         node_boxes[node["id"]] = (tx(node["x"]), ty(node["y"]), info["w"] / 2, info["h"] / 2)
 
     def _clip_and_shift(pts_px, idx, ctrl_idx, box, from_end):
-        """Clips pts_px[idx] onto box's boundary, then translates
-        pts_px[ctrl_idx] (that segment's own Bezier control point) by the
-        exact same delta. Graphviz's own node size assumed an inscribed
-        ellipse/cylinder curve; the rectangle we now draw fully contains
-        that curve, so an edge approaching at an angle (not square onto an
-        axis) can need a real, sometimes-large clip displacement -- moving
-        only the endpoint would leave the control point behind, shrinking
-        or reversing (end - control), the tangent marker-end's orient="auto"
-        rotates the arrowhead from. Shifting both keeps that tangent
-        exactly what it originally was, just translated, regardless of how
-        far the clip itself needed to move the point."""
+        """Clips pts_px[idx] onto the box boundary, then moves pts_px[ctrl_idx], that segment's
+        Bezier control point, by the same delta. The drawn rect is larger than the curved shape Graphviz
+        sized the node for, so a clip can move the endpoint a long way, and moving it alone would bend
+        the tangent that orients the arrowhead."""
         q = _direction_ref(pts_px, from_end=from_end)
         old_pt = pts_px[idx]
         new_pt = _clip_to_box(*q, *old_pt, *box)
@@ -1936,11 +1505,7 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
             e2["label"] = edge_xlabels[key]
 
         if is_data_asset:
-            # See FILTER_CATEGORIES_DATA_ASSET -- classify_edge's
-            # communication-link-based categories don't apply here; the
-            # edge's own solid/dashed style (already how render_edge
-            # decides "primary vs minor") is this diagram's real
-            # stored-vs-processed distinction.
+            # The data-asset diagram classifies by edge style (see FILTER_CATEGORIES_DATA_ASSET).
             style = edge.get("style", "solid").lower()
             categories = {"processed"} if "dashed" in style else {"stored"}
         else:
@@ -1989,10 +1554,7 @@ def build_html(dot_source: str, title: str = "Data Flow Diagram",
                      devops_link_pairs=devops_link_pairs,
                      path_tags_by_pair=path_tags_by_pair)
 
-    # See FILTER_CATEGORIES_DATA_ASSET -- the data-asset diagram gets its
-    # own filter set (stored/processed) instead of the data-flow diagram's
-    # communication-link categories, which have no meaningful signal for
-    # data-asset<->technical-asset edges.
+    # The data-asset diagram has its own filter set (see FILTER_CATEGORIES_DATA_ASSET).
     categories = FILTER_CATEGORIES_DATA_ASSET if confidentiality_by_label is not None else FILTER_CATEGORIES
     filter_chips = '<button class="filter-chip active" data-filter="all">ALL</button>' + "".join(
         f'<button class="filter-chip" data-filter="{value}">{label}</button>'

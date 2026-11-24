@@ -1,50 +1,30 @@
 #!/usr/bin/env python3
-"""Validates every modular app folder under models/modular-apps-repo/,
-independent of either CI workflow's matrix -- matrix membership is not a
-prerequisite for being checked. Run this over an app the moment its folder
-exists, not only once someone remembers to wire it into a workflow.
-
-This exists because nothing else catches this class of bug:
-exposed-ai-chat's 08-risk-tracking-template.yml had the wrong body (see
-364525a) and sat undetected for as long as it did specifically because
-that app wasn't in the modular workflow's matrix yet -- the one thing
-that *did* validate app content only ever ran against apps already
-believed to be fine.
+"""Validates every modular app folder under models/modular-apps-repo/, independent of any CI
+workflow's matrix, so an app is checked as soon as its folder exists rather than once someone adds
+it to a workflow.
 
 Checks per app folder:
-  1. Exactly the 8 canonical fragment filenames exist -- no stray or
-     misnamed file (5105f80 fixed the *.yml glob's blast radius for
-     apps already in the matrix; this catches the same class for an
-     app that isn't).
-  2. Every technical_asset's communication_link target resolves to a
-     real technical asset id.
-  3. Every trust_boundary's technical_assets_inside /
-     trust_boundaries_nested reference resolves; every non-external,
-     non-out-of-scope technical asset is placed in exactly one
-     boundary; no boundary is nested under more than one parent.
-     (Multiple *root* boundaries are legitimate here -- e.g. a
-     CSP-managed identity tenant or an out-of-scope external CDS
-     guard domain that isn't inside this app's own cloud subscription
-     -- so root count is deliberately not checked.)
-  4. Every shared_runtime's technical_assets_running reference
-     resolves to a real technical asset id.
-  5. tags_available reconciles exactly against tags actually used,
-     both directions (used-but-not-declared and declared-but-not-used
-     must both be empty).
-  6. No title collision between technical_assets and data_assets (see
-     6735ebd's runtime warning in generate_report.py -- the same check,
-     enforced here before a report is ever generated, not just warned
-     about while building one).
-  7. No two communication_links share the same (source, target) pair
-     (same rationale as #6).
+  1. Exactly the 8 canonical fragment filenames exist, with no stray or misnamed file.
+  2. Every technical asset's communication_link target resolves to a real technical asset id.
+  3. Every trust boundary's technical_assets_inside and trust_boundaries_nested references
+     resolve, every in-scope, non-external technical asset sits in exactly one boundary, and no
+     boundary has more than one parent. Several root boundaries are legitimate (such as a
+     CSP-managed identity tenant outside the app's subscription), so the root count is not
+     checked.
+  4. Every shared_runtime's technical_assets_running reference resolves to a real technical
+     asset id.
+  5. tags_available matches the tags actually used, in both directions.
+  6. No technical asset and data asset share a title, since the diagrams key their colors by title
+     (generate_report.py only warns about this).
+  7. No two communication_links share a (source, target) pair, since the diagram filter bar cannot
+     tell them apart.
 
 Usage:
   python validate_model.py                  # validate every app folder
   python validate_model.py confluence        # validate just one app
   python validate_model.py confluence llm-chat
 
-Exit code is 0 only if every checked app passes every check.
-"""
+Exit code is 0 only if every checked app passes every check."""
 
 import glob
 import os
@@ -68,11 +48,9 @@ CANONICAL_FRAGMENTS = [
 
 
 def deep_merge(a: dict, b: dict) -> dict:
-    """Same semantics as the workflows' `yq eval-all '. as $item ireduce
-    ({}; . * $item)'` -- later fragments' scalar/list values win, dicts
-    merge recursively. Fragments don't overlap in practice (each owns a
-    disjoint top-level key), so this is really just a union, but written
-    to match the real merge behavior rather than assume that."""
+    """The same semantics as the workflows' `yq eval-all '. as $item ireduce ({}; . * $item)'`:
+    later fragments' scalars and lists win, and dicts merge recursively. Fragments own disjoint
+    top-level keys, so in practice this is a union."""
     for k, v in b.items():
         if k in a and isinstance(a[k], dict) and isinstance(v, dict):
             deep_merge(a[k], v)
@@ -87,7 +65,7 @@ def validate_app(app_dir: str) -> list:
     app = os.path.basename(app_dir)
     errors = []
 
-    # 1. Exactly the canonical fragment filenames -- no more, no fewer.
+    # 1. Exactly the canonical fragment filenames, no more and no fewer.
     actual = sorted(os.path.basename(f) for f in glob.glob(os.path.join(app_dir, "*.yml")))
     expected = sorted(CANONICAL_FRAGMENTS)
     if actual != expected:
@@ -99,8 +77,8 @@ def validate_app(app_dir: str) -> list:
             errors.append(f"unexpected file(s) present (never read by the real merge -- "
                            f"either belongs here as one of the 8 canonical names, or shouldn't "
                            f"be in this folder at all): {extra}")
-        # A missing canonical file means we can't safely merge -- bail out
-        # for this app rather than risk validating a half-model.
+        # Without every canonical file, the merge is unsafe, so this app stops here rather than
+        # validating half a model.
         if missing:
             return errors
 
@@ -218,18 +196,16 @@ def validate_app(app_dir: str) -> list:
         errors.append(f"03-tags.yml: tag(s) declared in tags_available but never used: "
                        f"{declared_not_used}")
 
-    # 6. No title collision between technical_assets and data_assets --
-    # both diagrams' enrichment is keyed by title (see generate_report.py's
-    # confidentiality_by_label), so a shared title silently corrupts one.
+    # 6. No title shared by a technical asset and a data asset, since the diagrams key their colors
+    # by title (see generate_report.py's confidentiality_by_label).
     shared_titles = set(technical_assets) & set(data_assets)
     if shared_titles:
         errors.append(f"technical_assets and data_assets share title(s), which the report "
                        f"generator's confidentiality shading can't tell apart: "
                        f"{sorted(shared_titles)}")
 
-    # 7. No duplicate (source, target) communication_link pairs -- the
-    # diagram filter-links bar can't tell two such links apart (see
-    # 6735ebd's runtime warning in generate_report.py).
+    # 7. No duplicate (source, target) link pairs, since the diagram filter bar cannot tell them
+    # apart.
     seen_pairs = {}
     for title, node in technical_assets.items():
         for link_name, link in (node.get("communication_links") or {}).items():
