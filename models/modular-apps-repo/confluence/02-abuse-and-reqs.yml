@@ -3,67 +3,40 @@
 # Confluence
 # Source library: 02-abuse-and-reqs-lib.yml
 # ==============================================================================
-# Migrated from the old flat, unlettered scheme (still recoverable in git
-# history) onto the library's current SABER focus-area structure, ASVS/AISVS/
-# NIST 800-53 sourcing, and ASVS Vx.x/NIST-ID titling. Unlike the AI
-# Coding Agent apps, this app IS the primary application being modeled
-# (not an integration point another app reaches into), so its own
-# Application focus-area surface gets real coverage here rather than being
-# deferred elsewhere. Focus area/subsection selection is grounded in this
-# app's actual technical-asset tags (05-tech-assets.yml):
+# This file holds the library blocks that apply to Confluence, chosen from its
+# feature checklist (01-metadata.yml) and its technical asset tags
+# (05-tech-assets.yml). Confluence is the primary application in this model,
+# so the Application focus area gets full coverage. The focus areas apply as
+# follows.
 #
-#   IDENTITY: feature:oauth-oidc-provider, feature:saml-sp, and
-#     feature:password-reset all fire (Keycloak and Entra ID both
-#     support OAuth/SAML; Keycloak and Confluence itself support
-#     password reset), plus feature:admin-panel (Confluence) -- whole
-#     focus area applies. No mgmt:self-managed-identity or
-#     mgmt:self-managed-pam tag anywhere in this model (Keycloak here is
-#     containerized but not tagged as self-managed directory/PAM
-#     infrastructure the way coding-agent-legacy's Keycloak is), so
-#     AC-2(7) and AC-2(6) are both dropped entirely -- not merely
-#     uncopied.
-#   DEVICE AND INFRASTRUCTURE: container (Keycloak, Keycloak Identity
-#     Store, Confluence, Nginx Ingress Pod, AKS CSI Driver) and virtual
-#     (AVD Session Host) machine types are both genuinely present, no
-#     mgmt:self-managed-hardware tag, so the physical-hardware content
-#     is dropped -- same pattern as the AI Coding Agent apps.
-#   NETWORK AND ENVIRONMENT: net:tls-terminator and zone:dmz both fire
-#     (the Confluence and Keycloak Application Gateways) -- only the
-#     ASVS V12 (TLS) portion applies; no mgmt:self-managed-network or
-#     cds:* tags.
-#   APPLICATION: unlike the AI Coding Agent apps, this focus area gets real
-#     coverage since Confluence's own application layer is what's being
-#     modeled. feature:dynamic-code-execution (wiki macros/OGNL/
-#     Velocity) grounds V1.3; feature:import-export grounds V2.3/V2.4;
-#     the Asymmetric DoS and Malicious File Upload scenarios ground
-#     V4.1 and V5.2 respectively, both carried forward from this app's
-#     own pre-restructure content (git history) rather than dropped.
-#     feature:third-party-plugins and feature:search-index are
-#     acknowledged as present but not separately broken out beyond
-#     what's already covered by V1.3/V15-family supply-chain content
-#     elsewhere in this file, keeping this section proportionate to
-#     what pre-restructure content already justified rather than
-#     exhaustively expanding to every technically-matching ASVS
-#     subsection.
-#   DATA: storage:persistent (Keycloak Identity Store, Postgres
-#     Database, Azure File Store), storage:vault (Azure Key Vault), and
-#     feature:import-export (Confluence) all fire. V11.2 (Custom
-#     Cryptography Exploitation) is carried forward directly from this
-#     app's own pre-restructure content -- a scenario this app's
-#     original author already identified as relevant.
-#   DETECTION: feature:public-api-endpoint (Confluence) and
-#     machine:container (widely) fire.
-#   RESPONSE: zone:dmz and sec:secrets-broker both fire, and this app
-#     carries an independent third reason per 02-abuse-and-reqs-lib.yml's
-#     own Response focus area header: this model's mission_criticality is
-#     mission-essential, and Confluence itself carries a policy exception
-#     (exception:local-auth-fallback) -- either fact alone would pull in
-#     this focus area even without the tag matches.
-#   RECOVERY: ops:requires-backup fires widely (Keycloak, Keycloak
-#     Identity Store, Entra ID, Postgres Database, Azure File Store,
-#     Azure Log Analytics Workspace). No ops:vendor-hosted-service tag,
-#     so SA-9 and SC-12 are left out -- no vendor-hosted service the
-#     enterprise backup platform can't directly enroll.
+#   IDENTITY: feature:oauth-oidc-provider, feature:saml-sp,
+#     feature:password-reset, and feature:admin-panel all fire, so the whole
+#     focus area applies. However, no asset carries mgmt:self-managed-identity
+#     or mgmt:self-managed-pam, so AC-2(7) and AC-2(6) are left out.
+#   DEVICE AND INFRASTRUCTURE: Keycloak, its identity store, Confluence, the
+#     NGINX Ingress pod, and the AKS CSI Driver are containers, and the AVD
+#     session host is a virtual machine. No asset carries
+#     mgmt:self-managed-hardware, so PE-3 / SI-7 is left out.
+#   NETWORK AND ENVIRONMENT: net:tls-terminator and zone:dmz fire on the two
+#     Application Gateways. Only the ASVS V12 (TLS) portion applies, since no
+#     asset carries mgmt:self-managed-network or a cds: tag.
+#   APPLICATION: feature:dynamic-code-execution (wiki macros, OGNL, and
+#     Velocity) grounds V1.3, and feature:import-export grounds V2.3 and
+#     V2.4. Additionally, the asymmetric denial of service and malicious
+#     upload scenarios ground V4.1 and V5.2. Though feature:third-party-plugins
+#     and feature:search-index are also present, they are not broken out into
+#     sections of their own, which keeps this focus area in proportion.
+#   DATA: the Keycloak identity store, the Postgres database, the Azure file
+#     store, Azure Key Vault, and Confluence's import and export all fire.
+#   DETECTION: feature:public-api-endpoint (Confluence) and machine:container
+#     fire.
+#   RESPONSE: zone:dmz and sec:secrets-broker fire. Additionally, the model is
+#     mission-essential and Confluence carries exception:local-auth-fallback,
+#     and either fact alone would bring in this focus area.
+#   RECOVERY: ops:requires-backup fires on Keycloak, its identity store, Entra
+#     ID, the Postgres database, the Azure file store, and the Log Analytics
+#     workspace. No asset carries ops:vendor-hosted-service, so SA-9 and SC-12
+#     are left out.
 # ==============================================================================
 
 abuse_cases:
@@ -73,271 +46,239 @@ abuse_cases:
   # ----------------------------------------------------------------------------
 
   "ASVS V6.3: Credential Stuffing and Authentication Endpoint Abuse": >
-    As an attacker with a list of breached credentials, I want to perform
-    automated high-volume stuffing attacks against platform authentication
-    endpoints (IdP login, password reset, MFA enrollment) so that I can
-    identify valid accounts or cause lockout-based denial of service
-    without triggering network-layer DDoS protections.
+    As an attacker with a list of breached credentials, I want to run automated,
+    high-volume stuffing attacks against the authentication endpoints (IdP login,
+    password reset, and MFA enrollment), so that I can find valid accounts or lock
+    users out without triggering network-layer DDoS protections.
 
   "ASVS V7.2: Post-Authentication Session Hijacking": >
-    As an attacker on a compromised endpoint or VDI session, I want to
-    steal an active application session token so that I can bypass
-    perimeter MFA/Entra ID requirements and fully impersonate a
-    legitimate user.
+    As an attacker on a compromised endpoint or VDI session, I want to steal an
+    active application session token, so that I can bypass the Entra ID MFA
+    requirement and impersonate a legitimate user.
 
   "ASVS V7.5: Session Token Replay via AiTM Proxy or Infostealer": >
-    As an attacker operating an adversary-in-the-middle proxy or a
-    compromised endpoint's infostealer, I want to capture a session or
-    refresh token after Keycloak or Entra ID authentication so that I
-    can replay the bearer token from my own host and fully impersonate
-    the victim.
+    As an attacker with an adversary-in-the-middle proxy or an infostealer on the
+    victim's endpoint, I want to capture a session or refresh token after Keycloak
+    or Entra ID authentication, so that I can replay the token from my own host and
+    impersonate the victim.
 
   "ASVS V8.2: Vertical Privilege Escalation": >
-    As a low-privileged authenticated user, I want to manipulate API
-    parameters, hidden form fields, or JWT claims so that I can execute
-    administrative functions (e.g., changing system settings, elevating
-    permissions) without proper authorization.
+    As a low-privileged authenticated user, I want to manipulate API parameters,
+    hidden form fields, or JWT claims, so that I can run administrative functions,
+    such as changing system settings or elevating permissions, without
+    authorization.
 
   "ASVS V8.3: Horizontal Privilege Escalation (IDOR)": >
-    As an authenticated user, I want to guess or modify resource IDs in
-    my HTTP requests so that I can view, modify, or delete mission data
-    and CUI belonging to other users, squads, or tenant groups.
+    As an authenticated user, I want to guess or modify the resource IDs in my
+    requests, so that I can view, modify, or delete mission data and CUI that belong
+    to other users, squads, or tenant groups.
 
   "ASVS V9.1: JWT Algorithm Confusion and Signature Bypass": >
-    As an attacker in possession of a self-contained token issued by
-    Keycloak or Entra ID, I want to exploit algorithm confusion or a
-    missing signature check so that I can forge a token claiming
-    arbitrary identity or privilege without ever holding a valid signing
-    key.
+    As an attacker who holds a self-contained token from Keycloak or Entra ID, I
+    want to exploit algorithm confusion or a missing signature check, so that I can
+    forge a token with any identity or privilege without the signing key.
 
   "ASVS V10.1: OAuth and SAML Authentication Flow Abuse": >
-    As an attacker, I want to exploit misconfigured OAuth callback
-    validation, missing state parameters, or SAML XML Signature Wrapping
-    vulnerabilities so that I can forge authentication assertions,
-    intercept authorization codes, or impersonate arbitrary users
-    including administrators.
+    As an attacker, I want to exploit misconfigured OAuth callback validation, a
+    missing state parameter, or SAML XML Signature Wrapping, so that I can forge
+    authentication assertions, intercept authorization codes, or impersonate any
+    user, including an administrator.
 
   "ASVS V10.7: OAuth Illicit Consent Grant via Malicious Application": >
-    As an attacker, I want to register an OAuth application requesting
-    broad delegated scopes and phish a target into granting consent so
-    that I gain persistent, self-refreshing API access to the target's
-    data that survives a password reset and requires no further
-    phishing to maintain.
+    As an attacker, I want to register an OAuth application that requests broad
+    delegated scopes and then phish a target into granting consent, so that I gain
+    persistent, self-refreshing access to the target's data that survives a password
+    reset.
 
   # ----------------------------------------------------------------------------
   # DEVICE AND INFRASTRUCTURE
   # ----------------------------------------------------------------------------
 
   "CM-7: Container Breakout and Host Takeover": >
-    As an attacker who has gained RCE inside a Confluence or Keycloak
-    pod, I want to exploit unpatched kernel vulnerabilities or excessive
-    container privileges to escape the container boundary and take
-    control of the underlying AKS worker node OS.
+    As an attacker with code execution inside a Confluence or Keycloak pod, I want
+    to exploit an unpatched kernel or excessive container privileges, so that I can
+    escape the container and take control of the AKS worker node.
 
   "SC-7(21): Cloud Metadata API Abuse (IMDS)": >
-    As an attacker inside a compromised pod, I want to execute SSRF to
-    query the Azure Instance Metadata Service so that I can steal the
-    workload's managed identity tokens and pivot my attack into the
-    Azure control plane.
+    As an attacker inside a compromised pod, I want to use SSRF to query the Azure
+    Instance Metadata Service, so that I can steal the workload's managed identity
+    tokens and pivot into the Azure control plane.
 
   "AC-6(1): Kubernetes Service Account Token Theft": >
-    As an attacker with local file access inside a pod, I want to
-    extract the automatically mounted Kubernetes ServiceAccount token so
-    I can authenticate to the K8s API server, enumerate the cluster, and
-    steal platform secrets.
+    As an attacker with local file access inside a pod, I want to extract the
+    automatically mounted ServiceAccount token, so that I can authenticate to the
+    Kubernetes API server, enumerate the cluster, and steal platform secrets.
 
   "SC-7(21): East-West Lateral Movement": >
-    As a compromised frontend/ingress pod, I want to abuse the absence
-    of strict Kubernetes NetworkPolicies to port-scan the internal
-    cluster subnet and attack backend databases, caching layers, or
-    other tenant namespaces not exposed to the internet.
+    As an attacker in a compromised frontend or ingress pod, I want to exploit the
+    absence of strict NetworkPolicies to scan the cluster subnet, so that I can
+    attack backend databases, caching layers, and other tenant namespaces that are
+    not exposed to the internet.
 
   "SC-5: Shared Runtime Resource Exhaustion (Noisy Neighbor)": >
-    As an attacker, I want to execute a CPU and Memory fork-bomb or
-    deploy a cryptominer inside a compromised container to exhaust the
-    underlying AKS node's resources, causing the Kubelet to crash and
-    denying availability to every other workload sharing the node.
+    As an attacker in a compromised container, I want to run a fork bomb or a
+    cryptominer that exhausts the AKS node's CPU and memory, so that the kubelet
+    fails and every other workload on that node loses availability.
 
   "CM-14: Container Supply Chain Poisoning": >
-    As a sophisticated threat actor, I want to compromise an upstream
-    base image or the CI/CD pipeline's Helm charts so that the platform
-    team unwittingly deploys a backdoored container image directly into
-    the trusted production boundary.
+    As a sophisticated threat actor, I want to compromise an upstream base image or
+    the CI/CD pipeline's Helm charts, so that the platform team unknowingly deploys
+    a backdoored image into the production boundary.
 
   "AC-17: Administrative Interface Brute-Force and Credential Stuffing": >
-    As an attacker with network visibility to the VM management subnet,
-    I want to perform automated brute-force attacks against SSH or RDP
-    interfaces so that I can gain direct OS-level access and bypass
-    application-layer security controls.
+    As an attacker who can reach the VM management subnet, I want to brute-force the
+    SSH or RDP interfaces, so that I gain OS-level access and bypass the
+    application-layer controls.
 
   "SI-2: Persistent Rootkit and Malware Installation": >
-    As an attacker with local user access to the AVD session host, I
-    want to exploit unpatched OS vulnerabilities to escalate privileges
-    to root so that I can install persistent malware or backdoors that
-    survive reboots and evade file-integrity monitoring.
+    As an attacker with local user access to the AVD session host, I want to exploit
+    an unpatched OS vulnerability to escalate privileges, so that I can install
+    persistent malware that survives reboots and evades file-integrity monitoring.
 
   "AC-6(5): Lateral Movement via Local Managed Identity": >
-    As an attacker on a compromised VM, I want to query the instance
-    metadata service to steal the VM's managed identity token so that I
-    can move laterally into other cloud resources (Key Vault, storage
-    accounts) granted permissions to that identity.
+    As an attacker on a compromised VM, I want to steal the VM's managed identity
+    token from the instance metadata service, so that I can move into the other
+    cloud resources (such as Key Vault and the storage accounts) that the identity
+    can reach.
 
   "SC-28: Offline Data Disk Exfiltration": >
-    As a malicious platform administrator, I want to take a snapshot of
-    a VM's data disk so that I can mount it to a rogue VM and perform
-    offline analysis to steal mission data without triggering OS-level
-    logging.
+    As a malicious platform administrator, I want to snapshot a VM's data disk and
+    mount it on a rogue VM, so that I can analyze it offline and steal mission data
+    without triggering OS-level logging.
 
   "SC-7: Host-to-VNet Pivot and Internal Scanning": >
-    As an attacker who has compromised a VM in a transit or management
-    VNet, I want to use the VM as a jump-box to bypass perimeter
-    firewalls and exploit backend databases and the AKS cluster
-    otherwise shielded from the internet.
+    As an attacker who has compromised a VM in a transit or management VNet, I want
+    to use it as a jump box past the perimeter firewalls, so that I can exploit the
+    backend databases and the AKS cluster that the internet cannot reach.
 
   # ----------------------------------------------------------------------------
   # NETWORK AND ENVIRONMENT
   # ----------------------------------------------------------------------------
 
   "ASVS V12.1: TLS Downgrade and Weak Cipher Exploitation": >
-    As an attacker positioned on the network path, I want to force a
-    client-server or service-to-service connection to negotiate a
-    deprecated TLS version or a weak cipher suite so that I can decrypt
-    or tamper with traffic that both endpoints believed was properly
-    protected.
+    As an attacker on the network path, I want to force a connection to negotiate a
+    deprecated TLS version or a weak cipher suite, so that I can decrypt or tamper
+    with traffic that both endpoints believe is protected.
 
   "ASVS V12.3: Internal Service-to-Service Traffic Left Unencrypted": >
-    As an attacker who has gained a foothold inside the internal
-    network, I want to passively observe or actively tamper with
-    plaintext or self-signed, unvalidated internal service-to-service
-    traffic so that I can intercept CUI or forge requests between
-    trusted backend components without needing to compromise either
-    endpoint directly.
+    As an attacker with a foothold inside the internal network, I want to observe or
+    tamper with plaintext or unvalidated internal service-to-service traffic, so
+    that I can intercept CUI or forge requests between trusted backend components
+    without compromising either endpoint.
 
   # ----------------------------------------------------------------------------
   # APPLICATION
   # ----------------------------------------------------------------------------
 
   "ASVS V1.3: Server-Side Template Injection and RCE": >
-    As an attacker, I want to inject wiki macro directives or OGNL/
-    Velocity expression syntax into a field Confluence evaluates as
-    dynamic content so that I can achieve arbitrary code execution
-    inside the application's own JVM/container, rather than merely
-    rendering attacker-controlled markup.
+    As an attacker, I want to inject wiki macro directives or OGNL and Velocity
+    expressions into a field that Confluence evaluates as dynamic content, so that I
+    achieve code execution inside the application's JVM and container rather than
+    only rendering my markup.
 
   "ASVS V2.3: Business Workflow Step Skipping": >
-    As an authenticated user or a script driving the REST API directly,
-    I want to call a downstream endpoint out of sequence -- skipping a
-    required approval, verification, or review step that the UI would
-    normally force me through -- so that I complete a multi-step
-    business process (e.g., publishing or restricting a page) in a
-    state the application never intended to allow.
+    As an authenticated user or a script that drives the REST API directly, I want
+    to call a downstream endpoint out of sequence and skip an approval,
+    verification, or review step that the UI enforces, so that I complete a
+    multi-step process (such as publishing or restricting a page) in a state the
+    application never intended to allow.
 
   "ASVS V2.4: Application-Layer Data Exfiltration": >
-    As a malicious insider or compromised account, I want to abuse
-    legitimate application features (like Export to CSV, reporting
-    tools, or un-paginated APIs) so that I can scrape and download
-    massive amounts of sensitive data without triggering network-level
+    As a malicious insider or a compromised account, I want to abuse legitimate
+    features (such as Export to CSV, reporting tools, or unpaginated APIs), so that
+    I can scrape large amounts of sensitive data without triggering network-level
     DLP alarms.
 
   "ASVS V4.1: Asymmetric Application Denial of Service": >
-    As an attacker, I want to repeatedly trigger computationally
-    expensive features (complex nested search queries, heavy report
-    generation, or massive file parsing) so that I exhaust container
-    CPU and Memory resources and deny availability to legitimate users,
-    bypassing standard network volumetric DDoS protections.
+    As an attacker, I want to repeatedly trigger expensive features (such as nested
+    search queries, heavy report generation, or large file parsing), so that I
+    exhaust the containers' CPU and memory and deny service to legitimate users
+    while bypassing network volumetric DDoS protections.
 
   "ASVS V5.2: Malicious Payload Distribution via File Upload": >
-    As an attacker, I want to upload disguised malicious files (malware,
-    zip bombs, macro-enabled documents) through legitimate file
-    upload/attachment features so that I can compromise other users who
-    subsequently download them or trigger server-side parsing
+    As an attacker, I want to upload disguised malicious files (such as malware, zip
+    bombs, or macro-enabled documents) through the attachment feature, so that I can
+    compromise the users who download them or trigger server-side parser
     vulnerabilities.
 
   "ASVS V13.3: Software-Only Key Theft via Host Compromise": >
-    As an attacker who has compromised a host holding software-only key
-    material, I want to read the key directly from process or host
-    memory so that I obtain it with no hardware boundary to cross.
+    As an attacker who has compromised a host that holds software-only key material,
+    I want to read the key from process or host memory, so that I obtain it with no
+    hardware boundary to cross.
 
   # ----------------------------------------------------------------------------
   # DATA
   # ----------------------------------------------------------------------------
 
   "ASVS V11.1: Self-Authorized Key Misuse and Trace Removal": >
-    As a privileged insider holding both key-operation and vault-
-    administration permissions, I want to grant myself key-use access,
-    use the key, and then alter the vault's own audit configuration so
-    that no independent party can detect the misuse afterward.
+    As a privileged insider who holds both key-operation and vault-administration
+    permissions, I want to grant myself key-use access, use the key, and then alter
+    the vault's audit configuration, so that no independent party can detect the
+    misuse afterward.
 
   "ASVS V11.2: Custom Cryptography Exploitation": >
-    As an attacker, I want to target a hand-rolled or non-standard
-    cryptographic routine (a custom hash, a proprietary token scheme, an
-    outdated cipher mode) so that I can forge tokens, recover plaintext,
-    or bypass an integrity check that a vetted, standard algorithm would
-    have resisted.
+    As an attacker, I want to target a hand-rolled or non-standard cryptographic
+    routine (such as a custom hash, a proprietary token scheme, or an outdated
+    cipher mode), so that I can forge tokens, recover plaintext, or bypass an
+    integrity check that a vetted algorithm would have resisted.
 
   "ASVS V14.1: Exfiltration from an Unclassified Data Store": >
-    As an attacker, I want to reach a data store that has never been
-    run through a classification scan so that every downstream control
-    keyed to a sensitivity label -- encryption tier, access policy, DLP
-    -- silently applies a default posture, since no label exists to
-    drive the correct one.
+    As an attacker, I want to reach a data store that has never had a classification
+    scan, so that every control keyed to a sensitivity label (the encryption tier,
+    the access policy, and DLP) falls back to a default posture, since no label
+    exists to drive the correct one.
 
   "ASVS V14.2: Bulk Exfiltration via an Uninspected Export Path": >
-    As a malicious insider or compromised account, I want to use this
-    asset's own legitimate bulk-export or attachment feature so that I
-    can move CUI out with no DLP inspection in the path, since the
-    export feature was never covered by the classification-aware policy.
+    As a malicious insider or a compromised account, I want to use this asset's
+    legitimate bulk-export or attachment feature, so that I can move CUI out with no
+    DLP inspection in the path, since the classification-aware policy never covered
+    that feature.
 
   # ----------------------------------------------------------------------------
   # DETECTION
   # ----------------------------------------------------------------------------
 
   "ASVS V16.3: Enumeration Paced Under the Rate Limit": >
-    As an attacker, I want to pace object-ID enumeration or credential
-    probing requests just under this API's rate limit so that I produce
-    no throttling event at all, remaining invisible to a SOC watching
-    only for volumetric abuse.
+    As an attacker, I want to pace object-ID enumeration or credential probing just
+    under this API's rate limit, so that no throttling event occurs and a SOC that
+    watches only for volumetric abuse never sees me.
 
   "ASVS V16.4: Audit Trail Evasion and Tampering": >
-    As an attacker performing unauthorized actions, I want to abuse
-    business logic flaws to suppress, bypass, or flood the application's
-    internal audit logging mechanism so that my malicious activities
-    cannot be traced back to my identity by the SOC.
+    As an attacker performing unauthorized actions, I want to abuse business logic
+    flaws to suppress, bypass, or flood the application's audit logging, so that the
+    SOC cannot trace my activity back to my identity.
 
   # ----------------------------------------------------------------------------
   # RESPONSE
   # ----------------------------------------------------------------------------
 
   "IR-4: Incomplete Credential Rotation After a Breach": >
-    As an attacker who has compromised this asset, I want to retain a
-    credential that was never inventoried as one this asset consumes,
-    so that it survives the incident response team's rotation effort
-    and gives me a return path after the incident is declared contained.
+    As an attacker who has compromised this asset, I want to keep a credential that
+    was never inventoried as one the asset consumes, so that it survives the
+    response team's rotation and gives me a way back in after the incident is
+    declared contained.
 
   "IR-3: Incident Response Plan Fails Under Real Conditions": >
-    As an incident responder executing the documented plan for the
-    first time during an actual incident, I want the plan's untested
-    assumptions about tooling access, escalation paths, and authority to
-    isolate assets to fail exactly when they matter most, turning a
-    contained incident into a prolonged one.
+    As an attacker in the middle of a live incident, I want the response plan's
+    untested assumptions about tooling access, escalation paths, and the authority
+    to isolate assets to fail when the responders first execute it, so that a
+    contained incident becomes a prolonged one.
 
   # ----------------------------------------------------------------------------
   # RECOVERY
   # ----------------------------------------------------------------------------
 
   "CP-9: Ransomware Deletes Co-Administered Backups": >
-    As a ransomware actor who has compromised a production administrator
-    account, I want to delete or shorten the retention on the Postgres
-    Database's or Azure File Store's backups using that same account so
-    that the incident becomes unrecoverable rather than merely
-    disruptive.
+    As a ransomware actor who has compromised a production administrator account, I
+    want to delete the Postgres Database's or Azure File Store's backups, or shorten
+    their retention, with that same account, so that the incident becomes
+    unrecoverable rather than merely disruptive.
 
   "CP-4: Undiscovered Restoration Gap During an Actual Incident": >
-    As an incident responder attempting recovery, I want to execute the
-    documented restoration procedure only to discover it is incomplete,
-    outdated, or dependent on knowledge held only by the engineer who
-    originally built the backup job -- knowledge unavailable during the
-    incident itself.
+    As a ransomware actor who has taken Confluence down, I want its restoration
+    procedure to prove incomplete, outdated, or dependent on knowledge that only the
+    engineer who built the backup job holds, so that recovery stalls while that
+    knowledge is unavailable.
 
 
 security_requirements:
@@ -522,13 +463,13 @@ security_requirements:
   # ----------------------------------------------------------------------------
 
   "CM-14: Immutable and Trusted Image Supply Chain": |
-    1 | All container workloads MUST be instantiated from cryptographically signed, vulnerability-scanned images sourced from an approved registry (e.g., Iron Bank). | 1
-    2 | Mutable image tags (e.g., :latest) are prohibited; all deployments MUST reference explicit SHA-256 image digests. | 2
+    1 | All container workloads MUST be instantiated from cryptographically signed, vulnerability-scanned images sourced from an approved registry (such as Iron Bank). | 1
+    2 | Mutable image tags (such as :latest) are prohibited, and all deployments MUST reference explicit SHA-256 image digests. | 2
 
   "CM-7: Least-Privilege, Read-Only Container Execution": |
-    1 | Containers MUST NOT execute as root (UID 0) without a formal POA&M; the PodSecurityContext MUST set allowPrivilegeEscalation: false and runAsNonRoot: true. | 1
-    2 | Containers MUST explicitly drop all unnecessary Linux capabilities, adding back only what's demonstrably required. | 2
-    3 | Containers MUST mount their root filesystem as read-only; required ephemeral write access MUST be restricted to explicitly defined temporary volumes. | 2
+    1 | Containers MUST NOT execute as root (UID 0) without a formal POA&M, and the PodSecurityContext MUST set allowPrivilegeEscalation: false and runAsNonRoot: true. | 1
+    2 | Containers MUST explicitly drop all unnecessary Linux capabilities, adding back only what is demonstrably required. | 2
+    3 | Containers MUST mount their root filesystem as read-only, and required ephemeral write access MUST be restricted to explicitly defined temporary volumes. | 2
 
   "SC-7(21): Zero-Trust Network Micro-Segmentation": |
     1 | A default-deny Kubernetes NetworkPolicy MUST be enforced across all namespaces, with East-West and North-South communication explicitly allow-listed. | 1
@@ -557,7 +498,7 @@ security_requirements:
 
   "AC-17: Secure Administrative Access (JIT and Bastion)": |
     1 | Direct internet-inbound administrative access (SSH port 22, RDP port 3389) is strictly prohibited. | 1
-    2 | All administrative access MUST route through an authorized chokepoint (e.g., Azure Bastion) and enforce JIT access controls requiring MFA and explicit approval. | 2
+    2 | All administrative access MUST route through an authorized chokepoint (such as Azure Bastion) and enforce JIT access controls requiring MFA and explicit approval. | 2
 
   "SC-28: Host-Level Data-at-Rest Encryption": |
     1 | All virtual disks MUST be encrypted at rest using Azure Disk Encryption or Host-Based Encryption. | 1
@@ -694,14 +635,14 @@ security_requirements:
   # ----------------------------------------------------------------------------
 
   "IR-4: Containment Disposition": |
-    1 | Business-critical, mission-critical, internet-facing, exception-bearing, and CDS-interface assets MUST have a documented containment disposition (auto-isolation permitted / human approval required / prohibited) agreed in advance by the asset owner and the response team. | 1
+    1 | Mission-essential, mission-critical, internet-facing, exception-bearing, and CDS-interface assets MUST have a documented containment disposition (auto-isolation permitted / human approval required / prohibited) agreed in advance by the asset owner and the response team. | 1
 
   "IR-4: Credential Inventory for Incident-Driven Rotation": |
     1 | A current inventory of every credential/secret an asset consumes or issues MUST exist, sufficient to identify every consumer and complete a full rotation without an extended outage. | 1
     2 | The rotation procedure MUST be exercised, not merely documented, within the current ATO period. | 3
 
   "IR-3: Regularly Tested Incident Response Plan": |
-    1 | A plan that has only ever been reviewed on paper does not satisfy this requirement. | 1
+    1 | A plan that has only been reviewed on paper does not satisfy this requirement. | 1
     2 | The incident response plan MUST be exercised via tabletop or live-fire testing at least annually, with findings tracked to closure. | 2
 
   "IR-6: Mandatory Incident Reporting Timeline": |
@@ -714,7 +655,7 @@ security_requirements:
 
   "CP-9 / AC-5: Backup Access Separation and Immutability": |
     1 | Backup administration MUST be a role distinct from production administration, with dual authorization and step-up authentication required for destructive backup operations. | 1
-    2 | The backup store's immutability lock MUST be in compliance mode -- irreversible by any account, including the backup platform's own administrators, for the retention period. | 3
+    2 | The backup store's immutability lock MUST be in compliance mode, so that no account can reverse it, including the backup platform's own administrators, for the retention period. | 3
 
   "CP-2: Criticality-Derived Recovery Objectives": |
     1 | A criticality-tier-derived RTO and RPO MUST be documented in the system contingency plan for each asset. | 1
