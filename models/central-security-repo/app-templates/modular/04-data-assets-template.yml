@@ -23,6 +23,11 @@
 # 6. Ensure every data asset ID listed here is actively mapped to at least one
 #    Technical Asset in your '05-tech-assets.yml' file to prevent 'Orphaned
 #    Data' warnings during the pipeline run.
+# 7. For AI, copy the blocks from 06-ai-model-assets.yml that match the data
+#    your application keeps. The models themselves are not data assets. Each
+#    one is recorded on the technical asset that runs it (see step 7 of
+#    05-tech-assets-template.yml), and only fine-tuned weights appear here,
+#    since they are derived from your training data.
 #
 # OUTPUT FORMAT (copy the library's own section header verbatim):
 #

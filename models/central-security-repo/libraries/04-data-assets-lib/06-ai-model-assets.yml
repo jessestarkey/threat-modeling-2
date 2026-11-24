@@ -1,0 +1,155 @@
+  # ============================================================================
+  # 6. AI MODEL ASSETS
+  # Training data, fine-tuned weights, prompts, retrieval content, and model logs.
+  # ============================================================================
+  #
+  # These blocks hold the application's own data in its AI-specific forms. A
+  # model itself is not a data asset here. Every model the application uses is
+  # recorded on the technical asset that runs inference for it (an
+  # ai-llm-endpoint or ai-model-serving asset, see 05-ai-ml-workloads.yml),
+  # whether a vendor hosts it or the application does. Thus, the technical
+  # assets form the model inventory, and each model appears there once.
+  #
+  # Foundation model weights are treated like software the application runs,
+  # such as a container image, so they are not data assets either. Their
+  # integrity is a supply-chain concern on the serving asset (see the
+  # ai:model-package-signed and ai:air-gapped-model-delivery tags in
+  # 03-tags-lib.yml). Fine-tuned weights are the exception that follows from the
+  # same rule, since they are derived from the application's training data and
+  # count as that data in another form, wherever they are stored.
+  #
+  # As with the other data assets, the CIA ratings and their justifications
+  # stay as written. Add data:pii to an asset that carries personal data.
+
+  Fine-Tuned Model Weights and Adapters:
+    id: ai-fine-tuned-weights
+    description: >
+      Weights or adapters (such as LoRA) produced by fine-tuning <base model and version>
+      on the application's training data, together with their configuration and manifest.
+      Covers every stored copy, including one held by a vendor's fine-tuning service.
+    usage: business
+    tags:
+      - data:payload
+    origin: Fine-tuning of <base model> on ai-training-data by <internal pipeline or vendor service>
+    owner: <team accountable for the model>
+    quantity: very-few
+    confidentiality: restricted
+    integrity: mission-critical
+    availability: important
+    justification_cia_rating: >
+      Confidentiality (Restricted): Fine-tuned weights encode their training data, and
+      extraction or inversion attacks can recover that data from them. Thus, they carry
+      the confidentiality of the training data (OWASP LLM02:2025).
+
+      Integrity (Mission-Critical): Tampered weights or a substituted adapter give an
+      attacker a backdoor that survives every input and output control, since the model
+      itself produces the harmful behavior. Thus, the package must be verified at every
+      load (OWASP LLM03:2025, LLM04:2025).
+
+      Availability (Important): Losing the weights stops the fine-tuned model until a
+      verified copy is restored or the model is retrained. That degrades the AI features
+      without stopping the rest of the application.
+
+  AI Training and Fine-Tuning Data:
+    id: ai-training-data
+    description: >
+      Datasets used to train, fine-tune, or evaluate the application's models, including
+      labeled examples, preference data, and evaluation sets.
+    usage: business
+    tags:
+      - data:payload
+    origin: <source systems, vendors, or labeling teams that supply the data>
+    owner: <team accountable for the datasets>
+    quantity: very-many
+    confidentiality: restricted
+    integrity: critical
+    availability: operational
+    justification_cia_rating: >
+      Confidentiality (Restricted): Training sets are usually drawn from mission data, so
+      they carry the same controlled information as their sources, gathered in one place.
+
+      Integrity (Critical): Poisoned or mislabeled records change what every model trained
+      on them does, and the effect is hard to detect after training (OWASP LLM04:2025).
+      Thus, each dataset needs provenance and change control.
+
+      Availability (Operational): The data is needed only when a model is trained or
+      evaluated, so an outage delays retraining without affecting the running application.
+
+  System Prompts and Hidden Context:
+    id: ai-system-prompts
+    description: >
+      Developer instructions, guardrail policies, tool and function schemas, and other
+      context the application sends to a model without showing it to the user.
+    usage: devops
+    tags:
+      - data:payload
+    origin: Application source repository and configuration
+    owner: Application Development Team
+    quantity: few
+    confidentiality: internal
+    integrity: critical
+    availability: important
+    justification_cia_rating: >
+      Confidentiality (Internal): Models can be induced to reveal their hidden context, so
+      this rating assumes that disclosure will eventually occur. For that reason, the
+      context must hold no credentials or controlled data (OWASP LLM07:2025).
+
+      Integrity (Critical): The hidden context sets the model's guardrails and the tools it
+      may call. An attacker who can change it removes those controls for every user.
+
+      Availability (Important): Without its context the model either fails or runs without
+      its guardrails, so the AI features stop until the context is restored.
+
+  Retrieval Corpus and Embeddings:
+    id: ai-retrieval-corpus
+    description: >
+      Documents indexed for retrieval-augmented generation, their chunks, and the vector
+      embeddings and metadata stored in the vector store.
+    usage: business
+    tags:
+      - data:payload
+    origin: <document sources ingested by the RAG pipeline>
+    owner: <team accountable for the indexed content>
+    quantity: very-many
+    confidentiality: restricted
+    integrity: critical
+    availability: important
+    justification_cia_rating: >
+      Confidentiality (Restricted): Embeddings can be inverted to recover much of their
+      source text, so the index carries the confidentiality of the documents it was built
+      from. A query that ignores document permissions also returns content the user could
+      not open directly (OWASP LLM08:2025).
+
+      Integrity (Critical): A planted or altered document is returned as trusted context
+      and steers the model's answers, which makes it a path for indirect prompt injection
+      (OWASP LLM01:2025, LLM08:2025).
+
+      Availability (Important): Losing the index makes answers ungrounded or unavailable
+      until it is rebuilt from the sources, which degrades the AI features without stopping
+      the application.
+
+  Prompt and Response Logs:
+    id: ai-interaction-logs
+    description: >
+      Recorded user prompts, retrieved context, model responses, and tool calls, kept for
+      audit, troubleshooting, evaluation, and abuse detection.
+    usage: devops
+    tags:
+      - data:payload
+      - auth:human
+    origin: AI gateway, orchestrator, or application logging
+    owner: <team accountable for the logs>
+    quantity: very-many
+    confidentiality: restricted
+    integrity: important
+    availability: operational
+    justification_cia_rating: >
+      Confidentiality (Restricted): Users paste mission content into prompts, and responses
+      repeat retrieved documents, so the logs collect controlled information from every
+      session in one store (OWASP LLM02:2025).
+
+      Integrity (Important): The logs are the record for investigating misuse of the model,
+      so altering them hides that misuse (NIST SP 800-53 AU-9).
+
+      Availability (Operational): A logging outage loses records for its duration, while
+      the AI features keep working.

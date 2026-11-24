@@ -30,6 +30,12 @@
 #    your application handles.
 # 6. WIRE your architecture together by defining 'communication_links'. Ensure
 #    every link explicitly lists the 'data_assets_sent' and 'received'.
+# 7. RECORD every AI model on the technical asset that runs inference for it,
+#    whether a vendor hosts it (an ai-llm-endpoint, tagged
+#    ai:third-party-model-api) or your application does (an ai-model-serving
+#    asset). Its description names the model, version, provider, and license,
+#    such as "Serves Gemma 3 27B (Google, Gemma license)". These assets are
+#    the application's model inventory, so each model appears exactly once.
 #
 # OUTPUT FORMAT (copy the library's own section header verbatim):
 #

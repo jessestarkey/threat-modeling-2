@@ -1,5 +1,12 @@
   # ============================================================================
   # 5. AI/ML WORKLOADS
   # AI inference, RAG pipelines, agent orchestration, and training assets.
-  # Apply ai: tags from 03-authoritative-tags.yml to trigger ATLAS/MAESTRO risks.
+  # Apply ai: tags from 03-tags-lib.yml to trigger the AI risks.
   # ============================================================================
+  #
+  # Every AI model is recorded on the asset that runs inference for it, whether
+  # a vendor hosts it (an ai-llm-endpoint, tagged ai:third-party-model-api) or
+  # the application does (an ai-model-serving asset). That asset's description
+  # names the model, version, provider, and license, so these assets form the
+  # application's model inventory. The application's AI data, including any
+  # fine-tuned weights, is in 04-data-assets-lib/06-ai-model-assets.yml.
