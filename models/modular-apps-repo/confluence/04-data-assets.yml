@@ -15,7 +15,6 @@ data_assets:
     usage: business
     tags:
       - data:payload
-      - storage:persistent
       - auth:human
     origin: Internal mission users, administrators, and automated API integrations
     owner: Platform Team # Or the specific Business Owner of the Wiki
@@ -51,7 +50,6 @@ data_assets:
     usage: business
     tags:
       - data:payload
-      - storage:persistent
       - auth:human
       - risk:malware-vector
     origin: Internal mission users, administrators, and automated API integrations
@@ -91,7 +89,6 @@ data_assets:
     usage: devops
     tags:
       - data:credential
-      - storage:vault
       - auth:npe
     origin: IaC (Crossplane)
     owner: Platform Team
@@ -123,7 +120,6 @@ data_assets:
     usage: devops
     tags:
       - data:credential
-      - storage:vault
       - auth:npe
     origin: Managed Identity service
     owner: Platform Team
@@ -157,7 +153,6 @@ data_assets:
     usage: devops
     tags:
       - data:credential
-      - storage:vault
       - auth:npe
     origin: Enterprise PKI / Azure Key Vault
     owner: Platform Team
@@ -298,7 +293,6 @@ data_assets:
     usage: devops
     tags:
       - data:payload
-      - storage:persistent
       - auth:npe
     origin: Application workloads and infrastructure components
     owner: Platform Team

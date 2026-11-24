@@ -298,7 +298,6 @@ technical_assets:
       - ops:trusted-base-image
       - ops:read-only-fs
       - net:micro-segmented
-      - storage:persistent
       - icon:postgresql
     internet: false
     machine: container
@@ -419,7 +418,6 @@ technical_assets:
       - icon:azure-app-gateway
       - compliance:fips-validated
       - zone:dmz
-      - ops:waf-enabled
     internet: true
     machine: serverless 
     encryption: data-with-asymmetric-shared-key
@@ -515,7 +513,6 @@ technical_assets:
       - icon:azure-app-gateway
       - compliance:fips-validated
       - zone:dmz
-      - ops:waf-enabled
     internet: true
     machine: serverless
     encryption: data-with-asymmetric-shared-key
@@ -700,7 +697,6 @@ technical_assets:
     size: service
     technology: web-application
     tags:
-      - app:frontend-ui
       - app:backend-api
       - feature:third-party-plugins
       - feature:dynamic-code-execution
@@ -843,7 +839,6 @@ technical_assets:
     tags:
       - ops:requires-backup
       - compliance:fips-validated
-      - storage:persistent
       - icon:azure-database
     internet: false
     machine: serverless
@@ -979,7 +974,6 @@ technical_assets:
     tags:
       - ops:requires-backup
       - compliance:fips-validated
-      - storage:persistent
       - icon:azure-storage
     internet: false
     machine: serverless
@@ -1118,7 +1112,6 @@ technical_assets:
     tags:
       - sec:secrets-broker
       - compliance:fips-validated
-      - storage:vault
       - icon:azure-key-vault
     internet: false
     machine: serverless 
@@ -1530,7 +1523,6 @@ technical_assets:
     technology: desktop
     tags:
       - feature:vdi-path
-      - app:frontend-ui
       - ops:host-agents-installed
       - icon:azure-avd
       - ops:stig-baseline
