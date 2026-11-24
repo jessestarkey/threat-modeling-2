@@ -176,9 +176,8 @@ def asset_technologies(asset_data: dict) -> set:
 # built-in CalculateSeverity() in the forked engine (pkg/types/model.go) --
 # both now score (likelihood, impact) identically in shape, even though
 # they remain two independent scoring paths by design (see
-# docs/risk-methodology.md's "Could the custom engine just adopt
-# Threagile's own formula?" section for why that independence itself is
-# kept). WEIGHT is Fibonacci-spaced (1, 2, 3, 5) rather than linear
+# docs/risk-methodology.md's "Why the layers stay separate" section for
+# why that independence is kept). WEIGHT is Fibonacci-spaced (1, 2, 3, 5) rather than linear
 # (1, 2, 3, 4): the real-world jump in exploitability/consequence from
 # Likely to Very-Likely (or High to Very-High) is bigger than the jump
 # from Unlikely to Possible (or Low to Medium), so equal linear steps
