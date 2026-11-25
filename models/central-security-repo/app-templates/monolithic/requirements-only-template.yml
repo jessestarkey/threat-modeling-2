@@ -139,7 +139,8 @@ technical_assets:
     size: component
     technology: unknown-technology
     tags:
-    internet: false
+    internet: false # true only for the edge component the internet connects to directly
+    internet_reachable: false # true for an asset behind the edge that internet traffic reaches
     machine: virtual
     encryption: none
     owner: TBD

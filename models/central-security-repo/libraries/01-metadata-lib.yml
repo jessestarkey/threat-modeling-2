@@ -271,12 +271,14 @@ categories:
           - option: "Internet-facing endpoints"
             fields:
               - "internet: true on each internet-facing asset"
+              - "internet_reachable: true on each asset behind it that internet traffic reaches"
         affects: "The internet-exposure findings, such as unguarded access from internet, and the Network and Environment focus area"
         scoping: >
           Internet exposure drives many findings, so mark internet: true only on assets that
-          face the internet, and model outside users and partner systems as external entities or
-          out-of-scope assets. That way, the rules can tell an internet-side caller from an
-          in-scope gateway.
+          face the internet, and internet_reachable: true on the assets behind them that internet
+          traffic reaches, such as the application behind a gateway. Model outside users and
+          partner systems as external entities or out-of-scope assets. That way, the rules can
+          tell an internet-side caller from an in-scope gateway.
 
       - feature: "Authorization boundary crossings"
         select: multiple

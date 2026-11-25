@@ -146,7 +146,8 @@ technical_assets:
     tags:
       - some-tag
       - some-other-tag
-    internet: false
+    internet: false # true only for the edge component the internet connects to directly
+    internet_reachable: false # true for an asset behind the edge that internet traffic reaches
     machine: virtual # values: physical, virtual, container, serverless
     encryption: none # values: none, transparent, data-with-symmetric-shared-key, data-with-asymmetric-shared-key, data-with-end-user-individual-key
     owner: Some Owner
@@ -192,7 +193,8 @@ technical_assets:
     tags:
       - some-tag
       - some-other-tag
-    internet: false
+    internet: false # true only for the edge component the internet connects to directly
+    internet_reachable: false # true for an asset behind the edge that internet traffic reaches
     machine: virtual # values: physical, virtual, container, serverless
     encryption: none # values: none, transparent, data-with-symmetric-shared-key, data-with-asymmetric-shared-key, data-with-end-user-individual-key
     owner: Some Owner
