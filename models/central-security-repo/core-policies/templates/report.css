@@ -150,14 +150,13 @@ th { background: #eef2f6; }
 
 .feature-checklist td { font-size: 8.5pt; vertical-align: top; }
 .feature-checklist td:last-child { min-width: 1.6in; }
-.feature-checklist .opt { color: #777; line-height: 1.5; }
-.feature-checklist .opt.on { color: #111; font-weight: 600; }
-.feature-checklist .box { display: inline-block; width: 7px; height: 7px; border: 1px solid #555; margin-right: 5px; vertical-align: middle; }
-.feature-checklist .box.checked { background: #1a3a5c; border-color: #1a3a5c; }
-.feature-checklist .opt-flag { color: #8a6d00; font-style: italic; }
-.feature-checklist .implied-field { font-size: 7.5pt; color: #555; font-style: italic; }
-.feature-checklist .select-note { color: #777; font-size: 8pt; }
-.feature-checklist .implied-tag { font-family: "Courier New", monospace; font-size: 7.5pt; color: #1a3a5c; }
+/* One font and size throughout. Implied tags differ only in color, and the flags a reviewer must act on in amber. */
+.feature-checklist ul.answers { margin: 0; padding-left: 12px; }
+.feature-checklist ul.answers li { margin: 0; }
+.feature-checklist .opt-flag { color: #8a6d00; }
+.feature-checklist .implied-field { color: #555; }
+.feature-checklist .select-note { color: #777; }
+.feature-checklist .implied-tag { color: #1a3a5c; }
 
 .question-absent { color: #777; }
 .question-note { color: #555; font-size: 9pt; font-style: italic; }
@@ -213,8 +212,14 @@ th { background: #eef2f6; }
 .matrix-footnote { font-size: 8pt; color: #555; margin: -2px 0 8px; }
 
 /* -- Findings -- */
-.category-block { break-before: auto; }
-.finding { break-inside: avoid; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; }
+/* Pages break only before a section and before each focus area. A category's detail flows across a
+   page instead of jumping whole to the next one, while a table row or list item stays in one piece. */
+.focus-break { break-before: page; }
+.finding { margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; }
+.finding-meta, .compact-risk-table tr, .finding li { break-inside: avoid; }
+.finding p { orphans: 3; widows: 3; }
+ul.mitigation-steps { margin: 0 0 8px 0; padding-left: 18px; }
+ul.mitigation-steps li { margin-bottom: 3px; }
 .finding-meta td { border: none; padding: 1px 8px 1px 0; font-size: 9pt; }
 
 /* -- Diagrams -- */

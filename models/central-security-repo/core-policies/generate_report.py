@@ -672,7 +672,7 @@ def annotate_finding_classes(categories: list, category_meta: dict) -> None:
 # The report text a category's detail block shows. Libraries 09 and 10 supply it for the custom and
 # built-in categories, and risk-categories.json supplies it for the rest (the fork's script rules,
 # and any built-in without a library 10 entry), so every category shows the same sections.
-ENRICHMENT_FIELDS = ("description", "impact", "asvs", "cheat_sheet")
+ENRICHMENT_FIELDS = ("description", "impact", "asvs", "cheat_sheet", "references")
 
 
 def fill_missing_enrichment(categories: list, category_meta: dict) -> None:

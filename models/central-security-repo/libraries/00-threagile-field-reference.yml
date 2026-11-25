@@ -60,10 +60,10 @@ metadata_fields:
       five values). At mission-essential or above, the custom engine adds the incident-response
       readiness checks. It does not change any finding's score.
     values:
-      administrative:    Supports administrative or back-office functions. The mission continues without it.
-      mission-support:   Supports the mission. Loss degrades it, but workarounds exist.
-      mission-essential: Needed to accomplish the mission. Loss stops a mission function.
-      mission-critical:  Warfighting or core operational system. Loss causes immediate mission failure.
+      administrative:    Supports administrative or back-office work. Its loss affects no mission function.
+      mission-support:   Supports the mission. Its loss degrades mission functions, which continue through documented workarounds.
+      mission-essential: Needed to accomplish the mission. Its loss stops at least one mission function until the system is restored.
+      mission-critical:  Core operational system. Its loss causes immediate mission failure, with no workaround.
 
   business_criticality:
     type: enum

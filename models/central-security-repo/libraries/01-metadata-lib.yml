@@ -185,19 +185,19 @@ categories:
 
     questions:
 
-      - question: "How is each authentication mechanism implemented, enforced, and documented?"
+      - question: "Describe how each authentication mechanism is implemented, enforced, and documented"
         requirement_ids: "ASVS V6.1-ASVS V6.8"
         asked_when: always
 
-      - question: "How are sessions created, timed out, ended, and re-authenticated?"
+      - question: "Describe how sessions are created, timed out, ended, and re-authenticated"
         requirement_ids: "ASVS V7.1-ASVS V7.6"
         asked_when: always
 
-      - question: "How is authorization enforced at the function, data, and field level, and what protects the admin interface?"
+      - question: "Describe how authorization is enforced at the function, data, and field level, and what protects the admin interface"
         requirement_ids: "ASVS V8.1-ASVS V8.4"
         asked_when: always
 
-      - question: "For each OAuth or OIDC role the asset plays, how are tokens validated and scoped, and how are the flows secured?"
+      - question: "For each OAuth or OIDC role the asset plays, describe how tokens are validated and scoped, and how the flows are secured"
         requirement_ids: "ASVS V9.1-ASVS V9.2, ASVS V10.1-ASVS V10.7"
         asked_when:
           - "OAuth, OIDC, and SAML roles: OAuth client"
@@ -238,7 +238,7 @@ categories:
 
     questions:
 
-      - question: "How are the containers and VMs hardened, patched, monitored, and administered?"
+      - question: "Describe how the containers and VMs are hardened, patched, monitored, and administered"
         requirement_ids: "CM-14, CM-7, SC-7(21), SC-5, AC-6, CM-6, SI-2, SI-4, AC-17, SC-28"
         asked_when: always
 
@@ -312,11 +312,11 @@ categories:
 
     questions:
 
-      - question: "How is TLS implemented for external traffic and for service-to-service calls?"
+      - question: "Describe how TLS is implemented for external traffic and for service-to-service calls"
         requirement_ids: "ASVS V12.1-ASVS V12.3"
         asked_when: always
 
-      - question: "How are classification markings checked, content inspected and sanitized, and releases approved at the cross-domain solution?"
+      - question: "Describe how classification markings are checked, content is inspected and sanitized, and releases are approved at the cross-domain solution"
         requirement_ids: "AC-4(19), AC-4(8) / SI-3, AC-4(25) / AC-4(9), SI-7"
         asked_when:
           - "Cross-domain solution roles: Low-side submitter"
@@ -326,7 +326,7 @@ categories:
           - "Cross-domain solution roles: High-side receiver"
           - "Cross-domain solution roles: High-side broker"
 
-      - question: "How is each transfer across the authorization boundary governed and audited?"
+      - question: "Describe how each transfer across the authorization boundary is governed and audited"
         requirement_ids: "AU-9, AC-3, SC-31, MP-8, CA-3"
         asked_when:
           - "Authorization boundary crossings: Exchanges data with systems outside the program"
@@ -471,39 +471,39 @@ categories:
 
     questions:
 
-      - question: "What prevents injection and unsafe deserialization?"
+      - question: "Describe what prevents injection and unsafe deserialization"
         requirement_ids: "ASVS V1.1-ASVS V1.5"
         asked_when: always
 
-      - question: "What stops users from skipping business-logic steps or automating abuse?"
+      - question: "Describe what stops users from skipping business-logic steps or automating abuse"
         requirement_ids: "ASVS V2.1-ASVS V2.4"
         asked_when: always
 
-      - question: "How are cookies, security headers, CSRF, and origin separation configured for the browser?"
+      - question: "Describe how cookies, security headers, CSRF, and origin separation are configured for the browser"
         requirement_ids: "ASVS V3.1-ASVS V3.7"
         asked_when:
           - "Browser and VDI access: Rendered in a browser"
 
-      - question: "How are the HTTP, GraphQL, and WebSocket interfaces secured?"
+      - question: "Describe how the HTTP, GraphQL, and WebSocket interfaces are secured"
         requirement_ids: "ASVS V4.1-ASVS V4.4"
         asked_when: always
 
-      - question: "How are uploaded files validated, stored, and served?"
+      - question: "Describe how uploaded files are validated, stored, and served"
         requirement_ids: "ASVS V5.1-ASVS V5.4"
         asked_when:
           - "Content handling: File uploads"
           - "Content handling: Bulk import or export"
           - "Content handling: Server-side PDF generation"
 
-      - question: "How is configuration managed, how do backend services authenticate, and where do secrets live?"
+      - question: "Describe how configuration is managed, how backend services authenticate, and where secrets are stored"
         requirement_ids: "ASVS V13.1-ASVS V13.4"
         asked_when: always
 
-      - question: "How is third-party dependency risk tracked, and which defensive coding practices are enforced?"
+      - question: "Describe how third-party dependency risk is tracked, and which defensive coding practices are enforced"
         requirement_ids: "ASVS V15.1-ASVS V15.4"
         asked_when: always
 
-      - question: "How are the WebRTC TURN relay, media, and signaling secured?"
+      - question: "Describe how the WebRTC TURN relay, media, and signaling are secured"
         requirement_ids: "ASVS V17.1-ASVS V17.3"
         asked_when:
           - "Interfaces exposed: WebRTC"
@@ -611,7 +611,7 @@ categories:
 
     questions:
 
-      - question: "How are training data, labeling, and model artifacts secured, and how are model integrity and provenance verified?"
+      - question: "Describe how training data, labeling, and model artifacts are secured, and how model integrity and provenance are verified"
         requirement_ids: "AISVS C1.1-AISVS C1.3, AISVS C3.1-AISVS C3.5, AISVS C6.1-AISVS C6.2"
         asked_when:
           - "AI use and model sourcing: Self-hosted model"
@@ -619,22 +619,22 @@ categories:
           - "AI use and model sourcing: Data labeling"
           - "AI use and model sourcing: Model delivered into an air-gapped enclave"
 
-      - question: "How is untrusted input, including retrieved and embedded content, screened before it reaches the model, and who can access the memory or RAG index?"
+      - question: "Describe how untrusted input, including retrieved and embedded content, is screened before it reaches the model, and who can access the memory or RAG index"
         requirement_ids: "AISVS C2.1-AISVS C2.2, AISVS C8.1-AISVS C8.3"
         asked_when:
           - "AI inputs and outputs: Prompts from end users"
           - "AI inputs and outputs: External content read by the model"
           - "Agent capabilities: Memory or RAG index"
 
-      - question: "How are AI workloads isolated, and how is access to AI resources authenticated and authorized?"
+      - question: "Describe how AI workloads are isolated, and how access to AI resources is authenticated and authorized"
         requirement_ids: "AISVS C4.1-AISVS C4.3, AISVS C5.1-AISVS C5.3"
         asked_when: always
 
-      - question: "How is model output validated and bounded before users or downstream systems receive it?"
+      - question: "Describe how model output is validated and bounded before users or downstream systems receive it"
         requirement_ids: "AISVS C7.1-AISVS C7.4"
         asked_when: always
 
-      - question: "What constrains the agent and its tools, and how are its MCP servers sourced, authenticated, and validated?"
+      - question: "Describe what constrains the agent and its tools, and how its MCP servers are sourced, authenticated, and validated"
         requirement_ids: "AISVS C9.1-AISVS C9.6, AISVS C10.1-AISVS C10.4"
         asked_when:
           - "Agent capabilities: Tool calls"
@@ -642,7 +642,7 @@ categories:
           - "Agent capabilities: Code execution by the agent"
           - "Agent capabilities: Agent skills"
 
-      - question: "How is the model hardened against adversarial input, membership inference, and extraction?"
+      - question: "Describe how the model is hardened against adversarial input, membership inference, and extraction"
         requirement_ids: "AISVS C11.1-AISVS C11.3"
         asked_when:
           - "AI use and model sourcing: Self-hosted model"
@@ -697,11 +697,11 @@ categories:
 
     questions:
 
-      - question: "How are cryptographic keys managed, and are the algorithms approved?"
+      - question: "Describe how cryptographic keys are managed, and whether the algorithms are approved"
         requirement_ids: "ASVS V11.1-ASVS V11.7"
         asked_when: always
 
-      - question: "How is sensitive data classified and protected at rest, in transit, and on the client?"
+      - question: "Describe how sensitive data is classified and protected at rest, in transit, and on the client"
         requirement_ids: "ASVS V14.1-ASVS V14.3"
         asked_when: always
 
@@ -713,11 +713,11 @@ categories:
 
     questions:
 
-      - question: "What is logged, where do the logs go, and what do error messages reveal?"
+      - question: "Describe what is logged, where the logs go, and what error messages reveal"
         requirement_ids: "ASVS V16.1-ASVS V16.5"
         asked_when: always
 
-      - question: "How is the model monitored for anomalies, abuse, and drift, and is its lifecycle audited?"
+      - question: "Describe how the model is monitored for anomalies, abuse, and drift, and whether its lifecycle is audited"
         requirement_ids: "AISVS C11.4, AISVS C12.1-AISVS C12.5"
         asked_when:
           - "AI use and model sourcing: Model served in production"
@@ -729,7 +729,7 @@ categories:
 
     questions:
 
-      - question: "How are containment, credential rotation, and incident reporting handled, and have they been tested?"
+      - question: "Describe how containment, credential rotation, and incident reporting are handled, and whether they have been tested"
         requirement_ids: "IR-4, IR-4, IR-3, IR-6"
         asked_when: always
 
@@ -762,6 +762,6 @@ categories:
 
     questions:
 
-      - question: "How is the asset backed up, what are its RTO and RPO, and has a restore been tested?"
+      - question: "Describe how the asset is backed up, what its RTO and RPO are, and whether a restore has been tested"
         requirement_ids: "CP-9 / AC-5, CP-2, CP-4, SA-9, SC-12"
         asked_when: always

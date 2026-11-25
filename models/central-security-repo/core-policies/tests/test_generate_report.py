@@ -102,18 +102,18 @@ class Scoping(unittest.TestCase):
     def test_questions_follow_the_checklist(self):
         model = {
             "Feature: OAuth, OIDC, and SAML roles": "",
-            "How is each authentication mechanism implemented, enforced, and documented?": "Via Entra ID.",
+            "Describe how each authentication mechanism is implemented, enforced, and documented": "Via Entra ID.",
         }
         rows = report.feature_checklist(model)
         status = {e["question"]: e for e in report.question_status(model, rows)["Identity"]}
-        self.assertEqual(status["For each OAuth or OIDC role the asset plays, how are tokens validated and scoped, "
-                                "and how are the flows secured?"]["status"], "pending")
-        self.assertEqual(status["How are sessions created, timed out, ended, and re-authenticated?"]["status"],
+        self.assertEqual(status["For each OAuth or OIDC role the asset plays, describe how tokens are validated and "
+                                "scoped, and how the flows are secured"]["status"], "pending")
+        self.assertEqual(status["Describe how sessions are created, timed out, ended, and re-authenticated"]["status"],
                          "missing", "an always-asked question the model leaves out")
-        self.assertNotIn("How is each authentication mechanism implemented, enforced, and documented?", status)
-        detection = {e["question"]: e for e in report.question_status({"What is logged, where do the logs go, and what "
-                                                                        "do error messages reveal?": "SIEM."}, [])["Detection"]}
-        monitoring = detection["How is the model monitored for anomalies, abuse, and drift, and is its lifecycle audited?"]
+        self.assertNotIn("Describe how each authentication mechanism is implemented, enforced, and documented", status)
+        detection = {e["question"]: e for e in report.question_status({"Describe what is logged, where the logs go, and "
+                                                                        "what error messages reveal": "SIEM."}, [])["Detection"]}
+        monitoring = detection["Describe how the model is monitored for anomalies, abuse, and drift, and whether its lifecycle is audited"]
         self.assertEqual(monitoring["status"], "not asked", "its checklist item is in a focus area the model does not cover")
         no_ai = {"Feature: AI use and model sourcing": "None", "Feature: Agent capabilities": "None"}
         ai = report.question_status(no_ai, report.feature_checklist(no_ai))["Artificial Intelligence"]
@@ -129,7 +129,7 @@ class Scoping(unittest.TestCase):
         rows = report.feature_checklist({
             "Feature: Authentication mechanisms": "enterprise idp, MFA, Smartcards [ANSWER REQUIRED]",
             "Feature: Vendor-hosted or SaaS components": "",
-            "How is each authentication mechanism implemented, enforced, and documented?": "Via Entra ID.",
+            "Describe how each authentication mechanism is implemented, enforced, and documented": "Via Entra ID.",
         })
         self.assertEqual([r["feature"] for r in rows], ["Authentication mechanisms", "Vendor-hosted or SaaS components"])
         auth, vendor = rows
@@ -200,14 +200,14 @@ class FindingClasses(unittest.TestCase):
         script = category("b", "weakness-shown")
         undescribed = category("c", "weakness-shown")
         meta = {"a": {"description": "from the export"},
-                "b": {"description": "d", "impact": "i", "asvs": "V2", "cheat_sheet": "",
+                "b": {"description": "d", "impact": "i", "asvs": "V2", "cheat_sheet": "", "references": "CWE-1",
                       "mitigation": "not report text"},
                 "c": {"finding_class": "weakness-shown"}}
 
         report.fill_missing_enrichment([library, script, undescribed], meta)
 
         self.assertEqual(library["enrichment"], {"description": "from the library"})
-        self.assertEqual(script["enrichment"], {"description": "d", "impact": "i", "asvs": "V2"})
+        self.assertEqual(script["enrichment"], {"description": "d", "impact": "i", "asvs": "V2", "references": "CWE-1"})
         self.assertIsNone(undescribed["enrichment"])
 
     def test_mission_criticality_title_reads_both_keys(self):
@@ -226,7 +226,28 @@ class FindingClasses(unittest.TestCase):
             self.assertIn(level, html)
         for old in ("Archive", "Operational", "Important", "Mission-Critical"):
             self.assertNotIn(old, html)
-        self.assertIn("Mission Essential (this model)", html)
+        self.assertIn("<strong>Mission Essential</strong>", html)
+        self.assertNotIn("(this model)", html)
+
+    def test_mitigation_leads_with_the_action_and_lists_one_step_per_line(self):
+        import jinja2
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(str(Path(report.__file__).parent / "templates")),
+                                 autoescape=True)
+        source = env.loader.get_source(env, "report.html.jinja")[0]
+        macro = source[source.index("{% macro mitigation("):]
+        macro = macro[:macro.index("{% endmacro %}") + len("{% endmacro %}")]
+        render = lambda call: " ".join(env.from_string(macro + call).render().split())
+
+        listed = render("{{ mitigation('Do X.', 'Step one.\\n\\nStep two.') }}")
+        self.assertIn("<strong>Mitigation:</strong> Do X.</p>", listed)
+        self.assertIn("<li>Step one.</li><li>Step two.</li>", listed)
+
+        paragraph = render("{{ mitigation('Do X.', 'One paragraph.') }}")
+        self.assertIn("<p>One paragraph.</p>", paragraph)
+        self.assertNotIn("<li>", paragraph)
+
+        self.assertIn("<strong>Mitigation:</strong> Only text.", render("{{ mitigation('', 'Only text.') }}"))
+        self.assertEqual(render("{{ mitigation('', '') }}"), "")
 
     def test_split_keeps_every_category_exactly_once(self):
         cats = [category("w", "weakness-shown"), category("c", "control-not-evidenced"), category("u", None)]

@@ -5,6 +5,23 @@
 <title>{{ title }}</title>
 </head>
 <body>
+{# One Mitigation entry per finding: the rule's Action as the lead sentence, then its mitigation
+   steps. A mitigation written one step per line becomes a bulleted list, and one paragraph stays a
+   paragraph. #}
+{% macro mitigation(action, text) %}
+  {% set steps = (text or '').split('
+') | map('trim') | select | list %}
+  {% if action %}
+  <p><strong>Mitigation:</strong> {{ action | safe }}</p>
+  {% if steps | length > 1 %}<ul class="mitigation-steps">{% for s in steps %}<li>{{ s | safe }}</li>{% endfor %}</ul>
+  {% elif steps %}<p>{{ steps[0] | safe }}</p>{% endif %}
+  {% elif steps | length > 1 %}
+  <p><strong>Mitigation:</strong></p>
+  <ul class="mitigation-steps">{% for s in steps %}<li>{{ s | safe }}</li>{% endfor %}</ul>
+  {% elif steps %}
+  <p><strong>Mitigation:</strong> {{ steps[0] | safe }}</p>
+  {% endif %}
+{% endmacro %}
 
 <section class="title-page" style="page: title;">
   <div class="title-band"></div>
@@ -78,13 +95,13 @@
   <table class="asset-table">
     <tr><th>Level</th><th>Meaning</th></tr>
     {% for level, meaning in [
-      ("Administrative", "Supports administrative or back-office functions. The mission continues without it."),
-      ("Mission Support", "Supports the mission. Loss degrades it, but workarounds exist."),
-      ("Mission Essential", "Needed to accomplish the mission. Loss stops a mission function."),
-      ("Mission Critical", "Warfighting or core operational system. Loss causes immediate mission failure."),
+      ("Administrative", "Supports administrative or back-office work. Its loss affects no mission function."),
+      ("Mission Support", "Supports the mission. Its loss degrades mission functions, which continue through documented workarounds."),
+      ("Mission Essential", "Needed to accomplish the mission. Its loss stops at least one mission function until the system is restored."),
+      ("Mission Critical", "Core operational system. Its loss causes immediate mission failure, with no workaround."),
     ] %}
     {% if level == mission_criticality %}
-    <tr><td><strong>{{ level }} (this model)</strong></td><td><strong>{{ meaning }}</strong></td></tr>
+    <tr><td><strong>{{ level }}</strong></td><td><strong>{{ meaning }}</strong></td></tr>
     {% else %}
     <tr><td>{{ level }}</td><td>{{ meaning }}</td></tr>
     {% endif %}
@@ -167,8 +184,8 @@
       <td>{{ row.domain }}</td>
       <td>{{ row.feature }}{% if not row.multiple %} <span class="select-note">(select one)</span>{% endif %}</td>
       <td>
-        {% for option in row.options if option.selected %}<div class="opt on"><span class="box checked"></span>{{ option.label }}</div>{% endfor %}
-        {% for extra in row.unknown %}<div class="opt on"><span class="box checked"></span>{{ extra }}</div>{% endfor %}
+        {% set answers = (row.options | selectattr('selected') | map(attribute='label') | list) + (row.unknown | list) %}
+        {% if answers %}<ul class="answers">{% for answer in answers %}<li>{{ answer }}</li>{% endfor %}</ul>{% endif %}
         {% if not row.answered %}<div class="opt-flag">Not answered</div>{% endif %}
         {% if row.confirm %}<div class="opt-flag">To be confirmed</div>{% endif %}
       </td>
@@ -178,7 +195,7 @@
   </table>
   {% endif %}
   {% for group in question_domain_groups %}
-  <h2 class="domain-heading">{{ group.domain }}</h2>
+  <h2 class="domain-heading{% if feature_checklist or not loop.first %} focus-break{% endif %}">{{ group.domain }}</h2>
   {% for q_title, q_text in group.entries %}
   <h3 class="category-heading">{{ q_title }}</h3>
   {% for para in (q_text or '').split('\n') if para.strip() %}<p>{{ para.strip() }}</p>{% endfor %}
@@ -201,7 +218,7 @@
   applicable, with the reason ({{ not_applicable_requirement_count }} in this model). Any tailored
   entry that does not belong to a focus area falls under Uncategorized.</p>
   {% for group in requirement_abuse_groups %}
-  <h2 class="domain-heading">{{ group.domain }}</h2>
+  <h2 class="domain-heading{% if not loop.first %} focus-break{% endif %}">{{ group.domain }}</h2>
   {% for req in group.entries %}
   <h3 class="category-heading">{{ req.title }}</h3>
   {% for ac_title, ac_text in req.abuse_cases %}
@@ -255,8 +272,7 @@
   <div class="finding">
     <h3><span class="severity-badge severity-{{ f.severity }}">{{ f.severity | upper }}</span> {{ f.title }}</h3>
     <p><strong>Asset:</strong> {{ f.most_relevant_technical_asset or '—' }}</p>
-    {% if f.action %}<p><strong>Action:</strong> {{ f.action | safe }}</p>{% endif %}
-    {% if f.mitigation %}<p><strong>Mitigation:</strong> {{ f.mitigation | safe }}</p>{% endif %}
+    {{ mitigation(f.action, f.mitigation) }}
   </div>
   {% endfor %}
   {% endfor %}
@@ -403,7 +419,7 @@
   <p>This section gives the full detail of every finding, grouped by focus area. Each category's
   detection logic, false positives, and risk assessment are in the program's Threat Catalogue.</p>
   {% for group in all_domain_groups %}
-  <h2 id="domain-{{ group.slug }}" class="domain-heading">{{ group.domain }}</h2>
+  <h2 id="domain-{{ group.slug }}" class="domain-heading{% if not loop.first %} focus-break{% endif %}">{{ group.domain }}</h2>
   {% for cat in group.categories %}
   <div id="cat-{{ cat.slug }}" class="category-block">
 
@@ -438,8 +454,7 @@
       <p><strong>Description:</strong> {{ cat.enrichment.description }}</p>
       <p><strong>Impact:</strong> {{ cat.enrichment.impact }}</p>
       {% endif %}
-      {% if cat.shared.action %}<p><strong>Action:</strong> {{ cat.shared.action | safe }}</p>{% endif %}
-      {% if cat.shared.mitigation %}<p><strong>Mitigation:</strong> {{ cat.shared.mitigation | safe }}</p>{% endif %}
+      {{ mitigation(cat.shared.action, cat.shared.mitigation) }}
       {% if cat.enrichment %}
       {% if cat.enrichment.asvs %}<p><strong>ASVS:</strong> {{ cat.enrichment.asvs }}</p>{% endif %}
       {% if cat.enrichment.cheat_sheet %}<p><strong>Cheat Sheet:</strong> {{ cat.enrichment.cheat_sheet }}</p>{% endif %}
@@ -474,8 +489,7 @@
       <p><strong>Description:</strong> {{ cat.enrichment.description }}</p>
       <p><strong>Impact:</strong> {{ cat.enrichment.impact }}</p>
       {% endif %}
-      {% if f.action %}<p><strong>Action:</strong> {{ f.action | safe }}</p>{% endif %}
-      {% if f.mitigation %}<p><strong>Mitigation:</strong> {{ f.mitigation | safe }}</p>{% endif %}
+      {{ mitigation(f.action, f.mitigation) }}
       {% if loop.first and cat.enrichment %}
       {% if cat.enrichment.asvs %}<p><strong>ASVS:</strong> {{ cat.enrichment.asvs }}</p>{% endif %}
       {% if cat.enrichment.cheat_sheet %}<p><strong>Cheat Sheet:</strong> {{ cat.enrichment.cheat_sheet }}</p>{% endif %}

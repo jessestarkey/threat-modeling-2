@@ -43,17 +43,19 @@ management_summary_comment: >
 # ------------------------------------------------------------------------------
 # PURPOSE:
 # How much the mission depends on this application. It does not change any
-# finding's score; at mission-essential or above it adds the incident-response
+# finding's score. At mission-essential or above, it adds the incident-response
 # readiness checks (IR plan testing, breach notification, forensics) to the report.
 #
 # ALLOWED VALUES (Choose one):
-# - mission-critical:  (Warfighting) Essential for kinetic/operational success.
-#                      Loss = immediate mission failure.
-# - mission-essential: Needed to accomplish the mission. Loss stops a mission
-#                      function (e.g., Confluence as the program's system of record).
-# - mission-support:   Supports the mission. Loss degrades it, but workarounds exist.
-# - administrative:    Administrative or back-office functions. The mission
-#                      continues without it.
+# - mission-critical:  Core operational system. Its loss causes immediate mission
+#                      failure, with no workaround.
+# - mission-essential: Needed to accomplish the mission. Its loss stops at least
+#                      one mission function until the system is restored (such as
+#                      Confluence as the program's system of record).
+# - mission-support:   Supports the mission. Its loss degrades mission functions,
+#                      which continue through documented workarounds.
+# - administrative:    Supports administrative or back-office work. Its loss
+#                      affects no mission function.
 # (business_criticality, the older name, is still accepted.)
 # ------------------------------------------------------------------------------
 mission_criticality: mission-support # values: administrative, mission-support, mission-essential, mission-critical
@@ -188,8 +190,8 @@ questions:
   #
   # "Feature: Authentication mechanisms": "Enterprise IdP, MFA"
   #
-  # "How is each authentication mechanism implemented, enforced, and
-  # documented?": >
+  # "Describe how each authentication mechanism is implemented, enforced,
+  # and documented": >
   #   All user and administrator logins federate to Entra ID over OIDC, with
   #   MFA enforced by conditional access. The OIDC client is documented in the
   #   SSP, section 4.2. Verified by a quarterly sign-in log review.
