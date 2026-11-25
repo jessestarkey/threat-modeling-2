@@ -669,6 +669,24 @@ def annotate_finding_classes(categories: list, category_meta: dict) -> None:
         c["finding_class_label"] = FINDING_CLASS_LABELS.get(c["finding_class"], "")
 
 
+# The report text a category's detail block shows. Libraries 09 and 10 supply it for the custom and
+# built-in categories, and risk-categories.json supplies it for the rest (the fork's script rules,
+# and any built-in without a library 10 entry), so every category shows the same sections.
+ENRICHMENT_FIELDS = ("description", "impact", "asvs", "cheat_sheet")
+
+
+def fill_missing_enrichment(categories: list, category_meta: dict) -> None:
+    """Gives each category with no library entry the report text the fork exports for it, in place.
+    A category the export does not describe keeps no enrichment."""
+    for c in categories:
+        if c.get("enrichment"):
+            continue
+        meta = category_meta.get(c["slug"], {})
+        text = {k: meta[k] for k in ENRICHMENT_FIELDS if meta.get(k)}
+        if text.get("description"):
+            c["enrichment"] = text
+
+
 def split_by_finding_class(categories: list) -> tuple:
     """(weakness-shown, control-not-evidenced, unclassified) categories, in their given order."""
     weaknesses = [c for c in categories if c["finding_class"] == FINDING_CLASS_WEAKNESS]
@@ -691,7 +709,7 @@ def load_builtin_risk_defs() -> dict:
     """Returns {category_id: definition} for Threagile's built-in categories from
     10-threagile-builtin-risks-lib.yml, which supplies their report text. Action and Mitigation come
     from Threagile's risks.xlsx instead, which takes them from each rule's Go source in the fork. A
-    built-in with no entry has no enrichment."""
+    built-in with no entry falls back to the fork's export (see fill_missing_enrichment())."""
     path = LIBRARIES_DIR / "10-threagile-builtin-risks-lib.yml"
     if not path.exists():
         return {}
@@ -1196,6 +1214,7 @@ def build_context(model: dict, output_dir: str) -> dict:
     category_meta = load_risk_categories(output_dir)
     for group in (all_categories, remaining_categories, accepted_categories, closed_categories):
         annotate_finding_classes(group, category_meta)
+        fill_missing_enrichment(group, category_meta)
     # Open risks split by what the model can show: weaknesses its own facts show, and controls
     # it can't evidence (the rule fires because an interface exists; a reviewer confirms it).
     (remaining_weakness_categories, remaining_control_categories,

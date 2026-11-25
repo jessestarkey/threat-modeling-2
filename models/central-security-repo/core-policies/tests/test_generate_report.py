@@ -195,6 +195,21 @@ class FindingClasses(unittest.TestCase):
         self.assertEqual(unknown["finding_class"], "")
         self.assertEqual(unknown["finding_class_label"], "")
 
+    def test_categories_without_a_library_entry_take_the_exported_text(self):
+        library = category("a", "weakness-shown", enrichment={"description": "from the library"})
+        script = category("b", "weakness-shown")
+        undescribed = category("c", "weakness-shown")
+        meta = {"a": {"description": "from the export"},
+                "b": {"description": "d", "impact": "i", "asvs": "V2", "cheat_sheet": "",
+                      "mitigation": "not report text"},
+                "c": {"finding_class": "weakness-shown"}}
+
+        report.fill_missing_enrichment([library, script, undescribed], meta)
+
+        self.assertEqual(library["enrichment"], {"description": "from the library"})
+        self.assertEqual(script["enrichment"], {"description": "d", "impact": "i", "asvs": "V2"})
+        self.assertIsNone(undescribed["enrichment"])
+
     def test_mission_criticality_title_reads_both_keys(self):
         self.assertEqual(report.mission_criticality_title({"mission_criticality": "mission-essential"}), "Mission Essential")
         self.assertEqual(report.mission_criticality_title({"business_criticality": "critical"}), "Mission Essential")
