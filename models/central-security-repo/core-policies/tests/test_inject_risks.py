@@ -41,14 +41,20 @@ DOCUMENTED_TAGS = set(
 
 TAG_LITERAL = r"'([a-z0-9]+:[a-z0-9.-]+)'"
 ENGINE_TAGS = set(re.findall(TAG_LITERAL, ENGINE_SOURCE))
+# The system-wide checks are a table rather than inject() calls, so they are read from it.
+PROGRAM_TAGS = {tag for _, _, tag, _ in inject_risks.SYSTEM_CHECKS}
+ENGINE_TAGS |= PROGRAM_TAGS | {applies for _, _, _, applies in inject_risks.SYSTEM_CHECKS
+                               if applies != inject_risks.MISSION_ESSENTIAL}
 # A suppression tag is only ever checked for absence. A tag checked both ways (e.g.
 # ai:indirect-prompt-input, whose absence also stops a second branch injecting the same finding)
 # is a trigger.
 POSITIVE_TAGS = set(re.findall(TAG_LITERAL + r" in tags", ENGINE_SOURCE))
-SUPPRESSION_TAGS = set(re.findall(TAG_LITERAL + r" not in tags", ENGINE_SOURCE)) - POSITIVE_TAGS
+SUPPRESSION_TAGS = (set(re.findall(TAG_LITERAL + r" not in tags", ENGINE_SOURCE)) | PROGRAM_TAGS) - POSITIVE_TAGS
 TRIGGER_TAGS = ENGINE_TAGS - SUPPRESSION_TAGS
 ENGINE_TAG_PREFIXES = set(re.findall(r"startswith\('([a-z0-9]+:)'\)", ENGINE_SOURCE))
-INJECTED_KEYS = set(re.findall(r'inject\(\s*"([^"]+)"', ENGINE_SOURCE))
+SYSTEM_CHECK_TITLES = {cid for cid, _, _, _ in inject_risks.SYSTEM_CHECKS}
+INJECTED_KEYS = set(re.findall(r'inject\(\s*"([^"]+)"', ENGINE_SOURCE)) | {
+    cid for cid, _, _, _ in inject_risks.SYSTEM_CHECKS}
 
 REQUIRED_FIELDS = (
     "id", "baseline_likelihood", "baseline_impact", "description", "impact", "asvs",
@@ -209,7 +215,10 @@ class TagBehaviour(unittest.TestCase):
                     self.assertIn(risk["severity"], inject_risks.SEVERITY_ORDER)
                     self.assertIn(risk["exploitation_likelihood"], inject_risks.LIKELIHOOD_ORDER)
                     self.assertIn(risk["exploitation_impact"], inject_risks.IMPACT_ORDER)
-                    self.assertEqual(risk["most_relevant_technical_asset"], "probe")
+                    if title in SYSTEM_CHECK_TITLES:
+                        self.assertNotIn("most_relevant_technical_asset", risk, "a system-wide finding")
+                    else:
+                        self.assertEqual(risk["most_relevant_technical_asset"], "probe")
 
 
 # (description, asset tags, extra asset fields, category title, should fire)
@@ -448,6 +457,37 @@ class ReviewRegressions(unittest.TestCase):
             with self.subTest(older=value):
                 result = run_engine(probe_asset([]), mission_criticality=value, criticality_key="business_criticality")
                 self.assertEqual(title in result, applies, "the older key and values still work through the mapping")
+
+    def test_program_incident_response_checks_land_once_per_model(self):
+        title = "Untested Incident Response Plan"
+        assets = [probe_asset([], id="edge", internet=True, availability="operational"),
+                  probe_asset([], id="db", availability="mission-critical"),
+                  probe_asset([], id="app")]
+        result = run_engine(*assets, mission_criticality="mission-essential")
+        risks = list(result[title].values())
+        self.assertEqual(len(risks), 1, "one finding for the program, not one per asset")
+        self.assertNotIn("most_relevant_technical_asset", risks[0], "the system's finding, not any one asset's")
+        self.assertEqual(risks[0]["exploitation_likelihood"], "possible",
+                         "the baseline, with no RAA or internet step, as in the fork's whole-model checks")
+        self.assertEqual(risks[0]["exploitation_impact"], "high",
+                         "Medium plus the highest availability step in the system (the mission-critical db)")
+        tagged = [probe_asset(["ir:plan-tested"], id="app")] + assets[:2]
+        self.assertNotIn(title, run_engine(*tagged, mission_criticality="mission-essential"),
+                         "the tag on any in-scope asset records the program fact")
+
+    def test_one_pia_for_the_system_wherever_it_processes_pii(self):
+        title = "Missing Privacy Impact Assessment"
+        assets = [probe_asset(["data:pii"], id="app", confidentiality="restricted"),
+                  probe_asset(["data:pii"], id="db", confidentiality="strictly-confidential"),
+                  probe_asset([], id="cache")]
+        risks = list(run_engine(*assets)[title].values())
+        self.assertEqual(len(risks), 1, "one PIA covers the system, not one per PII asset")
+        self.assertNotIn("most_relevant_technical_asset", risks[0])
+        self.assertEqual(risks[0]["exploitation_impact"], "medium",
+                         "the Low baseline plus the highest confidentiality step among the PII assets (db)")
+        self.assertNotIn(title, run_engine(probe_asset([]), probe_asset([], id="db")), "no PII, no PIA")
+        tagged = [probe_asset(["data:pia-documented"], id="cache")] + assets[:2]
+        self.assertNotIn(title, run_engine(*tagged), "the tag on any in-scope asset records the PIA")
 
     def test_wireless_and_routing_findings_land_once_per_network(self):
         # 2026-11-18 review: rogue AP and RPKI are properties of the network, not of each workload.

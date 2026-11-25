@@ -210,6 +210,15 @@ class FindingClasses(unittest.TestCase):
         self.assertEqual(script["enrichment"], {"description": "d", "impact": "i", "asvs": "V2", "references": "CWE-1"})
         self.assertIsNone(undescribed["enrichment"])
 
+    def test_a_finding_with_no_subject_is_named_for_the_system(self):
+        merged = report.merge_findings([{"synthetic_id": "untested-incident-response-plan", "title": "t"}], {}, {},
+                                       system=report.system_label("Confluence Threat Model"))
+        self.assertEqual(merged[0]["most_relevant_technical_asset"], "Confluence System")
+        self.assertEqual(report.system_label("  Payroll   threat model "), "Payroll System")
+        self.assertEqual(report.system_label("Payroll"), "Payroll System")
+        self.assertEqual(report.system_label(None), "Whole System")
+        self.assertEqual(report.application_name("Confluence Threat Model"), "Confluence", "the title page's heading")
+
     def test_mission_criticality_title_reads_both_keys(self):
         self.assertEqual(report.mission_criticality_title({"mission_criticality": "mission-essential"}), "Mission Essential")
         self.assertEqual(report.mission_criticality_title({"business_criticality": "critical"}), "Mission Essential")

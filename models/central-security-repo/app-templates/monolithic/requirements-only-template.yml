@@ -148,7 +148,7 @@ technical_assets:
     integrity: operational
     availability: operational
     justification_cia_rating: Placeholder pending architecture design.
-    multi_tenant: false
+    multi_tenant: false # true only if this asset serves several organizations' tenants, not for a provider-shared managed service
     redundant: false
     custom_developed_parts: false
     data_assets_processed:

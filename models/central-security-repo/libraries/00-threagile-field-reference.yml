@@ -410,7 +410,11 @@ technical_asset_fields:
 
   multi_tenant:
     type: bool
-    notes: True if this asset serves multiple distinct organizational tenants from a shared deployment.
+    notes: >
+      True if this asset serves multiple distinct organizational tenants from a shared deployment.
+      A managed service that its provider shares among customers (such as Azure Firewall or Entra
+      ID) is not multi-tenant in this sense, since the provider, not this program, isolates those
+      tenants. The flag also raises the asset's RAA.
 
   redundant:
     type: bool

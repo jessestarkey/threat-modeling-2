@@ -282,6 +282,31 @@ def compute_impact(definition: dict, asset_data: dict) -> str:
     return IMPACT_ORDER[_clamp(baseline + cia_delta)]
 
 
+# The program-level checks, each raised once against the system: (category, risk title, the tag
+# that records the fact, and when the check applies). MISSION_ESSENTIAL applies in a
+# mission-essential or mission-critical model, and a tag applies where any in-scope asset carries it,
+# such as a PIA wherever the system processes PII (E-Gov Act Sec. 208 requires one per system).
+MISSION_ESSENTIAL = "mission-essential"
+SYSTEM_CHECKS = (
+    ("Untested Incident Response Plan", "Untested IR Plan Risk", "ir:plan-tested", MISSION_ESSENTIAL),
+    ("DFARS 252.204-7012 72-Hour Cyber Incident Reporting Gap", "Breach Notification Gap Risk",
+     "ir:breach-notification-procedure-documented", MISSION_ESSENTIAL),
+    ("Forensic Evidence Chain-of-Custody Gap", "Chain-of-Custody Gap Risk", "ir:evidence-handling-documented",
+     MISSION_ESSENTIAL),
+    ("Missing Privacy Impact Assessment", "Missing PIA Risk", "data:pia-documented", "data:pii"),
+)
+
+
+def system_name(model: dict) -> str:
+    """The system a whole-system finding names, from the model title, which the template sets as
+    "[Application] Threat Model" (so "Confluence Threat Model" gives "Confluence System"). The
+    report labels the same findings with generate_report.py's system_label()."""
+    name = " ".join(str(model.get('title') or '').split())
+    if name.lower().endswith('threat model'):
+        name = name[:-len('threat model')].strip()
+    return f"{name} System" if name else "Whole System"
+
+
 def compute_severity(likelihood: str, impact: str) -> str:
     product = WEIGHT[LIKELIHOOD_ORDER.index(likelihood)] * WEIGHT[IMPACT_ORDER.index(impact)]
     for threshold, severity in SEVERITY_THRESHOLDS:
@@ -384,6 +409,22 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if self_managed_unhardened(asset):
             network_edge_holder.setdefault(network_boundary(asset.get('id')), asset.get('id'))
 
+    def record(cid, name, asset_id, likelihood, impact):
+        """Adds one scored finding of category cid under the given risk name. A finding with no
+        asset_id belongs to the system as a whole."""
+        if cid not in model['individual_risk_categories']:
+            model['individual_risk_categories'][cid] = copy.deepcopy(risk_defs[cid])
+        risks_dict = model['individual_risk_categories'][cid].setdefault('risks_identified', {})
+        finding = {
+            "severity": compute_severity(likelihood, impact),
+            "exploitation_likelihood": likelihood,
+            "exploitation_impact": impact,
+            "data_breach_probability": "possible",
+        }
+        if asset_id:
+            finding["most_relevant_technical_asset"] = asset_id
+        risks_dict[name] = finding
+
     for asset_name, asset_data in tech_assets.items():
         # Every custom category asks whether this organization documented or hardened something,
         # which does not apply to an out-of-scope asset that it neither owns nor controls.
@@ -419,18 +460,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         def inject(cid, title, likelihood_delta=0):
             definition = risk_defs[cid]
             likelihood = compute_likelihood(definition, asset_raa, asset_is_internet_exposed, likelihood_delta)
-            impact = compute_impact(definition, asset_data)
-            severity = compute_severity(likelihood, impact)
-            if cid not in model['individual_risk_categories']:
-                model['individual_risk_categories'][cid] = copy.deepcopy(definition)
-            risks_dict = model['individual_risk_categories'][cid].setdefault('risks_identified', {})
-            risks_dict[f"{title} at {asset_name}"] = {
-                "severity": severity,
-                "exploitation_likelihood": likelihood,
-                "exploitation_impact": impact,
-                "data_breach_probability": "possible",
-                "most_relevant_technical_asset": asset_id
-            }
+            record(cid, f"{title} at {asset_name}", asset_id, likelihood, compute_impact(definition, asset_data))
 
         # --- 1. SOFTWARE BEHAVIORAL FEATURES ---
         if 'feature:third-party-plugins' in tags: inject("Unauthorized Marketplace Plugin", "Plugin Risk")
@@ -678,8 +708,6 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # Each check fires when its confirming tag is absent (see 03-tags-lib.yml, "DATA GOVERNANCE
         # AND LIFECYCLE TAGS"). A PIA (E-Gov Act Sec. 208) applies to processing PII at all, not only
         # to storing it.
-        if 'data:pii' in tags and 'data:pia-documented' not in tags:
-            inject("Missing Privacy Impact Assessment", "Missing PIA Risk")
 
         if ('data:external-feed-ingest' in tags or asset_techs & DATASET_STORE_TECHNOLOGIES) and 'data:provenance-tracked' not in tags:
             inject("Missing Data Provenance and Lineage Chain-of-Custody", "Data Provenance Gap Risk")
@@ -715,17 +743,6 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
                 and 'ir:credential-inventory-documented' not in tags:
             inject("Undocumented Credential Blast Radius for Incident-Driven Rotation", "Credential Blast Radius Risk")
 
-        # IR plan testing, breach notification, and chain of custody are program-level facts, but
-        # they are raised per asset, since risk_tracking signs off each finding per asset and one
-        # finding covering many assets cannot be partly accepted.
-        if model_is_mission_essential:
-            if 'ir:plan-tested' not in tags:
-                inject("Untested Incident Response Plan", "Untested IR Plan Risk")
-            if 'ir:breach-notification-procedure-documented' not in tags:
-                inject("DFARS 252.204-7012 72-Hour Cyber Incident Reporting Gap", "Breach Notification Gap Risk")
-            if 'ir:evidence-handling-documented' not in tags:
-                inject("Forensic Evidence Chain-of-Custody Gap", "Chain-of-Custody Gap Risk")
-
         # --- 7. NETWORK SEGMENTATION AND PERIMETER (SELF-MANAGED) ---
         if 'mgmt:self-managed-network' in tags and 'mgmt:self-managed-network-hardened' not in tags:
             # Containers are left to the fork's missing-network-micro-segmentation, which also
@@ -735,6 +752,24 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
             if network_edge_holder.get(network_boundary(asset_data.get('id'))) == asset_data.get('id'):
                 inject("Rogue Access Point and Evil-Twin Credential Harvesting on Self-Managed Wireless", "Rogue AP Risk")
                 inject("Missing Route Origin Validation on Self-Managed External Routing", "Missing RPKI Validation Risk")
+
+    # The program facts in SYSTEM_CHECKS are each raised once, against the system rather than any
+    # one asset (its risk_tracking key is the bare category id). Likelihood stays at the baseline,
+    # as in the fork's whole-model checks, since no one asset's attractiveness or exposure says
+    # anything about the program. Impact takes the highest CIA step among the assets the check
+    # covers, which is what the gap puts at stake. The tag on any in-scope asset records the fact.
+    in_scope = [a for a in tech_assets.values() if not a.get('out_of_scope')]
+    recorded = {tag for a in in_scope for tag in (a.get('tags') or [])}
+    for cid, title, tag, applies in SYSTEM_CHECKS:
+        if applies == MISSION_ESSENTIAL:
+            covered = in_scope if model_is_mission_essential else []
+        else:
+            covered = [a for a in in_scope if applies in (a.get('tags') or [])]
+        if not covered or tag in recorded:
+            continue
+        definition = risk_defs[cid]
+        impact = max((compute_impact(definition, a) for a in covered), key=IMPACT_ORDER.index)
+        record(cid, f"{title} for {system_name(model)}", None, definition["baseline_likelihood"], impact)
 
     # 5. Convert to custom_risk_categories, a list of categories with a 'title' field. The
     # title-keyed dict above only makes inject()'s lookups convenient. Threagile silently drops an

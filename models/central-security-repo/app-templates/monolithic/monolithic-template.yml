@@ -155,7 +155,7 @@ technical_assets:
     integrity: critical # values: archive, operational, important, critical, mission-critical
     availability: critical # values: archive, operational, important, critical, mission-critical
     justification_cia_rating: Some Justification
-    multi_tenant: false
+    multi_tenant: false # true only if this asset serves several organizations' tenants, not for a provider-shared managed service
     redundant: false
     custom_developed_parts: true
     data_assets_processed: # sequence of IDs to reference
@@ -202,7 +202,7 @@ technical_assets:
     integrity: critical # values: archive, operational, important, critical, mission-critical
     availability: critical # values: archive, operational, important, critical, mission-critical
     justification_cia_rating: Some Justification
-    multi_tenant: false
+    multi_tenant: false # true only if this asset serves several organizations' tenants, not for a provider-shared managed service
     redundant: false
     custom_developed_parts: true
     data_assets_processed: # sequence of IDs to reference

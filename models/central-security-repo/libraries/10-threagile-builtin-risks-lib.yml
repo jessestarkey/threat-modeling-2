@@ -482,8 +482,8 @@ builtin_risks:
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/CI_CD_Security_Cheat_Sheet.html"
     risk_assessment: >
       Likelihood starts at a flat Unlikely, and impact starts at a flat Low. This is a whole-model
-      check, so the asset it names is only an example, and that asset's ratings and attractiveness
-      do not move the score.
+      check, so the finding belongs to the system rather than to any one asset, and no asset's
+      ratings or attractiveness move the score.
     false_positives: >
       Two kinds of model can be treated as false positives after review: (1) a model with no
       custom-developed components (only configured COTS or SaaS), and (2) a model whose build
@@ -713,8 +713,8 @@ builtin_risks:
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
     risk_assessment: >
       Likelihood starts at a flat Unlikely, and impact starts at a flat Low. This is a whole-model
-      check, so the asset it names is only an example, and that asset's ratings and attractiveness
-      do not move the score.
+      check, so the finding belongs to the system rather than to any one asset, and no asset's
+      ratings or attractiveness move the score.
     false_positives: >
       Models that offer only public, unauthenticated data or services can be treated as false
       positives after review. However, where an enterprise identity service is inherited, model it
@@ -781,11 +781,11 @@ builtin_risks:
     asvs: "V6 - Stored Cryptography Verification Requirements"
     cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
     risk_assessment: >
-      Likelihood starts at Unlikely, and impact starts at Low. Impact steps on the confidentiality
-      of the most confidential asset or data in the model, moving one level up for a rating of
-      Confidential/Critical or above and one level down for Internal/Operational or below.
-      Additionally, likelihood moves one level with the asset's attractiveness (RAA) and internet
-      exposure.
+      Likelihood starts at a flat Unlikely, and impact starts at Low. This is a whole-model check, so
+      the finding belongs to the system rather than to any one asset, and no asset's attractiveness
+      or exposure moves its likelihood. Impact steps on the confidentiality of the most confidential
+      asset or data in the model, moving one level up for a rating of Confidential/Critical or above
+      and one level down for Internal/Operational or below.
     false_positives: >
       Models in which no component holds any secret, because all authentication uses workload
       identity or managed identity with no stored credential, can be treated as false positives

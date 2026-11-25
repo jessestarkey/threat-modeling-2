@@ -142,9 +142,9 @@ tags_available:
   # --- Incident-Response Readiness (absence fires risk) ---
   - ir:containment-disposition-documented # A documented containment disposition (auto-isolation permitted / human approval required / prohibited) exists for this asset. Suppresses the undocumented-containment-disposition risk
   - ir:credential-inventory-documented    # A current inventory of every credential/secret this asset consumes or issues exists, sufficient to support complete post-compromise rotation. Suppresses the undocumented-credential-blast-radius risk
-  - ir:plan-tested                        # The incident response plan has been exercised via a tabletop or live-fire drill (not merely documented) within the current ATO period. Suppresses the untested-incident-response-plan risk
-  - ir:breach-notification-procedure-documented # A documented procedure identifies the DoD/contract-specified reporting timeline (such as DFARS 252.204-7012's 72-hour requirement) and the party responsible for executing it. Suppresses the dfars-breach-notification-gap risk
-  - ir:evidence-handling-documented       # A documented forensic evidence-handling procedure (acquisition, custody log, storage, transfer) exists for incidents affecting this model. Suppresses the forensic-chain-of-custody-gap risk
+  - ir:plan-tested                        # The incident response plan has been exercised via a tabletop or live-fire drill (not merely documented) within the current ATO period. Suppresses the untested-incident-response-plan risk, which is raised once per model, so place it on any one in-scope asset
+  - ir:breach-notification-procedure-documented # A documented procedure identifies the DoD/contract-specified reporting timeline (such as DFARS 252.204-7012's 72-hour requirement) and the party responsible for executing it. Suppresses the dfars-breach-notification-gap risk, which is raised once per model, so place it on any one in-scope asset
+  - ir:evidence-handling-documented       # A documented forensic evidence-handling procedure (acquisition, custody log, storage, transfer) exists for incidents affecting this model. Suppresses the forensic-chain-of-custody-gap risk, which is raised once per model, so place it on any one in-scope asset
 
   # =============================================================================
   # DATA GOVERNANCE AND LIFECYCLE TAGS
@@ -160,7 +160,7 @@ tags_available:
   - data:provenance-tracked        # Ingested external content is checked against an append-only origin/integrity record at consumption time. Suppresses the missing-data-provenance-chain risk
   - ops:dlp-egress-inspected       # This asset's export/attachment/outbound-transfer paths are routed through classification-aware DLP inspection. Suppresses the dlp-egress-blind-spot risk
   - data:downgrade-procedure-documented # Media/data moved from this asset to a lower classification enclave follows a documented, independently verified downgrading procedure distinct from routine sanitization. Suppresses the media-downgrade-procedure-gap risk
-  - data:pia-documented            # A current Privacy Impact Assessment covers this asset's actual PII collection, use, and sharing, reviewed since the last material change. Suppresses the missing-privacy-impact-assessment risk
+  - data:pia-documented            # A current Privacy Impact Assessment covers the system's actual PII collection, use, and sharing, reviewed since the last material change. Suppresses the missing-privacy-impact-assessment risk, which is raised once per system, so place it on any one in-scope asset
   - data:reidentification-tested   # Released datasets from this asset have been tested against a motivated-intruder re-identification attempt per NIST SP 800-188. Suppresses the dataset-reidentification-risk
   - data:rights-managed            # Files released from this asset are routed through an enterprise rights-management capability providing persistent, revocable access control. Suppresses the missing-data-rights-management risk
 

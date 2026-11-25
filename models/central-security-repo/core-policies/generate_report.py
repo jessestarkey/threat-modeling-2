@@ -748,9 +748,21 @@ def resolve_domain(category_id: str, custom_domains: dict) -> str:
         or FALLBACK_DOMAIN
 
 
+def application_name(model_title: str) -> str:
+    """The application's name, from the model title, which the template sets as "[Application]
+    Threat Model" (so "Confluence Threat Model" gives "Confluence")."""
+    return re.sub(r"\s*threat\s+model$", "", " ".join(str(model_title or "").split()), flags=re.IGNORECASE)
+
+
+def system_label(model_title: str) -> str:
+    """The subject of a finding about the system as a whole, such as "Confluence System"."""
+    name = application_name(model_title)
+    return f"{name} System" if name else "Whole System"
+
+
 def merge_findings(risks_json: list, xlsx_by_id: dict, assets_by_id: dict,
                     boundary_by_id: dict = None, runtime_by_id: dict = None,
-                    data_assets_by_id: dict = None) -> list:
+                    data_assets_by_id: dict = None, system: str = "Whole System") -> list:
     boundary_by_id = boundary_by_id or {}
     runtime_by_id = runtime_by_id or {}
     data_assets_by_id = data_assets_by_id or {}
@@ -776,7 +788,9 @@ def merge_findings(risks_json: list, xlsx_by_id: dict, assets_by_id: dict,
             # Already a descriptive string, not an id.
             subject = r["most_relevant_communication_link"]
         else:
-            subject = ""
+            # A finding about a program fact, such as an untested incident response plan, belongs
+            # to the system rather than to any one part of it.
+            subject = system
 
         merged.append({
             **r,
@@ -1196,7 +1210,8 @@ def build_context(model: dict, output_dir: str) -> dict:
                   f"blend their path:/usage tags onto both edges.")
 
     all_findings = merge_findings(risks_json, xlsx_by_id, assets_by_id,
-                                   boundary_by_id, runtime_by_id, data_assets_by_id)
+                                   boundary_by_id, runtime_by_id, data_assets_by_id,
+                                   system_label(model.get("title")))
     findings = [f for f in all_findings if f["category"] not in MODEL_FAILURE_CATEGORY_IDS]
     model_failure_findings = [f for f in all_findings if f["category"] in MODEL_FAILURE_CATEGORY_IDS]
     remaining_findings = [f for f in findings
@@ -1252,6 +1267,7 @@ def build_context(model: dict, output_dir: str) -> dict:
 
     return {
         "title": model.get("title", ""),
+        "application_name": application_name(model.get("title")) or model.get("title", ""),
         "date": model.get("date"),
         "author": model.get("author") or {},
         "mission_criticality": mission_criticality_title(model),

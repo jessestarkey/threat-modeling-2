@@ -214,7 +214,7 @@ endangers: the asset's own ratings, the highest rating among the data it process
 the link. The injection, deserialization, and code backdooring rules use the higher of
 Confidentiality and Integrity, since those threats both read and alter data. Finally, the two
 whole-model checks, `missing-build-infrastructure` and `missing-identity-store`, take no step,
-since the asset they report is only an example.
+since they report against the system rather than any one asset.
 
 **No model-wide step.** The model's mission criticality does not change Impact (see
 [Mission criticality](#mission-criticality)). Every asset carries its own justified CIA rating, so
@@ -268,10 +268,11 @@ the usual steps:
   asset types), and `missing-network-segmentation` uses a similar gate. Both gates sit at or above
   the 40.0 RAA threshold, so every asset that passes the gate also takes the RAA step. The gate
   decides whether the risk applies, while the step scores it.
-- **Whole-model checks.** `missing-build-infrastructure` and `missing-identity-store` keep a flat
-  Unlikely Likelihood, like their flat Low Impact, since the asset they report is only an example.
-  `missing-vault` takes the steps on the asset it reports, and keeps its flat baseline when it has
-  no asset to report. Additionally, the shared-runtime and trust-boundary findings of
+- **Whole-model checks.** `missing-build-infrastructure`, `missing-identity-store`, and
+  `missing-vault` each raise one finding against the system rather than an example asset, so the
+  finding names no asset and its `risk_tracking` key is the bare category id. All three keep a flat
+  Unlikely Likelihood. The first two also keep a flat Low Impact, while `missing-vault` takes the
+  CIA step for the most confidential data in the model. Additionally, the shared-runtime and trust-boundary findings of
   `missing-cloud-hardening` and `mixed-targets-on-shared-runtime` score the runtime or boundary
   itself, so they keep a flat Likelihood.
 
@@ -409,7 +410,7 @@ The approval set four decisions:
   - `cicd-pipeline-tampering-outside-repo` takes High impact rather than Medium, since a tampered
     pipeline ships attacker code.
   - `missing-build-infrastructure` and `missing-identity-store` take no CIA step, since they are
-    whole-model checks whose reported asset is only a placeholder.
+    whole-model checks that report against the system rather than any one asset.
   - `fips-non-compliant-cryptography` and `ai-hidden-context-exposure` accept Medium on profile T.
 
 ### Results (independent re-rating, checked)
@@ -513,6 +514,15 @@ the custom categories and the fork led to these fixes:
     highest Likelihood across the cluster's containers.
   - The rogue access point and route origin validation findings are raised once per network trust
     boundary, on its edge asset where one is modeled, while segmentation stays per workload.
+  - The untested IR plan, DFARS breach notification, forensic chain-of-custody, and missing PIA
+    findings are program facts, so each is raised once, against the system rather than any one
+    asset, and its `risk_tracking` key is the bare category id. The first three apply in a
+    mission-essential model, and the PIA wherever the system processes PII, since the E-Government
+    Act requires one PIA per system. As with the fork's whole-model checks, their Likelihood stays
+    at the baseline, since no one asset's attractiveness or exposure changes a program fact, while
+    Impact takes the highest CIA step among the assets the check covers (every in-scope asset, or
+    the ones that process PII). The tag on any in-scope asset records the fact, whereas containment
+    disposition stays per asset, since each asset has its own.
   - `push-instead-of-pull-deployment` rates each deployment target on its own.
 - **Triggers that read native fields.**
   - Dangling DNS and the IDS blind spot fire on a public endpoint, meaning an asset with

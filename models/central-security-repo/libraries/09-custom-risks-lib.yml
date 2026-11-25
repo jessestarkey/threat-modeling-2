@@ -2018,7 +2018,7 @@ custom_risk_definitions:
     baseline_likelihood: possible
     baseline_impact: low
     finding_class: control-not-evidenced
-    description: 'This asset processes or stores PII on individuals. However, no current Privacy Impact Assessment documents what is collected, why, and how it is protected, as Section 208 of the E-Government Act of 2002 requires.'
+    description: 'This system processes or stores PII on individuals. However, no current Privacy Impact Assessment documents what is collected, why, and how it is protected, as Section 208 of the E-Government Act of 2002 requires.'
     impact: 'If this risk remains unmitigated, privacy risks in the system''s design go unreviewed until an incident, an audit, or a FOIA request forces the question, when remediation is far more disruptive than an assessment would have been.'
     asvs: V8 - Data Protection
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html
@@ -2035,8 +2035,8 @@ custom_risk_definitions:
       Reassess and update the PIA whenever the system's collection, use, or sharing of PII changes
       materially, rather than only on a fixed calendar.
     references: E-Government Act of 2002, Section 208 (Privacy Impact Assessments); OMB Circular A-130; DoD Instruction 5400.16 (DoD Privacy Impact Assessment Guidance)
-    risk_assessment: 'Likelihood starts at Possible, and impact starts at Low. Impact then steps on the asset''s confidentiality rating, moving one level up at Confidential/Critical or above and one level down at Internal/Operational or below. Additionally, likelihood moves with the asset''s attractiveness and internet reachability. Once the condition is confirmed, the finding is High for any asset that processes PII with no current PIA on file, or with a PIA that predates a material change to what PII is collected or how it is used.'
-    false_positives: 'The asset is tagged data:pia-documented, which confirms that a current Privacy Impact Assessment covers this asset''s actual collection, use, and sharing of PII, and that it has been reviewed since the last material change.'
+    risk_assessment: 'Likelihood starts at Possible, and impact starts at Low. Since the E-Government Act requires one PIA per system, the finding is raised once, against the system rather than any one asset, and its likelihood stays at the baseline. Impact then steps on the highest confidentiality rating among the assets that process PII, moving one level up at Confidential/Critical or above and one level down at Internal/Operational or below. Once the condition is confirmed, the finding is High for a system that processes PII with no current PIA on file, or with a PIA that predates a material change to what PII is collected or how it is used.'
+    false_positives: 'An in-scope asset is tagged data:pia-documented, which confirms that a current Privacy Impact Assessment covers the system''s actual collection, use, and sharing of PII, and that it has been reviewed since the last material change.'
     function: operations
     stride: information-disclosure
     cwe: 359
@@ -2366,7 +2366,7 @@ custom_risk_definitions:
     baseline_likelihood: possible
     baseline_impact: medium
     finding_class: control-not-evidenced
-    description: 'This asset, in a mission-essential or mission-critical system, falls under an incident response plan that has been documented but never exercised through a tabletop or live-fire drill.'
+    description: 'This mission-essential or mission-critical system has an incident response plan that has been documented but never exercised through a tabletop or live-fire drill.'
     impact: 'If this risk remains unmitigated, the roles, escalation paths, and technical procedures assumed to work during an actual incident are tested for the first time under real pressure, when gaps are most costly to discover.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
@@ -2381,8 +2381,8 @@ custom_risk_definitions:
 
       Record the findings, and update the plan before the next ATO renewal.
     references: NIST SP 800-53 IR-3 (Incident Response Testing); NIST SP 800-61r2 (Computer Security Incident Handling Guide)
-    risk_assessment: 'Likelihood starts at Possible, and impact starts at Medium. Impact then steps on the asset''s availability rating, moving one level up at Confidential/Critical or above and one level down at Internal/Operational or below. Additionally, likelihood moves with the asset''s attractiveness and internet reachability. Once the condition is confirmed, the finding is High for any asset in a mission-essential or mission-critical system whose incident response plan has not been exercised within the current ATO period.'
-    false_positives: 'The asset is tagged ir:plan-tested, which confirms that a tabletop or live-fire incident response exercise covering this asset has been conducted within the current ATO period.'
+    risk_assessment: 'Likelihood starts at Possible, and impact starts at Medium. As a program fact, the finding is raised once, against the system rather than any one asset, and its likelihood stays at the baseline, since no one asset''s attractiveness or exposure changes it. Impact then steps on the highest availability rating among the in-scope assets, moving one level up at Confidential/Critical or above and one level down at Internal/Operational or below. Once the condition is confirmed, the finding is High for a mission-essential or mission-critical system whose incident response plan has not been exercised within the current ATO period.'
+    false_positives: 'An in-scope asset is tagged ir:plan-tested, which confirms that a tabletop or live-fire incident response exercise covering this system has been conducted within the current ATO period.'
     function: operations
     stride: denial-of-service
     cwe: 1008
@@ -2393,7 +2393,7 @@ custom_risk_definitions:
     baseline_likelihood: unlikely
     baseline_impact: medium
     finding_class: control-not-evidenced
-    description: 'This asset, in a mission-essential or mission-critical system, has no documented procedure that identifies the contract-mandated cyber incident reporting timeline, or the party responsible for carrying it out.'
+    description: 'This mission-essential or mission-critical system has no documented procedure that identifies the contract-mandated cyber incident reporting timeline, or the party responsible for carrying it out.'
     impact: 'If this risk remains unmitigated, an incident is discovered with no clear owner or timeline for DoD-mandated reporting, so the 72-hour reporting window can be missed, with its contractual and legal consequences.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
@@ -2410,8 +2410,8 @@ custom_risk_definitions:
       response exercises, so that the 72-hour clock is a practiced procedure rather than a
       first-time scramble.
     references: DFARS 252.204-7012 (Safeguarding Covered Defense Information and Cyber Incident Reporting); NIST SP 800-53 IR-6 (Incident Reporting); NIST SP 800-171
-    risk_assessment: 'Likelihood starts at Unlikely, and impact starts at Medium. Impact then steps on the asset''s availability rating, moving one level up at Confidential/Critical or above and one level down at Internal/Operational or below. Additionally, likelihood moves with the asset''s attractiveness and internet reachability. Once the condition is confirmed, the finding is High for any asset in a mission-essential or mission-critical system that is covered by a DFARS 252.204-7012 clause and has no documented reporting procedure or owner.'
-    false_positives: 'The asset is tagged ir:breach-notification-procedure-documented, which confirms two things: (1) a documented reporting procedure identifies the contract-mandated timeline and the responsible party, and (2) the procedure has been rehearsed.'
+    risk_assessment: 'Likelihood starts at Unlikely, and impact starts at Medium. As a program fact, the finding is raised once, against the system rather than any one asset, and its likelihood stays at the baseline, since no one asset''s attractiveness or exposure changes it. Impact then steps on the highest availability rating among the in-scope assets, moving one level up at Confidential/Critical or above and one level down at Internal/Operational or below. Once the condition is confirmed, the finding is High for a mission-essential or mission-critical system that is covered by a DFARS 252.204-7012 clause and has no documented reporting procedure or owner.'
+    false_positives: 'An in-scope asset is tagged ir:breach-notification-procedure-documented, which confirms two things: (1) a documented reporting procedure identifies the contract-mandated timeline and the responsible party, and (2) the procedure has been rehearsed.'
     function: operations
     stride: denial-of-service
     cwe: 1059
@@ -2422,7 +2422,7 @@ custom_risk_definitions:
     baseline_likelihood: unlikely
     baseline_impact: low
     finding_class: control-not-evidenced
-    description: 'This asset, in a mission-essential or mission-critical system, has no documented procedure for acquiring, logging, and transferring forensic evidence during an incident that affects it.'
+    description: 'This mission-essential or mission-critical system has no documented procedure for acquiring, logging, and transferring forensic evidence during an incident that affects it.'
     impact: 'If this risk remains unmitigated, evidence collected during an incident cannot be shown to be unaltered or continuously accounted for. Thus, its value in legal proceedings, contract disputes, or a defensible after-action record is undermined.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
@@ -2436,8 +2436,8 @@ custom_risk_definitions:
       Assign a named role to carry out this procedure during an incident, distinct from whoever
       performs containment, so that evidence handling is not improvised under pressure.
     references: NIST SP 800-53 IR-4 (Incident Handling); NIST SP 800-86 (Guide to Integrating Forensic Techniques into Incident Response)
-    risk_assessment: 'Likelihood starts at Unlikely, and impact starts at Low. Impact then steps on the asset''s integrity rating, moving one level up at Confidential/Critical or above and one level down at Internal/Operational or below. Additionally, likelihood moves with the asset''s attractiveness and internet reachability. Once the condition is confirmed, the finding is High for any asset in a mission-essential or mission-critical system with no documented forensic evidence-handling procedure.'
-    false_positives: 'The asset is tagged ir:evidence-handling-documented, which confirms that a documented forensic evidence-handling procedure (covering acquisition, the custody log, storage, and transfer) exists and names a responsible role.'
+    risk_assessment: 'Likelihood starts at Unlikely, and impact starts at Low. As a program fact, the finding is raised once, against the system rather than any one asset, and its likelihood stays at the baseline, since no one asset''s attractiveness or exposure changes it. Impact then steps on the highest integrity rating among the in-scope assets, moving one level up at Confidential/Critical or above and one level down at Internal/Operational or below. Once the condition is confirmed, the finding is High for a mission-essential or mission-critical system with no documented forensic evidence-handling procedure.'
+    false_positives: 'An in-scope asset is tagged ir:evidence-handling-documented, which confirms that a documented forensic evidence-handling procedure (covering acquisition, the custody log, storage, and transfer) exists and names a responsible role.'
     function: operations
     stride: repudiation
     cwe: 1059

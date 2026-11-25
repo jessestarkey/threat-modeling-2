@@ -25,9 +25,11 @@
 #    survives across model versions.
 #
 # KEY FORMAT: <risk-category-id>@<technical-asset-id>, where "*" can stand in
-# for the asset ID to cover every asset a category fired on. Take both IDs from
-# a pipeline run (the "ID" column of risks.xlsx, or the small grey ID under each
-# finding in report.pdf) rather than guessing them.
+# for the asset ID to cover every asset a category fired on. A finding about
+# the system as a whole, such as an untested incident response plan, has no
+# asset part, so its key is the category ID alone (for example,
+# untested-incident-response-plan). Take every ID from the "ID" column of a
+# pipeline run's risks.xlsx rather than guessing it.
 #
 # AI ASSISTANCE (optional):
 #   Provide this template, a pipeline run's risks.json or risks.xlsx, and your
