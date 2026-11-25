@@ -994,7 +994,9 @@ def render_diagram_svg(gv_path: str, title: str, confidentiality_by_label: dict 
 
     # Two renders: the PDF copy swaps in raster PNGs for any icon WeasyPrint cannot draw (see
     # threagile_dfd_to_html.py's _icon_needs_print_raster), while the standalone .svg keeps the
-    # vector icons.
+    # vector icons. The PDF copy also keeps the light print theme, while the standalone files are
+    # viewed on screen, so they take the dark theme.
+    screen_theme = dfd.DARK
     svg_for_pdf = dfd.build_svg(dot_source, title=title, print_size_in=print_size_in,
                                  confidentiality_by_label=confidentiality_by_label,
                                  icon_by_label=icon_by_label,
@@ -1007,7 +1009,8 @@ def render_diagram_svg(gv_path: str, title: str, confidentiality_by_label: dict 
                                   icon_by_label=icon_by_label,
                                   vpc_by_label=vpc_by_label,
                                   devops_link_pairs=devops_link_pairs,
-                                  path_tags_by_pair=path_tags_by_pair)
+                                  path_tags_by_pair=path_tags_by_pair,
+                                  theme=screen_theme)
 
     base = os.path.splitext(gv_path)[0]
     with open(base + ".svg", "w", encoding="utf-8") as f:
@@ -1018,7 +1021,8 @@ def render_diagram_svg(gv_path: str, title: str, confidentiality_by_label: dict 
                                 icon_by_label=icon_by_label,
                                 vpc_by_label=vpc_by_label,
                                 devops_link_pairs=devops_link_pairs,
-                                path_tags_by_pair=path_tags_by_pair))
+                                path_tags_by_pair=path_tags_by_pair,
+                                theme=screen_theme))
 
     # Threagile's own PNG of the diagram is superseded by the .svg and .html, and it is the largest
     # file in the output, so it is removed.

@@ -9,6 +9,8 @@ Usage:
 """
 
 import argparse
+from dataclasses import dataclass
+from string import Template
 import base64
 import functools
 import html
@@ -26,7 +28,8 @@ ICONS_DIR = Path(__file__).resolve().parent / "icons"
 # Design tokens
 # ---------------------------------------------------------------------------
 # Editorial palette: neutral ink on paper, with one accent color reserved for external and
-# out-of-scope entities (Threagile's octagon shape), the diagram's natural focal point. The font
+# out-of-scope entities (Threagile's octagon shape), the diagram's natural focal point. These are
+# the LIGHT (print) theme's colors, and DARK below is the on-screen theme. The font
 # is local FreeSans, which is what Graphviz resolves "Verdana" to when it sizes node boxes, so
 # another font would overflow the precomputed label boxes.
 PAPER    = "#ffffff"
@@ -123,6 +126,75 @@ CONFIDENTIALITY_FILL = {
     "confidential": "#fbe9dd",
     "strictly-confidential": "#fbe0e0",
 }
+
+
+@dataclass(frozen=True)
+class Theme:
+    """Every color the diagram and its HTML page use. LIGHT is the print theme, which the PDF
+    report embeds, and DARK is the on-screen theme of the standalone .svg and .html files. In DARK,
+    boundaries keep a dark grey fill and carry their green in the border and label instead."""
+    paper: str              # the canvas
+    node_fill: str          # an asset box (a data-asset diagram's confidentiality fill overrides it)
+    ink: str                # node borders, primary links, and text
+    muted: str              # background links, such as telemetry
+    accent: str             # external and out-of-scope entities, and boundary borders in LIGHT
+    highlight: str          # the clicked asset, its links, and filtered links
+    boundary_fill: dict     # per boundary type, by nesting depth (see BOUNDARY_FILL)
+    boundary_stroke: dict   # per boundary type, by nesting depth, or accent where a type is absent
+    boundary_stroke_width: float
+    confidentiality_fill: dict    # data-asset diagram: node fill per confidentiality level
+    confidentiality_stroke: dict  # data-asset diagram: node border per confidentiality level
+    page: dict              # the HTML page's own colors (see _CSS)
+
+
+LIGHT = Theme(
+    paper=PAPER, node_fill=PAPER, ink=INK, muted=MUTED, accent=ACCENT, highlight=ACCENT,
+    boundary_fill=BOUNDARY_FILL, boundary_stroke={}, boundary_stroke_width=HAIRLINE,
+    confidentiality_fill=CONFIDENTIALITY_FILL, confidentiality_stroke={},
+    page={"page_bg": "#f0f2f5", "chrome_bg": "#ffffff", "chrome_border": "#dde1e9",
+          "title": "#1a1a2e", "badge_bg": "#eef2ff", "badge_text": "#4361ee", "label": "#8a8f98",
+          "chip_bg": "#ffffff", "chip_text": "#555555", "chip_hover_border": "#b7bfcc",
+          "chip_hover_text": "#1a1a2e", "chip_active_bg": ACCENT, "chip_active_text": "#ffffff",
+          "shadow": "rgba(0,0,0,.08)"},
+)
+
+# The depth-0 cloud provider (the CSP-owned tenant, outside the ATO boundary) keeps a grey
+# border, as it keeps a grey fill in LIGHT. The green brightens with nesting.
+DARK = Theme(
+    paper="#1b1c1f", node_fill="#2b2d31", ink="#e3e5e8", muted="#8e939b", accent="#7aa7e0",
+    highlight="#ffffff",
+    boundary_fill={
+        "network-cloud-provider": ["#222326", "#26282b", "#2a2c30"],
+        "network-cloud-security-group": ["#2c2e32", "#303236", "#34363b", "#383a3f"],
+        "network-policy-namespace-isolation": ["#2e3034", "#33353a"],
+        "network-on-prem": ["#222326", "#26282b", "#2a2c30"],
+        "network-dedicated-hoster": ["#222326", "#26282b", "#2a2c30"],
+        "network-virtual-lan": ["#26282b", "#2a2c30", "#2e3034"],
+    },
+    boundary_stroke={
+        "network-cloud-provider": ["#8e939b", "#3f9d5c", "#5cb877"],
+        "network-cloud-security-group": ["#4caf6e", "#6bbb80", "#8fcc9f", "#b3ddbe"],
+        "network-policy-namespace-isolation": ["#6bbb80", "#8fcc9f"],
+        "network-on-prem": ["#3f9d5c", "#5cb877", "#7cc791"],
+        "network-dedicated-hoster": ["#3f9d5c", "#5cb877", "#7cc791"],
+        "network-virtual-lan": ["#3f9d5c", "#5cb877", "#7cc791"],
+    },
+    boundary_stroke_width=HAIRLINE * 1.4,
+    # The report's confidentiality badge scale (report.css), brightened to read on dark.
+    confidentiality_fill={},
+    confidentiality_stroke={
+        "public": "#7fb069",
+        "internal": "#6ea8fe",
+        "restricted": "#e6c34a",
+        "confidential": "#f08c3a",
+        "strictly-confidential": "#e5484d",
+    },
+    page={"page_bg": "#111214", "chrome_bg": "#1b1c1f", "chrome_border": "#2e3034",
+          "title": "#e3e5e8", "badge_bg": "#2b2d31", "badge_text": "#7aa7e0", "label": "#8e939b",
+          "chip_bg": "#2b2d31", "chip_text": "#c4c7cc", "chip_hover_border": "#5a5e66",
+          "chip_hover_text": "#ffffff", "chip_active_bg": "#e3e5e8", "chip_active_text": "#1b1c1f",
+          "shadow": "rgba(0,0,0,.4)"},
+)
 
 # Icons, keyed by the value of an icon: tag (see 03-tags-lib.yml, "DIAGRAM ICON TAGS"), as
 # paths under ICONS_DIR with one folder per source. The Azure and AWS icons are the official
@@ -834,9 +906,9 @@ def wrap_and_fit(label: str, native_w: float, fontsize: float) -> tuple:
 
 
 def render_node(node: dict, cx: float, cy: float, w: float, h: float,
-                dot_attrs: dict, lines: list, fill_override: str = None, icon_tags: list = None,
+                dot_attrs: dict, lines: list, confidentiality: str = None, icon_tags: list = None,
                 fontsize: float = NODE_FONTSIZE, for_print: bool = False,
-                icon_target_size: float = NODE_ICON_TARGET_SIZE) -> str:
+                icon_target_size: float = NODE_ICON_TARGET_SIZE, theme: Theme = LIGHT) -> str:
     """lines is the label already wrapped by the caller against the node's native Graphviz width
     (see wrap_and_fit), so the wrapping stays stable."""
     nid   = node["id"]
@@ -848,11 +920,13 @@ def render_node(node: dict, cx: float, cy: float, w: float, h: float,
 
     # External and out-of-scope entities (Threagile's octagons) get an accent-colored border
     # rather than a fill, which kept their labels readable. Everything else is ink on paper.
-    # fill_override (the data-asset diagram's confidentiality fill) replaces the paper color.
+    # On the data-asset diagram, a node's confidentiality level shows as its fill in LIGHT and as
+    # a heavier border in DARK (see Theme), which replaces the accent there.
     is_accent = shape == "octagon"
-    fill      = fill_override or PAPER
-    stroke    = ACCENT if is_accent else INK
-    sw        = HAIRLINE
+    fill      = theme.confidentiality_fill.get(confidentiality) or theme.node_fill
+    level_edge = theme.confidentiality_stroke.get(confidentiality)
+    stroke    = level_edge or (theme.accent if is_accent else theme.ink)
+    sw        = HAIRLINE * 2.0 if level_edge else HAIRLINE
 
     dash = "5,3" if "dotted" in style else ("8,4" if "dashed" in style else "")
 
@@ -991,7 +1065,7 @@ def bezier_path(pts: list) -> str:
     return d
 
 
-def render_edge(edge: dict) -> str:
+def render_edge(edge: dict, theme: Theme = LIGHT) -> str:
     pts   = edge["points"]
     if not pts: return ""
     style = edge.get("style", "solid").lower()
@@ -1002,7 +1076,7 @@ def render_edge(edge: dict) -> str:
     is_minor = "dashed" in style
     sw       = HAIRLINE * (0.7 if is_minor else 1.0)
     fontsize = EDGE_FONTSIZE_MINOR if is_minor else EDGE_FONTSIZE
-    color    = MUTED if is_minor else INK
+    color    = theme.muted if is_minor else theme.ink
     mid      = "arr-muted" if is_minor else "arr-ink"
 
     path = bezier_path(pts)
@@ -1028,7 +1102,7 @@ def render_cluster(cl: dict, bb: list, px_per_pt: float,
                    gh_pts: float, padding: float, shade_depth: int = 0,
                    icon_tags: list = None, for_print: bool = False,
                    label_fontsize: float = CLUSTER_FONTSIZE,
-                   icon_size: float = ICON_SIZE, fill_type: str = None) -> str:
+                   icon_size: float = ICON_SIZE, fill_type: str = None, theme: Theme = LIGHT) -> str:
     x0, y0, x1, y1 = bb
     # Convert points to SVG pixels (Y-flip)
     sx0 = x0 * px_per_pt + padding
@@ -1036,15 +1110,19 @@ def render_cluster(cl: dict, bb: list, px_per_pt: float,
     w   = (x1 - x0) * px_per_pt
     h   = (y1 - y0) * px_per_pt
 
-    # Boundaries recede, with a pastel fill and a hairline dashed border, while the border and
-    # label share the accent color so a boundary reads as one unit. shade_depth steps one shade
+    # Boundaries recede, with a quiet fill and a hairline dashed border, while the border and
+    # label share one color so a boundary reads as one unit. shade_depth steps one shade
     # darker per same-type ancestor, and fill_type selects another type's ramp for a type in
     # FOLLOWS_RAMP_OF.
-    shades = BOUNDARY_FILL.get(fill_type or cl.get("boundary_type", ""), [PAPER])
+    ramp_type = fill_type or cl.get("boundary_type", "")
+    shades = theme.boundary_fill.get(ramp_type, [theme.paper])
     fill = shades[min(shade_depth, len(shades) - 1)]
+    strokes = theme.boundary_stroke.get(ramp_type, [theme.accent])
+    edge = strokes[min(shade_depth, len(strokes) - 1)]
     out = [
         f'<rect x="{sx0:.2f}" y="{sy0:.2f}" width="{w:.2f}" height="{h:.2f}" '
-        f'rx="{RADIUS}" fill="{fill}" stroke="{ACCENT}" stroke-width="{HAIRLINE}" stroke-dasharray="6,4"/>'
+        f'rx="{RADIUS}" fill="{fill}" stroke="{edge}" stroke-width="{theme.boundary_stroke_width:.2f}" '
+        f'stroke-dasharray="6,4"/>'
     ]
 
     label = cl["label"]
@@ -1058,15 +1136,15 @@ def render_cluster(cl: dict, bb: list, px_per_pt: float,
         out.append(
             f'<text x="{label_cx:.2f}" y="{label_y:.2f}" '
             f'text-anchor="middle" font-size="{label_fontsize:.2f}" font-weight="600" font-family="{FONT}" '
-            f'fill="{ACCENT}">{html.escape(label)}</text>'
+            f'fill="{edge}">{html.escape(label)}</text>'
         )
     if icon_tags:
         left_tags  = [t for t in icon_tags if t in BOUNDARY_LEFT_CORNER_ICONS]
         right_tags = [t for t in icon_tags if t not in BOUNDARY_LEFT_CORNER_ICONS]
         if right_tags:
-            out.append(render_icon(sx0 + w, sy0, right_tags, ACCENT, for_print=for_print, icon_size=icon_size))
+            out.append(render_icon(sx0 + w, sy0, right_tags, edge, for_print=for_print, icon_size=icon_size))
         if left_tags:
-            out.append(render_icon(sx0, sy0, left_tags, ACCENT, for_print=for_print, anchor="left", icon_size=icon_size))
+            out.append(render_icon(sx0, sy0, left_tags, edge, for_print=for_print, anchor="left", icon_size=icon_size))
     return "\n".join(out)
 
 
@@ -1074,15 +1152,15 @@ def render_cluster(cl: dict, bb: list, px_per_pt: float,
 # 8. Build HTML
 # ---------------------------------------------------------------------------
 
-_CSS = """
+_CSS = Template("""
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Verdana, sans-serif; background: #f0f2f5; min-height: 100vh; }
-header { padding: 14px 24px; background: #fff; border-bottom: 1px solid #dde1e9; display: flex; align-items: center; gap: 10px; }
-header h1 { font-size: 16px; font-weight: 600; color: #1a1a2e; }
-.badge { background: #eef2ff; color: #4361ee; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+body { font-family: Verdana, sans-serif; background: $page_bg; min-height: 100vh; }
+header { padding: 14px 24px; background: $chrome_bg; border-bottom: 1px solid $chrome_border; display: flex; align-items: center; gap: 10px; }
+header h1 { font-size: 16px; font-weight: 600; color: $title; }
+.badge { background: $badge_bg; color: $badge_text; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
 .canvas-wrap { padding: 24px; overflow: hidden; cursor: grab; user-select: none; }
 .canvas-wrap.grabbing { cursor: grabbing; }
-svg.dfd { display: block; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.08); transform-origin: top left; }
+svg.dfd { display: block; background: $paper; border-radius: 8px; box-shadow: 0 2px 12px $shadow; transform-origin: top left; }
 
 /* Click-to-highlight (see _HIGHLIGHT_JS): clicking an asset dims every
    node/edge not connected to it. Only active once svg.dfd carries
@@ -1095,25 +1173,31 @@ svg.dfd.hl-active .edge { opacity: 0.15; transition: opacity 0.12s ease-out; }
 svg.dfd.hl-active .node.hl-selected,
 svg.dfd.hl-active .node.hl-connected,
 svg.dfd.hl-active .edge.hl-connected { opacity: 1; }
-svg.dfd.hl-active .edge.hl-connected path { stroke: #1a3a5c; stroke-width: 2.2px; }
-svg.dfd.hl-active .node.hl-selected rect:first-of-type { stroke: #1a3a5c; stroke-width: 2.5px; }
+svg.dfd.hl-active .edge.hl-connected path { stroke: $highlight; stroke-width: 2.2px; marker-end: url(#arr-hl); }
+svg.dfd.hl-active .node.hl-selected rect:first-of-type { stroke: $highlight; stroke-width: 2.5px; }
 
 /* Filter-links bar (see _FILTER_JS): picking a category dims every edge
    not classified into it (see classify_edge/data-category) -- nodes are
    never dimmed by this, only links, so the asset layout stays legible
    while tracing one kind of flow. Independent of click-to-highlight
    above: .dimmed forces opacity regardless of hl-active/hl-connected. */
-.filter-bar { padding: 10px 24px; background: #fff; border-bottom: 1px solid #dde1e9; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.filter-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: #8a8f98; margin-right: 2px; }
-.filter-chip { font-family: Verdana, sans-serif; font-size: 11px; font-weight: 600; color: #555; background: #fff; border: 1px solid #dde1e9; border-radius: 20px; padding: 4px 12px; cursor: pointer; transition: all 0.12s ease-out; }
-.filter-chip:hover { border-color: #b7bfcc; color: #1a1a2e; }
-.filter-chip.active { color: #fff; background: #1a3a5c; border-color: #1a3a5c; }
+.filter-bar { padding: 10px 24px; background: $chrome_bg; border-bottom: 1px solid $chrome_border; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.filter-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: $label; margin-right: 2px; }
+.filter-chip { font-family: Verdana, sans-serif; font-size: 11px; font-weight: 600; color: $chip_text; background: $chip_bg; border: 1px solid $chrome_border; border-radius: 20px; padding: 4px 12px; cursor: pointer; transition: all 0.12s ease-out; }
+.filter-chip:hover { border-color: $chip_hover_border; color: $chip_hover_text; }
+.filter-chip.active { color: $chip_active_text; background: $chip_active_bg; border-color: $chip_active_bg; }
 svg.dfd .edge.dimmed { opacity: 0.06 !important; }
-"""
+svg.dfd.filter-active .edge:not(.dimmed) path { stroke: $highlight; marker-end: url(#arr-hl); }
+""")
 
-# Two fixed-color markers, since WeasyPrint does not support context-stroke and would paint a
-# shared marker black on muted edges.
-ARROW_DEFS = """<defs>
+
+def page_css(theme: Theme) -> str:
+    """The HTML page's stylesheet in the theme's colors."""
+    return _CSS.substitute(paper=theme.paper, highlight=theme.highlight, **theme.page)
+
+# Fixed-color markers, since WeasyPrint does not support context-stroke and would paint a shared
+# marker black on muted edges. arr-hl is for highlighted links (see _CSS).
+_ARROW_DEFS = """<defs>
   <marker id="arr-ink" viewBox="0 0 10 10" refX="9" refY="5"
           markerWidth="6" markerHeight="6" orient="auto">
     <path d="M1,2 L9,5 L1,8" fill="none" stroke="%(ink)s"
@@ -1124,7 +1208,16 @@ ARROW_DEFS = """<defs>
     <path d="M1,2 L9,5 L1,8" fill="none" stroke="%(muted)s"
           stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </marker>
-</defs>""" % {"ink": INK, "muted": MUTED}
+  <marker id="arr-hl" viewBox="0 0 10 10" refX="9" refY="5"
+          markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M1,2 L9,5 L1,8" fill="none" stroke="%(highlight)s"
+          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>"""
+
+
+def arrow_defs(theme: Theme) -> str:
+    return _ARROW_DEFS % {"ink": theme.ink, "muted": theme.muted, "highlight": theme.highlight}
 
 _JS = """
 (function () {
@@ -1248,6 +1341,7 @@ _FILTER_JS = """
       chips.forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       const filter = chip.getAttribute('data-filter');
+      svg.classList.toggle('filter-active', filter !== 'all');
       edges.forEach(function (e) {
         const categories = (e.getAttribute('data-category') || '').split(' ');
         e.classList.toggle('dimmed', filter !== 'all' && !categories.includes(filter));
@@ -1318,7 +1412,8 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
               vpc_by_label: dict = None,
               devops_link_pairs: set = None,
               path_tags_by_pair: dict = None,
-              for_print: bool = False) -> str:
+              for_print: bool = False,
+              theme: Theme = LIGHT) -> str:
     """Returns a bare <svg>...</svg> fragment (no XML declaration or HTML wrapper), laid out at
     Graphviz's own coordinates via `dot -Tplain`, with this project's shapes and palette.
 
@@ -1378,8 +1473,8 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
         f'viewBox="0 0 {canvas_w:.2f} {canvas_h:.2f}" '
         f'xmlns="http://www.w3.org/2000/svg" role="img">',
         f'<title>{html.escape(title)}</title>',
-        ARROW_DEFS,
-        f'<rect width="{canvas_w:.2f}" height="{canvas_h:.2f}" fill="{PAPER}"/>',
+        arrow_defs(theme),
+        f'<rect width="{canvas_w:.2f}" height="{canvas_h:.2f}" fill="{theme.paper}"/>',
     ]
 
     # Trust boundaries, sorted by area so outer ones render first. Same-type shade depth comes
@@ -1412,7 +1507,7 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
         # from the corner.
         cl_icons = (icon_by_label.get(cl["label"]) or []) if icon_by_label else []
         parts.append(render_cluster(cl, bb, px_per_pt, gh_pts, padding, shade_depth=depth, icon_tags=cl_icons, for_print=for_print,
-                                     label_fontsize=cluster_fontsize, icon_size=boundary_icon_size, fill_type=fill_type))
+                                     label_fontsize=cluster_fontsize, icon_size=boundary_icon_size, fill_type=fill_type, theme=theme))
         placed.append((cid, bb))
 
     # confidentiality_by_label is passed only for the data-asset diagram, so it also selects that
@@ -1515,7 +1610,7 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
                                         devops_link_pairs, path_tags_by_pair)
         parts.append(f'<g class="edge" data-tail="{html.escape(edge["tail"])}" '
                      f'data-head="{html.escape(edge["head"])}" data-category="{" ".join(sorted(categories))}">')
-        parts.append(render_edge(e2))
+        parts.append(render_edge(e2, theme))
         parts.append('</g>')
 
     # Nodes on top
@@ -1524,15 +1619,12 @@ def build_svg(dot_source: str, title: str = "Data Flow Diagram",
         cx = tx(node["x"])
         cy = ty(node["y"])
         node = dict(node, label=info["label"])
-        fill_override = None
-        if confidentiality_by_label:
-            level = confidentiality_by_label.get(info["label"])
-            fill_override = CONFIDENTIALITY_FILL.get(level)
+        level = confidentiality_by_label.get(info["label"]) if confidentiality_by_label else None
         parts.append(f'<g class="node" data-id="{html.escape(node["id"])}">')
         parts.append(render_node(node, cx, cy, info["w"], info["h"], dot_attrs,
-                                  info["lines"], fill_override=fill_override, icon_tags=info["icon_tags"],
+                                  info["lines"], confidentiality=level, icon_tags=info["icon_tags"],
                                   fontsize=node_fontsize, for_print=for_print,
-                                  icon_target_size=node_icon_target))
+                                  icon_target_size=node_icon_target, theme=theme))
         parts.append('</g>')
 
     parts.append('</svg>')
@@ -1545,9 +1637,12 @@ def build_html(dot_source: str, title: str = "Data Flow Diagram",
                icon_by_label: dict = None,
                vpc_by_label: dict = None,
                devops_link_pairs: set = None,
-               path_tags_by_pair: dict = None) -> str:
+               path_tags_by_pair: dict = None,
+               theme: Theme = None) -> str:
+    theme = theme or DARK  # the interactive page is on-screen
 
     svg = build_svg(dot_source, title=title, target_width=target_width, padding=padding,
+                     theme=theme,
                      confidentiality_by_label=confidentiality_by_label,
                      icon_by_label=icon_by_label,
                      vpc_by_label=vpc_by_label,
@@ -1568,7 +1663,7 @@ def build_html(dot_source: str, title: str = "Data Flow Diagram",
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>{html.escape(title)}</title>
-    <style>{_CSS}</style>
+    <style>{page_css(theme)}</style>
     </head>
     <body>
     <header>
