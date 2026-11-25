@@ -263,3 +263,9 @@ th { background: #eef2f6; }
 .raa-badge.raa-elevated { background: #b8860b; }
 .raa-badge.raa-high { background: #c1440e; }
 .raa-badge.raa-critical { background: #8b0000; }
+
+/* Severity Analysis summary: one row per category, with a shaded row for each focus area. */
+.severity-summary th, .severity-summary td { text-align: center; }
+.severity-summary td:first-child, .severity-summary th:first-child { text-align: left; }
+.severity-summary tr.summary-domain td { background: #eef2f6; font-weight: bold; text-align: left; }
+.severity-summary tr { break-inside: avoid; }

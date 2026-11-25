@@ -40,8 +40,7 @@
     <li class="toc-l2"><a href="#domain-{{ group.slug }}">{{ group.domain }}</a><span class="toc-fill"></span><a class="toc-page" href="#domain-{{ group.slug }}"></a></li>
     {% endfor %}
 
-    <li class="toc-l0"><a href="#tag-listing">Part III: Application Components</a><span class="toc-fill"></span><a class="toc-page" href="#tag-listing"></a></li>
-    <li class="toc-l1"><a href="#tag-listing">Tag Listing</a><span class="toc-fill"></span><a class="toc-page" href="#tag-listing"></a></li>
+    <li class="toc-l0"><a href="#data-assets">Part III: Application Components</a><span class="toc-fill"></span><a class="toc-page" href="#data-assets"></a></li>
     <li class="toc-l1"><a href="#data-assets">Data Assets</a><span class="toc-fill"></span><a class="toc-page" href="#data-assets"></a></li>
     <li class="toc-l1"><a href="#technical-assets">Technical Assets</a><span class="toc-fill"></span><a class="toc-page" href="#technical-assets"></a></li>
     <li class="toc-l1"><a href="#out-of-scope-assets">Out of Scope Assets</a><span class="toc-fill"></span><a class="toc-page" href="#out-of-scope-assets"></a></li>
@@ -129,7 +128,7 @@
   <h2 class="section-heading">Data-Flow Diagram</h2>
   <p>This diagram shows every technical asset, trust boundary, and communication link in the
   application model. Small icons in the corner of a node or boundary mark specific application
-  components or cloud services where they are tagged (see Tag Listing). This page is a fixed-size
+  components or cloud services where they are tagged. This page is a fixed-size
   overview, while the accompanying <code>data-flow-diagram.html</code> (or <code>.svg</code>) file is
   a full-resolution, zoomable version.</p>
   <div class="diagram">{{ data_flow_diagram | safe }}</div>
@@ -151,7 +150,7 @@
   <p>This section establishes which features the application has, and therefore which of the
   security requirements in the next section apply. It has two parts. First, the feature checklist
   records facts that no tag or model field captures, such as whether any local accounts exist. It
-  marks the options that apply, and it lists the requirement sections each item affects and the tags
+  shows the options selected for each item, and it lists the requirement sections each item affects and the tags
   and model fields its selections imply. A reviewer checks that each implied tag and field appears on
   the asset that has the feature. Where an answer rules out a section, the next section shows it as
   not applicable, with the reason.</p>
@@ -168,7 +167,7 @@
       <td>{{ row.domain }}</td>
       <td>{{ row.feature }}{% if not row.multiple %} <span class="select-note">(select one)</span>{% endif %}</td>
       <td>
-        {% for option in row.options %}<div class="opt{% if option.selected %} on{% endif %}"><span class="box{% if option.selected %} checked{% endif %}"></span>{{ option.label }}</div>{% endfor %}
+        {% for option in row.options if option.selected %}<div class="opt on"><span class="box checked"></span>{{ option.label }}</div>{% endfor %}
         {% for extra in row.unknown %}<div class="opt on"><span class="box checked"></span>{{ extra }}</div>{% endfor %}
         {% if not row.answered %}<div class="opt-flag">Not answered</div>{% endif %}
         {% if row.confirm %}<div class="opt-flag">To be confirmed</div>{% endif %}
@@ -273,66 +272,41 @@
 <section id="impact-methodology" style="page: content;">
   <h1>Part II: Application Risks</h1>
   <h2 class="section-heading">Risk Methodology</h2>
-  <p>This section describes how each risk is rated. Every finding receives a Severity on a
-  five-level scale, <span class="severity-low">Low</span> &lt; <span class="severity-medium">Medium</span> &lt;
+  <p>Every finding receives a Severity on a five-level scale,
+  <span class="severity-low">Low</span> &lt; <span class="severity-medium">Medium</span> &lt;
   <span class="severity-elevated">Elevated</span> &lt; <span class="severity-high">High</span> &lt;
-  <span class="severity-critical">Critical</span>, which the report shows in its colored Severity
-  columns and badges. Severity always comes from a Likelihood score and an Impact score, but how those
-  scores are computed depends on where the finding came from. This report draws on two rule sources,
-  and each scores its findings in its own way:</p>
-  <ul>
-    <li><strong>Threagile's built-in risk categories</strong> are scored by Threagile itself, in
-    this project's fork (<code>jessestarkey/threagile</code>), which changes both the Severity formula
-    and the scoring of most individual rules. Each rule starts from its own baseline Likelihood and
-    Impact. Most rules then adjust that baseline for the asset, the same way the custom categories
-    below do. Specifically, Likelihood is adjusted for Relative Attacker Attractiveness (RAA) and
-    internet reachability, and Impact is narrowed to the CIA dimension that the finding's STRIDE
-    category threatens (or kept broader where the category's impact spans several dimensions). A
-    minority of rules, namely the checks for missing model elements and whole-model issues, have no
-    single asset to adjust for and keep a flat baseline. Threagile then gives each Likelihood and
-    Impact level a Fibonacci-spaced weight (1, 2, 3, and 5, rather than a linear 1 to 4), since the
-    real-world jump from the third tier to the fourth is larger than the jump from the first to the
-    second. Finally, it multiplies the two weights and buckets the product into a Severity level, as
-    shown below.
-    <table class="severity-matrix">
-      <caption>Threagile's built-in Severity matrix</caption>
-      <tr><th></th><th>Low (1)</th><th>Medium (2)</th><th>High (3)</th><th>Very-High (5)</th></tr>
-      <tr><th>Unlikely (1)</th><td class="severity-low">Low</td><td class="severity-medium">Medium</td><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td></tr>
-      <tr><th>Possible (2)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td></tr>
-      <tr><th>Likely (3)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td></tr>
-      <tr><th>Very-Likely (5)</th><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td><td class="severity-critical">Critical</td></tr>
-    </table>
-    <br>
-    </li>
-    <li><strong>The custom risk-injection categories</strong> are scored by a separately maintained
-    rule rather than by Threagile's. Each category starts from a baseline Likelihood and Impact,
-    grounded in CWE or OWASP data where a mapping exists and in expert judgment where it does not.
-    Those baselines are then adjusted for the asset that each finding lands on. First, Likelihood rises
-    one level if the asset's RAA score is 40% or more, and one more level if the asset carries the
-    <code>net:internet-reachable</code> tag. RAA is computed here with a copy of Threagile's formula
-    (asset and data sensitivity, data volume, a technology-type multiplier, and a pivoting effect, in
-    which an asset inherits some attractiveness from whatever it can reach). Second, Impact moves down
-    one level, stays, or moves up one level, according to the asset's rating on the CIA dimension that
-    the finding's STRIDE category threatens, rather than taking the highest of all three. The model's
-    Mission Criticality changes no score, although at Mission Essential or above it adds the
-    incident-response readiness checks. The two scores then combine through the same Fibonacci-weighted
-    rule as the built-in path above. The two paths are computed and maintained separately by design
-    (see <code>docs/risk-methodology.md</code>), even though they currently share the same matrix.
-    <table class="severity-matrix">
-      <caption>Custom-category Severity matrix</caption>
-      <tr><th></th><th>Low (1)</th><th>Medium (2)</th><th>High (3)</th><th>Very-High (5)</th></tr>
-      <tr><th>Unlikely (1)</th><td class="severity-low">Low</td><td class="severity-medium">Medium</td><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td></tr>
-      <tr><th>Possible (2)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td></tr>
-      <tr><th>Likely (3)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td></tr>
-      <tr><th>Very-Likely (5)</th><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td><td class="severity-critical">Critical</td></tr>
-    </table>
-    </li>
-  </ul>
-  <p>Though the two paths are computed separately and can rate similar findings differently, since
-  they draw on different Likelihood and Impact inputs, both reach Severity the same way. In other
-  words, Likelihood and Impact combine through a fixed rule rather than a judgment call for each
-  finding.</p>
+  <span class="severity-critical">Critical</span>. Each finding starts from a baseline Likelihood and
+  Impact set by its rule. The baseline is then tailored to the asset that the finding lands on, based
+  on (1) how attractive the asset is to an attacker, (2) whether it can be reached from the internet,
+  and (3) how the asset is rated on the security property that the threat endangers (confidentiality,
+  integrity, or availability). Finally, the tailored Likelihood and Impact combine into a Severity, as
+  shown below.</p>
+  <table class="severity-matrix">
+    <caption>Severity matrix (rows are Likelihood, columns are Impact)</caption>
+    <tr><th></th><th>Low (1)</th><th>Medium (2)</th><th>High (3)</th><th>Very-High (5)</th></tr>
+    <tr><th>Unlikely (1)</th><td class="severity-low">Low</td><td class="severity-medium">Medium</td><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td></tr>
+    <tr><th>Possible (2)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td></tr>
+    <tr><th>Likely (3)</th><td class="severity-medium">Medium</td><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td></tr>
+    <tr><th>Very-Likely (5)</th><td class="severity-elevated">Elevated</td><td class="severity-high">High</td><td class="severity-high">High</td><td class="severity-critical">Critical</td></tr>
+  </table>
+  <p>For further details, see the program's Application Risk Methodology.</p>
 </section>
+
+{% macro severity_summary(groups) %}
+  <table class="compact-risk-table severity-summary">
+    <tr><th>Category</th>{% for sev in severity_order %}<th>{{ sev | capitalize }}</th>{% endfor %}<th>Total</th></tr>
+    {% for group in groups %}
+    <tr class="summary-domain"><td colspan="{{ severity_order | length + 2 }}">{{ group.domain }}</td></tr>
+    {% for cat in group.categories %}
+    <tr>
+      <td><a href="#cat-{{ cat.slug }}">{{ cat.title }}</a></td>
+      {% for sev in severity_order %}{% set n = cat.findings | selectattr('severity', 'equalto', sev) | list | length %}<td{% if n %} class="severity-{{ sev }}"{% endif %}>{{ n if n else '' }}</td>{% endfor %}
+      <td>{{ cat.findings | length }}</td>
+    </tr>
+    {% endfor %}
+    {% endfor %}
+  </table>
+{% endmacro %}
 
 <section id="impact-analysis" style="page: content;">
   <h2 class="section-heading">Severity Analysis of {{ remaining_finding_count }} Open Risks in {{ remaining_categories | length }} Categories</h2>
@@ -343,72 +317,24 @@
   as data sent over a plain-HTTP link or a static secret used to authenticate.
   <strong>Control Verifications</strong> ({{ remaining_control_finding_count }}) are findings raised
   because an interface or capability exists, while the model cannot show whether the control is in
-  place. A reviewer confirms each one, and its assessment is the severity to assign if the control
+  place. A reviewer confirms each one, and its Severity is the rating that applies if the control
   turns out to be missing.</p>
 
+  <p>Each table counts a category's open findings by Severity, and each category links to its full
+  detail under Identified Risks by Vulnerability Category.</p>
+
   <h2 class="domain-heading">Model Weaknesses ({{ remaining_weakness_finding_count }})</h2>
-  {% for group in remaining_weakness_domain_groups %}
-  <h3 class="domain-heading">{{ group.domain }}</h3>
-  {% for cat in group.categories %}
-  <h3 class="category-heading"><a href="#cat-{{ cat.slug }}">{{ cat.title }}</a></h3>
-  <table class="compact-risk-table">
-    <tr><th>Severity</th><th>Asset</th><th>Communication Link</th><th>Status</th></tr>
-    {% for f in cat.findings %}
-    <tr>
-      <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
-      <td>{{ f.most_relevant_technical_asset or '—' }}</td>
-      <td>{{ f.communication_link or '—' }}</td>
-      <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
-    </tr>
-    {% endfor %}
-  </table>
-  {% endfor %}
-  {% else %}
-  <p>No open model weaknesses.</p>
-  {% endfor %}
+  {% if remaining_weakness_domain_groups %}{{ severity_summary(remaining_weakness_domain_groups) }}
+  {% else %}<p>No open model weaknesses.</p>{% endif %}
 
   <h2 class="domain-heading">Control Verifications ({{ remaining_control_finding_count }})</h2>
-  {% for group in remaining_control_domain_groups %}
-  <h3 class="domain-heading">{{ group.domain }}</h3>
-  {% for cat in group.categories %}
-  <h3 class="category-heading"><a href="#cat-{{ cat.slug }}">{{ cat.title }}</a></h3>
-  {% if cat.risk_assessment_if_missing %}<p><strong>If the control is confirmed missing:</strong> {{ cat.risk_assessment_if_missing }}</p>{% endif %}
-  <table class="compact-risk-table">
-    <tr><th>Severity</th><th>Asset</th><th>Communication Link</th><th>Status</th></tr>
-    {% for f in cat.findings %}
-    <tr>
-      <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
-      <td>{{ f.most_relevant_technical_asset or '—' }}</td>
-      <td>{{ f.communication_link or '—' }}</td>
-      <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
-    </tr>
-    {% endfor %}
-  </table>
-  {% endfor %}
-  {% else %}
-  <p>No open control verifications.</p>
-  {% endfor %}
+  {% if remaining_control_domain_groups %}{{ severity_summary(remaining_control_domain_groups) }}
+  {% else %}<p>No open control verifications.</p>{% endif %}
 
   {% if remaining_unclassified_finding_count %}
   <h2 class="domain-heading">Other Open Risks ({{ remaining_unclassified_finding_count }})</h2>
   <p>Findings from rules that carry no finding class.</p>
-  {% for group in remaining_unclassified_domain_groups %}
-  <h3 class="domain-heading">{{ group.domain }}</h3>
-  {% for cat in group.categories %}
-  <h3 class="category-heading"><a href="#cat-{{ cat.slug }}">{{ cat.title }}</a></h3>
-  <table class="compact-risk-table">
-    <tr><th>Severity</th><th>Asset</th><th>Communication Link</th><th>Status</th></tr>
-    {% for f in cat.findings %}
-    <tr>
-      <td class="severity-{{ f.severity }}">{{ f.severity | capitalize }}</td>
-      <td>{{ f.most_relevant_technical_asset or '—' }}</td>
-      <td>{{ f.communication_link or '—' }}</td>
-      <td>{{ f.risk_status | replace('-', ' ') | capitalize }}</td>
-    </tr>
-    {% endfor %}
-  </table>
-  {% endfor %}
-  {% endfor %}
+  {{ severity_summary(remaining_unclassified_domain_groups) }}
   {% endif %}
 </section>
 
@@ -474,7 +400,8 @@
 
 <section id="risks-by-category" style="page: content;">
   <h2 class="section-heading">Identified Risks by Vulnerability Category</h2>
-  <p>This section gives the full detail of every finding, grouped by focus area.</p>
+  <p>This section gives the full detail of every finding, grouped by focus area. Each category's
+  detection logic, false positives, and risk assessment are in the program's Threat Catalogue.</p>
   {% for group in all_domain_groups %}
   <h2 id="domain-{{ group.slug }}" class="domain-heading">{{ group.domain }}</h2>
   {% for cat in group.categories %}
@@ -516,9 +443,6 @@
       {% if cat.enrichment %}
       {% if cat.enrichment.asvs %}<p><strong>ASVS:</strong> {{ cat.enrichment.asvs }}</p>{% endif %}
       {% if cat.enrichment.cheat_sheet %}<p><strong>Cheat Sheet:</strong> {{ cat.enrichment.cheat_sheet }}</p>{% endif %}
-      {% if cat.enrichment.risk_assessment %}<p><strong>Risk Assessment:</strong> {{ cat.enrichment.risk_assessment }}</p>{% endif %}
-      {% if cat.enrichment.false_positives %}<p><strong>False Positives:</strong> {{ cat.enrichment.false_positives }}</p>{% endif %}
-      {% if cat.enrichment.detection_logic %}<p><strong>Detection Logic:</strong> {{ cat.enrichment.detection_logic }}</p>{% endif %}
       {% if cat.enrichment.references %}<p><strong>References:</strong> {{ cat.enrichment.references }}</p>{% endif %}
       {% endif %}
     </div>
@@ -555,9 +479,6 @@
       {% if loop.first and cat.enrichment %}
       {% if cat.enrichment.asvs %}<p><strong>ASVS:</strong> {{ cat.enrichment.asvs }}</p>{% endif %}
       {% if cat.enrichment.cheat_sheet %}<p><strong>Cheat Sheet:</strong> {{ cat.enrichment.cheat_sheet }}</p>{% endif %}
-      {% if cat.enrichment.risk_assessment %}<p><strong>Risk Assessment:</strong> {{ cat.enrichment.risk_assessment }}</p>{% endif %}
-      {% if cat.enrichment.false_positives %}<p><strong>False Positives:</strong> {{ cat.enrichment.false_positives }}</p>{% endif %}
-      {% if cat.enrichment.detection_logic %}<p><strong>Detection Logic:</strong> {{ cat.enrichment.detection_logic }}</p>{% endif %}
       {% if cat.enrichment.references %}<p><strong>References:</strong> {{ cat.enrichment.references }}</p>{% endif %}
       {% endif %}
     </div>
@@ -572,23 +493,8 @@
 <!-- PART 3: APPLICATION COMPONENTS                                -->
 <!-- ============================================================ -->
 
-<section id="tag-listing" style="page: content;">
-  <h1>Part III: Application Components</h1>
-  <h2 class="section-heading">Tag Listing</h2>
-  <p>This section lists every tag applied in this model, with its meaning and how often it is used.</p>
-  <table class="tag-table">
-    <tr><th>Tag</th><th>Meaning</th><th>Usage Count</th></tr>
-    {% for tag in tags %}
-    <tr>
-      <td><code>{{ tag.name }}</code></td>
-      <td>{{ tag.description }}</td>
-      <td>{{ tag.usage_count }}</td>
-    </tr>
-    {% endfor %}
-  </table>
-</section>
-
 <section id="data-assets" style="page: content;">
+  <h1>Part III: Application Components</h1>
   <h2 class="section-heading">Data Assets</h2>
   <p>This section outlines the information that the application model processes or stores,
   regardless of which technical asset handles it. Each entry records who is accountable for it

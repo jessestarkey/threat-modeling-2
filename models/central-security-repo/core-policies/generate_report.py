@@ -550,7 +550,6 @@ def feature_checklist(questions: dict) -> list:
     rows.sort(key=lambda r: (order.get(r["domain"], len(DOMAIN_ORDER)), library_order.get(r["feature"], 10 ** 6)))
     return rows
 
-TAG_LINE_RE = re.compile(r"^\s*-\s*(\S+)\s*(?:#\s*(.*))?$")
 RISK_LIB_DOMAIN_BANNER_RE = re.compile(r"^\s*#\s*FOCUS AREA\s+\d+:\s*(.+?)\s*$")
 RISK_LIB_ENTRY_ID_RE = re.compile(r"^\s*id:\s*(\S+)\s*$")
 SVS_ROW_RE = re.compile(r"^([\w.]+)\s*\|\s*(.+?)\s*\|\s*([123])$")
@@ -639,7 +638,7 @@ def mission_criticality_title(model: dict) -> str:
 def load_risk_categories(output_dir: str) -> dict:
     """Returns {category_id: category_dict} from risk-categories.json, which the jessestarkey/
     threagile fork writes next to risks.json: every category with a finding, from all three
-    rule layers, with its finding_class and risk_assessment. Empty when the file is absent (an
+    rule layers, with its finding_class. Empty when the file is absent (an
     older image), in which case finding classes come from risks.json alone."""
     path = os.path.join(output_dir, "risk-categories.json")
     if not os.path.exists(path):
@@ -660,17 +659,14 @@ FINDING_CLASS_LABELS = {
 
 
 def annotate_finding_classes(categories: list, category_meta: dict) -> None:
-    """Adds finding_class / finding_class_label / risk_assessment_if_missing to each category
-    from group_by_category(), in place. The class comes from the category's own findings
-    (risks.json carries it per finding), falling back to risk-categories.json. The risk
-    assessment is the 09/10 library enrichment where one exists, else the rule's own text."""
+    """Adds finding_class and finding_class_label to each category from group_by_category(), in
+    place. The class comes from the category's own findings (risks.json carries it per finding),
+    falling back to risk-categories.json."""
     for c in categories:
         meta = category_meta.get(c["slug"], {})
         classes = {f.get("finding_class") for f in c["findings"] if f.get("finding_class")}
         c["finding_class"] = classes.pop() if len(classes) == 1 else meta.get("finding_class", "")
         c["finding_class_label"] = FINDING_CLASS_LABELS.get(c["finding_class"], "")
-        c["risk_assessment_if_missing"] = ((c.get("enrichment") or {}).get("risk_assessment")
-                                           or meta.get("risk_assessment", ""))
 
 
 def split_by_finding_class(categories: list) -> tuple:
@@ -706,8 +702,7 @@ def load_builtin_risk_defs() -> dict:
 
 def load_custom_risk_domains() -> dict:
     """Returns {category_id: focus area} from 09-custom-risks-lib.yml's FOCUS AREA banner
-    comments. yaml.safe_load discards comments, so this walks the raw lines, as
-    load_tag_descriptions() does for 03-tags-lib.yml."""
+    comments. yaml.safe_load discards comments, so this walks the raw lines."""
     # Banners are upper case, so they are matched against DOMAIN_ORDER's spelling. An unknown
     # banner is kept as written, so it still appears in the report.
     canonical_by_upper = {name.upper(): name for name in DOMAIN_ORDER}
@@ -733,19 +728,6 @@ def resolve_domain(category_id: str, custom_domains: dict) -> str:
         or THREAGILE_BUILTIN_DOMAIN_MAP.get(category_id) \
         or THREAGILE_FORK_SCRIPT_DOMAIN_MAP.get(category_id) \
         or FALLBACK_DOMAIN
-
-
-def load_tag_descriptions() -> dict:
-    """03-tags-lib.yml gives each tag's meaning as a trailing comment (such as
-    `- zone:dmz  # Internet-facing...`), which yaml.safe_load discards, so the raw lines are parsed."""
-    path = LIBRARIES_DIR / "03-tags-lib.yml"
-    descriptions = {}
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            m = TAG_LINE_RE.match(line)
-            if m:
-                descriptions[m.group(1)] = (m.group(2) or "").strip()
-    return descriptions
 
 
 def merge_findings(risks_json: list, xlsx_by_id: dict, assets_by_id: dict,
@@ -1120,7 +1102,6 @@ def build_context(model: dict, output_dir: str) -> dict:
     xlsx_by_id = load_risks_xlsx(output_dir)
     custom_defs = {**load_custom_risk_defs(), **load_builtin_risk_defs()}
     custom_domains = load_custom_risk_domains()
-    tag_descriptions = load_tag_descriptions()
 
     technical_assets = model.get("technical_assets") or {}
     data_assets = model.get("data_assets") or {}
@@ -1240,31 +1221,6 @@ def build_context(model: dict, output_dir: str) -> dict:
         key=lambda a: a["title"],
     )
 
-    # Tags can sit on technical assets, links, trust boundaries, shared runtimes, and data assets,
-    # so every kind is counted (a tag such as mgmt:csp-managed may appear only on a boundary).
-    tag_usage = {}
-
-    def _count_tags(node):
-        for t in (node.get("tags") or []):
-            tag_usage[t] = tag_usage.get(t, 0) + 1
-
-    for a in technical_assets.values():
-        _count_tags(a)
-        for link in (a.get("communication_links") or {}).values():
-            _count_tags(link)
-    for b in (model.get("trust_boundaries") or {}).values():
-        _count_tags(b)
-    for rt in (model.get("shared_runtimes") or {}).values():
-        _count_tags(rt)
-    for da in (model.get("data_assets") or {}).values():
-        _count_tags(da)
-
-    tags = [
-        {"name": t, "description": tag_descriptions.get(t, ""), "usage_count": tag_usage.get(t, 0)}
-        for t in sorted(model.get("tags_available") or [])
-        if tag_usage.get(t, 0) > 0
-    ]
-
     with open(os.path.join(output_dir, "stats.json"), encoding="utf-8") as f:
         stats = json.load(f)
 
@@ -1316,7 +1272,6 @@ def build_context(model: dict, output_dir: str) -> dict:
         "questions": sorted((model.get("questions") or {}).items()),
         "feature_checklist": checklist,
         "question_domain_groups": question_groups(model.get("questions") or {}, checklist),
-        "tags": tags,
         "trust_boundary_tree": build_trust_boundary_tree(model.get("trust_boundaries") or {}, assets_by_id),
         "shared_runtimes": build_shared_runtimes(model.get("shared_runtimes") or {}, assets_by_id),
         "technical_assets": asset_list,

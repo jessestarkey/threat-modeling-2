@@ -195,16 +195,6 @@ class FindingClasses(unittest.TestCase):
         self.assertEqual(unknown["finding_class"], "")
         self.assertEqual(unknown["finding_class_label"], "")
 
-    def test_risk_assessment_prefers_the_library_enrichment(self):
-        enriched = category("a", "control-not-evidenced", enrichment={"risk_assessment": "from the library"})
-        plain = category("b", "control-not-evidenced")
-        meta = {"a": {"risk_assessment": "from the rule"}, "b": {"risk_assessment": "from the rule"}}
-
-        report.annotate_finding_classes([enriched, plain], meta)
-
-        self.assertEqual(enriched["risk_assessment_if_missing"], "from the library")
-        self.assertEqual(plain["risk_assessment_if_missing"], "from the rule")
-
     def test_mission_criticality_title_reads_both_keys(self):
         self.assertEqual(report.mission_criticality_title({"mission_criticality": "mission-essential"}), "Mission Essential")
         self.assertEqual(report.mission_criticality_title({"business_criticality": "critical"}), "Mission Essential")
