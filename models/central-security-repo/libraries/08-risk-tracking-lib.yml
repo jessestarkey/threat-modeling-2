@@ -68,6 +68,20 @@
 # way. exception:direct-admin-access raises its own finding only where the
 # built-in unguarded-access-from-internet does not cover the asset. Where it
 # does, accept that built-in finding instead.
+#
+# WHOLE-SYSTEM FINDINGS: a program fact, such as an untested incident response
+# plan or a missing PIA, is raised once against the system rather than any one
+# asset, so its key is the category ID alone, with no @ part. One program
+# sign-off can cover several applications, but each application records its
+# own entry, and only after confirming that the sign-off covers it (an exercise
+# held before the application existed does not). For example:
+#     untested-incident-response-plan:
+#       status: mitigated
+#       justification: "Program IR plan <plan and version> exercised by
+#         <tabletop or live-fire> on YYYY-MM-DD, covering this application."
+#       ticket: <exercise record>
+#       date: YYYY-MM-DD
+#       checked_by: <ISSO>
 # ==============================================================================
 
 # NOTE:
