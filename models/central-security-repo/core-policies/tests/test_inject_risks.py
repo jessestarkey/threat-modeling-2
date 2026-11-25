@@ -332,16 +332,24 @@ class ReviewRegressions(unittest.TestCase):
         result = run_engine(probe_asset(["ai:indirect-prompt-input"], technology="ai-rag-pipeline"))
         self.assertEqual(len(result["Indirect Prompt Injection and Goal Hijack"]), 1)
 
-    def test_memory_outside_step_does_not_stack_with_the_internet_tag(self):
+    def test_memory_outside_step_does_not_stack_with_internet_reachable(self):
         title = "Agent Memory and Context Poisoning"
         boundaries = {"Core": {"id": "core", "technical_assets_inside": ["probe"]},
                       "DMZ": {"id": "dmz", "technical_assets_inside": ["outside"]}}
         tagged = run_engine(
-            probe_asset(["ai:agent-memory", "net:internet-reachable"]),
+            probe_asset(["ai:agent-memory"], internet_reachable=True),
             probe_asset([], id="outside", communication_links={"Write": link("probe")}),
             trust_boundaries=boundaries)
-        # Baseline possible, RAA pinned low (-1), internet tag +1, outside writer suppressed: possible.
+        # Baseline possible, RAA pinned low (-1), internet_reachable +1, outside writer suppressed: possible.
         self.assertEqual(likelihood_of(tagged, title), "possible")
+
+    def test_either_exposure_field_takes_the_internet_step(self):
+        title = "Agent Memory and Context Poisoning"
+        plain = likelihood_of(run_engine(probe_asset(["ai:agent-memory"])), title)
+        edge = likelihood_of(run_engine(probe_asset(["ai:agent-memory"], internet=True)), title)
+        behind = likelihood_of(run_engine(probe_asset(["ai:agent-memory"], internet_reachable=True)), title)
+        # Baseline possible, RAA pinned low (-1): unlikely, and one step up for either field.
+        self.assertEqual((plain, edge, behind), ("unlikely", "possible", "possible"))
 
     def test_internal_backend_in_another_boundary_is_not_an_outside_writer(self):
         title = "Agent Memory and Context Poisoning"

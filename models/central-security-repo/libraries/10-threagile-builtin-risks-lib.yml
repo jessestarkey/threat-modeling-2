@@ -44,8 +44,8 @@
 # escalation conditions read from the Go source), including the fork's
 # shared computeLikelihood() nudge where that rule applies it: +1 step at
 # RAA >= 40%, -1 step at RAA < 15%, and +1 step if the asset is
-# internet-reachable (native internet flag or the net:internet-reachable
-# tag).
+# internet-reachable (the native internet field or the fork's
+# internet_reachable field).
 #
 # COVERAGE -- all 35 built-in categories with enrichment, i.e. every
 # built-in rule except the 7 pure model-authoring failures in

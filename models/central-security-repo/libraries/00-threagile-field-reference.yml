@@ -357,6 +357,15 @@ technical_asset_fields:
     type: bool
     notes: True if the asset is directly reachable from the public internet.
 
+  internet_reachable:
+    type: bool
+    notes: >
+      A field of the jessestarkey/threagile fork, not upstream Threagile. True if internet traffic
+      reaches the asset through an edge component in front of it (such as the application behind
+      an internet-facing gateway), while the asset is not the edge itself. Like internet, it adds
+      one step of Likelihood. Leave it false on a log sink or an internal integration that merely
+      shares the edge.
+
   machine:
     type: enum
     values:

@@ -42,7 +42,7 @@ Severity through one shared formula.
 | What they are | Threagile's 42 compiled Go rules, in the fork. Seven are model-authoring checks, so 35 are catalogued as threats. | 62 YAML rules in the fork's scripting language, mostly IL5-specific (AI, CDS, container and VM hardening, mission systems) | 86 categories in `09-custom-risks-lib.yml`, injected by `inject_risks.py` |
 | Where they run | Inside the Threagile binary | Inside the Threagile binary | Before Threagile runs, as preprocessing |
 | Baseline | Set in each rule's code | Stated once in each rule's YAML | `baseline_likelihood` and `baseline_impact` on each category |
-| Likelihood steps | RAA step, internet step, rule-specific steps | RAA step and rule-specific steps, with no internet step | RAA step, internet step, an optional branch step |
+| Likelihood steps | RAA step, internet step, rule-specific steps | The same | The same |
 | Impact step | Symmetric CIA step on the STRIDE-mapped dimension | The same | The same |
 | Report text | `10-threagile-builtin-risks-lib.yml` | Inline in each rule's YAML | `09-custom-risks-lib.yml` |
 
@@ -125,8 +125,7 @@ Likely):
 raa_step       = +1  if asset_raa >= 40.0
                = -1  if asset_raa <  15.0
                =  0  otherwise
-internet_step  = +1  if the asset is internet-facing or internet-reachable, else 0
-                     (built-in rules and the custom engine only)
+internet_step  = +1  if the asset sets internet or internet_reachable, else 0
 rule_steps     = any steps a rule takes from model facts, such as -1 on a DevOps link
 
 Likelihood = clamp(baseline + raa_step + internet_step + rule_steps)
@@ -139,25 +138,32 @@ Likelihood could only rise as a model grows. Additionally, 15.0 sits well below 
 mirroring it (at 60.0), so an asset must be clearly low-value, not merely below average, to step
 down.
 
-**The internet step.** The built-in rules read the native `internet: true` field, which marks an
-internet-facing edge component, or the `net:internet-reachable` tag. The custom engine reads the
-tag. The tag marks an asset that internet traffic can reach even though it is not the edge
-component, typically the application behind a gateway, since most vulnerability classes pass
-through a WAF untouched. The author places the tag, rather than the engine deriving it from the
-graph, because a graph walk produces false positives through shared hops. For example, one
-ingress controller can serve both an internet-facing login flow and a separate internal flow, and
-a walk cannot tell which outbound links continue the internet-facing one. Tracking that
-provenance would cost as much to maintain as the tag, so the explicit tag is both cheaper and more
-correct. The step is one-directional, since an asset that is not reachable is the ordinary case
-that the baseline already assumes. Finally, `zone:dmz` stays narrower, meaning an asset that
-directly receives hostile traffic, and the rules that need that meaning (such as Missing WAF) read
-it instead.
+**The internet step.** Two fields mark internet exposure. The native `internet: true` marks the
+edge component that the internet connects to directly, and the fork's `internet_reachable: true`
+marks an asset that internet traffic reaches through that edge, typically the application behind a
+gateway, since most vulnerability classes pass through a WAF untouched. The built-in rules read
+either field, and the custom engine reads `internet_reachable`. The two stay separate because
+several triggers treat an asset with `internet: true` as an internet-side caller, so setting it on
+the application would make the application's own backend calls look like internet traffic. The
+author sets `internet_reachable`, rather than the engine deriving it from the graph, because a
+graph walk produces false positives through shared hops. For example, one ingress controller can
+serve both an internet-facing login flow and a separate internal flow, and a walk cannot tell which
+outbound links continue the internet-facing one. Tracking that provenance would cost as much to
+maintain as the field, so the explicit field is both cheaper and more correct. To catch a missing
+field, `validate_model.py` warns about an asset that an internet-facing asset reaches over a
+business link without setting the field, and the author decides. The step is one-directional, since
+an asset that is not reachable is the ordinary case that the baseline already assumes. Finally,
+`zone:dmz` stays narrower, meaning an asset that directly receives hostile traffic, and the rules
+that need that meaning (such as Missing WAF) read it instead.
 
-**The script rules take no internet step.** Script rules use exposure to decide whether they fire
-at all, rather than as a Likelihood step. For example, many AI rules fire only when an asset is
-reachable from outside its own trust boundary, so an internet step on top would count the same
-fact twice. Thus, a script finding and a custom finding on the same internet-reachable asset can
-differ by one Likelihood level, and that difference is expected rather than drift.
+**Every rule takes the internet step.** The step applies the same way across all three layers, as
+the impact step does. The built-in rules apply it in `computeLikelihood()`, the script rules in
+`adjust_likelihood`, which takes the asset itself rather than its RAA, and the custom engine in
+`compute_likelihood()`. A rule that also uses exposure to decide whether it fires, such as an AI
+rule gated on requests from outside its trust boundary, still takes the step, since an outside
+caller can be another internal boundary, while an internet-exposed asset faces the whole internet.
+Where a rule adds its own step for the same fact, the rule drops that step on an exposed asset
+instead, as Agent Memory and Context Poisoning does for an outside writer.
 
 ## Impact
 
@@ -297,9 +303,8 @@ same logic, in two languages and two repositories, and the drift tests keep them
 baselines also stay independent judgments, since upstream maintainers set the built-in rules'
 original values and this framework calibrated all three layers against one rubric (see
 [Risk calibration](#risk-calibration)). Ultimately, a similar-looking finding can still score
-differently across layers, for three reasons: (1) the rules' baselines and rating sources differ,
-(2) the script rules take no internet step, and (3) each layer's detection logic decides which
-assets a finding lands on.
+differently across layers, for two reasons: (1) the rules' baselines and rating sources differ,
+and (2) each layer's detection logic decides which assets a finding lands on.
 
 ## Risk calibration
 
@@ -512,7 +517,7 @@ the custom categories and the fork led to these fixes:
 - **Triggers that read native fields.**
   - Dangling DNS and the IDS blind spot fire on a public endpoint, meaning an asset with
     `internet: true` that an out-of-scope or external-entity asset calls (the IDS rule also fires on
-    `net:internet-reachable`). As a result, an egress-only device such as a firewall no longer
+    `internet_reachable: true`). As a result, an egress-only device such as a firewall no longer
     qualifies.
   - CORS and CSP fire on an asset with a browser caller, so the `feature:browser-facing` tag is
     retired.

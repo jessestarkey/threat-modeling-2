@@ -36,6 +36,13 @@
 #    asset). Its description names the model, version, provider, and license,
 #    such as "Serves Gemma 3 27B (Google, Gemma license)". These assets are
 #    the application's model inventory, so each model appears exactly once.
+# 8. MARK internet exposure with two fields. Set 'internet: true' only on the
+#    edge component that the internet connects to directly (an application
+#    gateway, a firewall, or a SaaS identity provider). Set
+#    'internet_reachable: true' on each asset behind that edge that internet
+#    traffic reaches, such as the application behind the gateway, but not on a
+#    log sink or an internal integration that merely shares the edge.
+#    validate_model.py warns about an asset that the edge links to without it.
 #
 # OUTPUT FORMAT (copy the library's own section header verbatim):
 #
@@ -80,7 +87,8 @@ technical_assets:
     tags:
       - some-tag
       - some-other-tag
-    internet: false
+    internet: false # true only for the edge component the internet connects to directly
+    internet_reachable: false # true for an asset behind the edge that internet traffic reaches
     machine: virtual # values: physical, virtual, container, serverless
     encryption: none # values: none, transparent, data-with-symmetric-shared-key, data-with-asymmetric-shared-key, data-with-end-user-individual-key
     owner: Some Owner
@@ -126,7 +134,8 @@ technical_assets:
     tags:
       - some-tag
       - some-other-tag
-    internet: false
+    internet: false # true only for the edge component the internet connects to directly
+    internet_reachable: false # true for an asset behind the edge that internet traffic reaches
     machine: virtual # values: physical, virtual, container, serverless
     encryption: none # values: none, transparent, data-with-symmetric-shared-key, data-with-asymmetric-shared-key, data-with-end-user-individual-key
     owner: Some Owner

@@ -49,7 +49,6 @@ tags_available:
 
   # --- Trust Boundary Classification ---
   - zone:dmz           # Internet-facing or untrusted transit network. Asset is expected to handle hostile traffic. Selects requirements and abuse cases. Risk triggers read the native internet field instead
-  - net:internet-reachable # Internet-originated traffic can plausibly reach this asset, even though it is not the edge component itself (such as the real application behind an already-modeled app gateway/ALB/WAF, which carries its own internet:true field instead). Author-maintained ground truth, not derived from graph topology. Feeds inject_risks.py's own Likelihood/IDS-blind-spot/containment-disposition checks. Tag the actual application, not the gateway that fronts it, and not anything merely sharing infrastructure with a real DMZ path (a log-forwarding sink, an unrelated internal integration behind the same shared ingress). That distinction is exactly what a prior graph-walk version of this signal got wrong, which is why it is an explicit tag now instead
   - zone:restricted    # Deep-internal boundary (data tier, private endpoint). Must never have a direct route to the internet
   - mgmt:csp-managed   # Boundary where Azure owns the underlying security controls (Shared Responsibility Model)
   - scope:ato-boundary # Asset is within the formal ATO accreditation boundary. Assets without this tag are external dependencies

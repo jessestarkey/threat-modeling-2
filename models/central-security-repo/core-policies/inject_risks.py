@@ -250,10 +250,11 @@ def compute_raa_by_id(model: dict) -> dict:
     return _raa_normalize(adjusted_raw)
 
 
-def compute_likelihood(definition: dict, asset_raa: float, internet_reachable: bool, adjust: int = 0) -> str:
+def compute_likelihood(definition: dict, asset_raa: float, internet_exposed: bool, adjust: int = 0) -> str:
     """The category's baseline_likelihood, plus an RAA step (+1 at or above
-    RAA_LIKELIHOOD_THRESHOLD, -1 below RAA_LIKELIHOOD_LOW_THRESHOLD), plus +1 if the asset carries
-    net:internet-reachable, plus `adjust`, clamped.
+    RAA_LIKELIHOOD_THRESHOLD, -1 below RAA_LIKELIHOOD_LOW_THRESHOLD), plus +1 if the asset is
+    internet-exposed (internet or internet_reachable, as in the fork's IsInternetExposed), plus
+    `adjust`, clamped.
 
     The internet step never goes negative, since an unreachable asset is the ordinary case that
     the baseline already assumes. `adjust` is an optional one-level step from a model fact that
@@ -265,7 +266,7 @@ def compute_likelihood(definition: dict, asset_raa: float, internet_reachable: b
         raa_delta = -1
     else:
         raa_delta = 0
-    exposed_delta = 1 if internet_reachable else 0
+    exposed_delta = 1 if internet_exposed else 0
     return LIKELIHOOD_ORDER[_clamp(baseline + raa_delta + exposed_delta + adjust)]
 
 
@@ -390,7 +391,8 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         tags = asset_data.get('tags', [])
         asset_techs = technologies_by_id.get(asset_data.get('id'), set())
         asset_id = asset_data.get('id')
-        asset_is_internet_reachable = 'net:internet-reachable' in tags
+        asset_is_internet_reachable = bool(asset_data.get('internet_reachable'))
+        asset_is_internet_exposed = bool(asset_data.get('internet')) or asset_is_internet_reachable
         asset_raa = raa_by_id.get(asset_id, 1.0)
         incoming = incoming_by_target.get(asset_id, [])
         outgoing_targets = [link.get('target') for link in (asset_data.get('communication_links') or {}).values()]
@@ -416,7 +418,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # Adds one finding of category cid on this asset, scored for the asset.
         def inject(cid, title, likelihood_delta=0):
             definition = risk_defs[cid]
-            likelihood = compute_likelihood(definition, asset_raa, asset_is_internet_reachable, likelihood_delta)
+            likelihood = compute_likelihood(definition, asset_raa, asset_is_internet_exposed, likelihood_delta)
             impact = compute_impact(definition, asset_data)
             severity = compute_severity(likelihood, impact)
             if cid not in model['individual_risk_categories']:
@@ -521,9 +523,9 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # Agent persistent memory (memory/thread poisoning, chat history manipulation); one level
         # more likely when the memory is written from outside its trust boundary.
         if 'ai:agent-memory' in tags:
-            # The net:internet-reachable tag already adds +1 in compute_likelihood, so the
-            # outside-writer step applies only when that tag is absent.
-            memory_step = 1 if written_from_outside and not asset_is_internet_reachable else 0
+            # Internet exposure already adds +1 in compute_likelihood, so the outside-writer step
+            # applies only to an asset that is not exposed.
+            memory_step = 1 if written_from_outside and not asset_is_internet_exposed else 0
             inject("Agent Memory and Context Poisoning", "Agent Memory Poisoning Risk", memory_step)
 
         # Code the agent or tool runs itself (ASI05, AST06). It is one level more likely on an
@@ -659,7 +661,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         if public_endpoint and 'ops:dns-record-reconciled' not in tags:
             inject("Dangling DNS Record and Subdomain Takeover", "Dangling DNS Risk")
 
-        # Network detection gap, on the public endpoint or an asset marked net:internet-reachable,
+        # Network detection gap, on the public endpoint or an asset that sets internet_reachable,
         # since a sensor at the edge does not cover traffic to the application a few hops behind.
         if (public_endpoint or asset_is_internet_reachable) and 'net:ids-monitored' not in tags:
             inject("Network Intrusion Detection and Traffic Anomaly Blind Spot", "Network IDS Blind Spot Risk")
@@ -698,7 +700,7 @@ def inject_risks(yaml_file_path, output_path='threagile_injected.yml'):
         # --- 6. INCIDENT-RESPONSE READINESS ---
 
         # Containment disposition, on internet-reachable, exception-bearing, and CDS-interface
-        # assets, and on every asset in a mission-essential model. It reads net:internet-reachable
+        # assets, and on every asset in a mission-essential model. It reads internet_reachable
         # rather than zone:dmz, since the likely compromise target is usually the application behind
         # the edge.
         if 'ir:containment-disposition-documented' not in tags and (

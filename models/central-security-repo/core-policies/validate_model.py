@@ -18,6 +18,12 @@ Checks per app folder:
      (generate_report.py only warns about this).
   7. No two communication_links share a (source, target) pair, since the diagram filter bar cannot
      tell them apart.
+  8. No asset uses a retired tag, such as net:internet-reachable, which the internet_reachable
+     field replaced.
+
+It also warns, without failing, about an asset that receives a link from an internet-facing asset
+(internet: true) but sets neither internet nor internet_reachable. The author decides, since a
+link from the edge does not always carry internet traffic onward (see docs/risk-methodology.md).
 
 Usage:
   python validate_model.py                  # validate every app folder
@@ -59,9 +65,35 @@ def deep_merge(a: dict, b: dict) -> dict:
     return a
 
 
-def validate_app(app_dir: str) -> list:
-    """Returns a list of human-readable error strings; empty means the
-    app passed every check."""
+RETIRED_TAGS = {
+    "net:internet-reachable": "set the technical asset's internet_reachable field instead",
+}
+
+
+def internet_reachable_warnings(technical_assets: dict) -> list:
+    """Assets that an internet-facing asset links to over a business link, but that set neither
+    internet nor internet_reachable. A devops link (log forwarding or management) carries no
+    internet traffic onward, so it is skipped."""
+    by_id = {n["id"]: (title, n) for title, n in technical_assets.items() if isinstance(n, dict) and "id" in n}
+    warnings = []
+    for title, node in technical_assets.items():
+        if not isinstance(node, dict) or not node.get("internet"):
+            continue
+        for link in (node.get("communication_links") or {}).values():
+            if link.get("usage") == "devops":
+                continue
+            target_title, target = by_id.get(link.get("target"), (None, None))
+            if target is None or target.get("out_of_scope") or target.get("internet") or target.get("internet_reachable"):
+                continue
+            warnings.append(f"05-tech-assets.yml: '{target_title}' receives a link from internet-facing "
+                            f"'{title}' but does not set internet_reachable. Set it if internet "
+                            f"traffic reaches this asset through '{title}'.")
+    return sorted(set(warnings))
+
+
+def validate_app(app_dir: str) -> tuple:
+    """Returns (errors, warnings) as lists of human-readable strings. The app passes when errors is
+    empty."""
     app = os.path.basename(app_dir)
     errors = []
 
@@ -80,7 +112,7 @@ def validate_app(app_dir: str) -> list:
         # Without every canonical file, the merge is unsafe, so this app stops here rather than
         # validating half a model.
         if missing:
-            return errors
+            return errors, []
 
     model = {}
     for fname in CANONICAL_FRAGMENTS:
@@ -92,7 +124,7 @@ def validate_app(app_dir: str) -> list:
                 data = yaml.safe_load(f) or {}
             except yaml.YAMLError as e:
                 errors.append(f"{fname}: does not parse as YAML: {e}")
-                return errors
+                return errors, []
         deep_merge(model, data)
 
     technical_assets = model.get("technical_assets") or {}
@@ -220,7 +252,11 @@ def validate_app(app_dir: str) -> list:
                            f"communication_links to '{target}' ({', '.join(names)}) -- the "
                            f"filter-links bar can't tell them apart")
 
-    return errors
+    # 8. No retired tags.
+    for tag in sorted(used & set(RETIRED_TAGS)):
+        errors.append(f"tag '{tag}' is retired: {RETIRED_TAGS[tag]}")
+
+    return errors, internet_reachable_warnings(technical_assets)
 
 
 def main():
@@ -244,7 +280,7 @@ def main():
             print(f"FAIL {app}: not a directory ({app_dir})")
             overall_ok = False
             continue
-        errors = validate_app(app_dir)
+        errors, warnings = validate_app(app_dir)
         if errors:
             overall_ok = False
             print(f"FAIL {app}:")
@@ -252,6 +288,8 @@ def main():
                 print(f"  - {e}")
         else:
             print(f"OK   {app}")
+        for w in warnings:
+            print(f"  warning: {w}")
 
     sys.exit(0 if overall_ok else 1)
 
