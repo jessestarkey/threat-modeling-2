@@ -68,7 +68,7 @@ custom_risk_definitions:
     baseline_likelihood: likely
     baseline_impact: medium
     finding_class: weakness-shown
-    description: 'This application maintains a local credential store, such as a vendor break-glass account, that bypasses the enterprise identity provider. As a result, conditional access, central deprovisioning, and session controls do not apply to it. Missing MFA on its login path, however, is a separate finding raised by the built-in missing-authentication-second-factor rule.'
+    description: 'This application keeps a local credential store, such as a vendor break-glass account, that bypasses the enterprise identity provider, so conditional access, central deprovisioning, and session controls do not apply to it. Missing MFA on it is a separate finding.'
     impact: 'If this risk remains unmitigated, the local store becomes a backdoor that an attacker can brute-force or credential-stuff outside enterprise conditional access. Additionally, an account removed from the identity provider can still sign in here.'
     asvs: V2 - Authentication
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
@@ -246,7 +246,7 @@ custom_risk_definitions:
     baseline_likelihood: possible
     baseline_impact: high
     finding_class: control-not-evidenced
-    description: 'This asset relies on a self-managed directory service that does not inherit the enterprise identity team''s Tier-0 hardening. As a result, it is exposed to attacks such as abuse of unconstrained delegation, AdminSDHolder tampering, or use of an unrotated krbtgt credential.'
+    description: 'This asset relies on a self-managed directory that does not inherit the enterprise Tier-0 hardening. Thus, it is exposed to attacks such as unconstrained delegation abuse, AdminSDHolder tampering, or use of an unrotated krbtgt credential.'
     impact: 'If this risk remains unmitigated, compromise of the directory''s Tier-0 infrastructure lets an attacker forge authentication for any identity that the directory manages. Additionally, that persistence survives ordinary password resets.'
     asvs: V2 - Authentication
     cheat_sheet: https://learn.microsoft.com/en-us/security/privileged-access-workstations/privileged-access-access-model
@@ -305,7 +305,7 @@ custom_risk_definitions:
     baseline_impact: high
     finding_class: control-not-evidenced
     description: 'This asset runs a self-managed hybrid identity synchronization server, which holds working credentials for both the on-premises directory and the cloud identity tenant that it bridges.'
-    impact: 'If this risk remains unmitigated, compromise of the sync server lets an attacker pivot between the on-premises directory and the cloud tenant. In doing so, the attacker bypasses tier separation that was designed around each side individually.'
+    impact: 'If this risk remains unmitigated, compromising the sync server lets an attacker pivot between the on-premises directory and the cloud tenant, bypassing the tier separation designed for each side.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://learn.microsoft.com/en-us/security/privileged-access-workstations/privileged-access-access-model
     action: 'Administer this hybrid sync server with the same Tier-0 rigor as the directory infrastructure it bridges, rather than as ordinary application infrastructure.'
@@ -336,7 +336,7 @@ custom_risk_definitions:
     baseline_likelihood: possible
     baseline_impact: high
     finding_class: control-not-evidenced
-    description: 'The asset exposes an administrative interface that is reachable with standard application authentication alone. In other words, no additional network or authentication barrier, such as an IP restriction or a separate elevated factor, protects it. Server-side role checks on admin functions, by contrast, belong to the broken-function-level-authorization rule.'
+    description: 'The asset exposes an administrative interface reachable with standard application authentication alone, with no added barrier such as an IP restriction or a separate elevated factor. Server-side role checks on admin functions belong to the broken-function-level-authorization rule.'
     impact: 'If this risk remains unmitigated, the compromise of an admin session yields control over all application data, user accounts, and configuration.'
     asvs: V4 - Access Control
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
@@ -475,8 +475,8 @@ custom_risk_definitions:
     baseline_likelihood: likely
     baseline_impact: high
     finding_class: control-not-evidenced
-    description: 'This asset''s managed identity, service principal, or Kubernetes service account is over-privileged in one of two ways. First, it may hold role assignments wider than its function needs, such as subscription- or resource-group-scoped Contributor or Owner, or wildcard data-plane roles. Second, its credential or token may be reachable through the cloud instance metadata service, or through an automounted service-account token, from code that an attacker could influence.'
-    impact: 'If this risk remains unmitigated, compromising the workload turns directly into cloud control-plane access. Specifically, the attacker can create credentials, assign roles, or read every vault and store that the identity''s role assignment can reach, whether or not the application itself was the actual target.'
+    description: 'This asset''s managed identity, service principal, or service account is over-privileged in one of two ways. First, it holds roles wider than its function needs, such as Contributor or Owner at a broad scope. Second, its token is reachable through the metadata service or an automounted token.'
+    impact: 'If this risk remains unmitigated, compromising the workload turns directly into control-plane access. The attacker can create credentials, assign roles, or read every vault and store the identity reaches, whether or not the application was the target.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
     action: 'Scope this workload identity''s role assignments to only the specific resources and actions its function requires. Then, confirm that its credential or token endpoint is not reachable from code outside this asset''s own trust boundary.'
@@ -1103,7 +1103,7 @@ custom_risk_definitions:
     baseline_impact: medium
     finding_class: control-not-evidenced
     description: 'The application extracts or decompresses user-supplied archives (for example, ZIP, TAR, or GZIP). Such archives can carry entries whose paths escape the extraction directory (zip slip), or entries that expand to exhaust disk and memory (decompression bombs).'
-    impact: 'If this risk remains unmitigated, a crafted archive can overwrite files outside the extraction directory, including code or configuration that the application later loads. Alternatively, it can take the service down by exhausting disk or memory.'
+    impact: 'If this risk remains unmitigated, a crafted archive can overwrite files outside the extraction directory, including code or configuration the application later loads, or take the service down by exhausting disk or memory.'
     asvs: V12 - File and Resources
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
     action: 'Before extracting, validate every archive entry''s resolved path against the extraction directory, and cap the total expanded size, the entry count, and the compression ratio.'
@@ -1351,7 +1351,7 @@ custom_risk_definitions:
     baseline_impact: low
     finding_class: control-not-evidenced
     description: 'This browser-facing asset has at least one of two gaps. Either (1) its CORS policy reflects arbitrary origins with credentials allowed, or (2) its rendered pages lack a restrictive Content-Security-Policy frame-ancestors (or X-Frame-Options) directive.'
-    impact: 'If this risk remains unmitigated, a hostile site can read this asset''s authenticated API responses cross-origin. Alternatively, it can overlay the asset''s UI to capture clicks on privileged actions (clickjacking, or UI redressing) without the victim''s awareness.'
+    impact: 'If this risk remains unmitigated, a hostile site can read this asset''s authenticated API responses cross-origin, or overlay its UI to capture clicks on privileged actions (clickjacking) without the victim noticing.'
     asvs: V14 - Configuration
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Clickjacking_Defense_Cheat_Sheet.html
     action: 'Restrict CORS to an explicit allow-list of trusted origins, with credentials disabled for cross-origin requests. Additionally, enforce a restrictive Content-Security-Policy frame-ancestors directive on every rendered page.'
@@ -1533,7 +1533,7 @@ custom_risk_definitions:
     baseline_impact: low
     finding_class: control-not-evidenced
     description: 'The API surface includes endpoints or versions that remain reachable but fall outside the organization''s current inventory, documentation, and patching and monitoring scope. Specifically, these are undocumented, deprecated, or non-production (beta, staging, or debug) endpoints or versions.'
-    impact: 'If this risk remains unmitigated, an old API version keeps the vulnerabilities and weaker controls of the state it was frozen in. At the same time, it receives none of the monitoring, patching, or rate limiting applied to the current version. Furthermore, because it is not inventoried, nobody notices that it is still reachable.'
+    impact: 'If this risk remains unmitigated, an old API version keeps the vulnerabilities and weaker controls it was frozen with, and gets none of the current version''s monitoring, patching, or rate limiting. Because it is not inventoried, nobody notices it is still reachable.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
     action: 'Maintain a current, authoritative inventory of every API version and environment that is reachable from the internet. Additionally, formally decommission any version that is no longer in active use, rather than only ceasing to document it.'
@@ -1564,8 +1564,8 @@ custom_risk_definitions:
     baseline_likelihood: likely
     baseline_impact: medium
     finding_class: control-not-evidenced
-    description: 'This asset implements a multi-step business process that is valuable enough to automate or abuse at scale, such as bulk account creation, ticket or inventory scalping, loan or claim submission, or bulk coupon redemption. However, it has no control that distinguishes legitimate human use from automated abuse of the flow itself. This differs from Public API Abuse and Asymmetric DoS, which concerns raw request volume and compute exhaustion regardless of what the request does. Instead, this category concerns the business value of a specific flow being automated at scale, even at ordinary request rates.'
-    impact: 'If this risk remains unmitigated, an adversary can automate a legitimate business process at a volume and speed that no human user could achieve. As a result, the adversary extracts business value (such as inventory, credentials, or approved applications) that the flow was never designed to yield at scale.'
+    description: 'This asset implements a multi-step business process worth automating at scale, such as bulk account creation, scalping, claim submission, or coupon redemption, with no control that tells human use from automated abuse. Unlike Public API Abuse, this concerns the flow''s business value, even at ordinary request rates.'
+    impact: 'If this risk remains unmitigated, an adversary can automate a legitimate business process at a volume no human could reach, and extract value (such as inventory, credentials, or approved applications) the flow was never designed to yield at scale.'
     asvs: V11 - Business Logic
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
     action: 'Identify which business flows on this asset are sensitive enough to warrant anti-automation controls, and apply bot detection, behavioral analysis, or step-up friction to each of them specifically.'
@@ -1596,8 +1596,8 @@ custom_risk_definitions:
     baseline_likelihood: possible
     baseline_impact: medium
     finding_class: control-not-evidenced
-    description: 'This asset sends requests to an external, third-party API and trusts the response''s content and schema without validation. In other words, it treats a response from a legitimate external API as safe to consume. This differs from Server-Side Request Forgery, where the asset''s own request is hijacked to reach an unintended target. Instead, this category concerns trusting the response from an intended, legitimate target without verifying it.'
-    impact: 'If this risk remains unmitigated, a compromised, misconfigured, or simply buggy upstream API can inject unexpected data shapes, oversized payloads, or malicious content directly into this asset''s processing logic, since no boundary exists between external API responses and trusted internal data.'
+    description: 'This asset calls an external, third-party API and trusts the response''s content and schema without validation. Unlike Server-Side Request Forgery, where the request is hijacked, this concerns trusting a response from the intended, legitimate target.'
+    impact: 'If this risk remains unmitigated, a compromised, misconfigured, or buggy upstream API can push unexpected data shapes, oversized payloads, or malicious content straight into this asset''s processing logic.'
     asvs: V13 - API and Web Service
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
     action: 'Apply the same schema validation, size limits, and content sanitization to every external API response that this asset consumes as would be applied to direct user input.'
@@ -1863,7 +1863,7 @@ custom_risk_definitions:
     baseline_impact: low
     finding_class: control-not-evidenced
     description: 'This asset presents AI-generated output to a human as input to a consequential decision. However, it provides no confidence indicator, citation or provenance, or mandatory verification step to help the human catch a confidently wrong (hallucinated) answer.'
-    impact: 'If this risk remains unmitigated, a human decision-maker can act on a fluent and confident but factually wrong AI output, for example by misclassifying data, misreporting a status, or authorizing an action based on a fabricated summary of CUI. Furthermore, no built-in signal distinguishes a well-grounded answer from a hallucinated one.'
+    impact: 'If this risk remains unmitigated, a decision-maker can act on fluent but wrong AI output, such as misclassifying data or authorizing an action based on a fabricated summary of CUI. Nothing distinguishes a grounded answer from a hallucinated one.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
     action: 'Surface a confidence indicator, a source citation, or a provenance trail alongside any AI-generated output that feeds a consequential decision. Additionally, require explicit human verification before the decision is finalized.'
@@ -1925,8 +1925,8 @@ custom_risk_definitions:
     baseline_likelihood: possible
     baseline_impact: medium
     finding_class: control-not-evidenced
-    description: 'This agent loads skills, namely packaged instructions, manifests, and scripts that tell it how to orchestrate its tools, from sources that are not vetted, pinned, or scanned. Thus, a malicious, tampered, or drifted skill becomes part of how the agent behaves.'
-    impact: 'If this risk remains unmitigated, a malicious skill can direct the agent to exfiltrate data, misuse its tools, or follow an attacker''s instructions with the agent''s own permissions. Furthermore, this applies across every deployment that loads the skill.'
+    description: 'This agent loads skills (packaged instructions, manifests, and scripts that direct its tools) from sources that are not vetted, pinned, or scanned. Thus, a malicious, tampered, or drifted skill becomes part of how the agent behaves.'
+    impact: 'If this risk remains unmitigated, a malicious skill can direct the agent to exfiltrate data, misuse its tools, or follow an attacker''s instructions with the agent''s permissions, across every deployment that loads it.'
     asvs: V15 - Secure Coding and Architecture
     cheat_sheet: https://owasp.org/www-project-agentic-skills-top-10/
     action: 'Load agent skills only from an approved, pinned, and scanned internal catalogue, and review each skill''s instructions and permissions before it is enabled.'
@@ -1953,7 +1953,7 @@ custom_risk_definitions:
     baseline_likelihood: unlikely
     baseline_impact: low
     finding_class: control-not-evidenced
-    description: 'People outside the system''s normal access, such as data labelers, annotation contractors, red-teamers, or human-in-the-loop reviewers, see raw training data, prompts, or outputs from this asset. Often, they do so through third-party platforms, and without the clearance, need-to-know, or handling controls that the data requires.'
+    description: 'People outside the system''s normal access, such as data labelers, annotation contractors, red-teamers, or human reviewers, see raw training data, prompts, or outputs from this asset, often through third-party platforms and without the clearance or handling controls the data requires.'
     impact: 'If this risk remains unmitigated, a workforce that the system''s owners do not control views, copies, or leaks sensitive records, CUI, or personal data outside the boundary the data was confined to.'
     asvs: V14 - Data Protection
     cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
@@ -1982,8 +1982,8 @@ custom_risk_definitions:
     baseline_likelihood: unlikely
     baseline_impact: low
     finding_class: control-not-evidenced
-    description: 'An AI assistant, such as a desktop copilot, a browser extension, or an AI-enabled IDE, runs on user endpoints or in the browser. It has broad access to local files, open pages, the clipboard, or the screen, and it sends what it sees to a model service.'
-    impact: 'If this risk remains unmitigated, endpoint data that was never meant for an AI service, such as documents, credentials, or other applications'' screens, is read and sent outside the boundary. Furthermore, a malicious page or file can steer the assistant into acting on the user''s behalf.'
+    description: 'An AI assistant, such as a desktop copilot, a browser extension, or an AI-enabled IDE, runs on user endpoints with broad access to local files, open pages, the clipboard, or the screen, and sends what it sees to a model service.'
+    impact: 'If this risk remains unmitigated, endpoint data never meant for an AI service (documents, credentials, or other applications'' screens) leaves the boundary, and a malicious page or file can steer the assistant into acting for the user.'
     asvs: V14 - Data Protection
     cheat_sheet: https://owasp.org/www-project-top-10-for-large-language-model-applications/
     action: 'Allow only approved endpoint AI assistants, restrict what each one can read on the device, and route their traffic to an approved model service.'
@@ -2019,7 +2019,7 @@ custom_risk_definitions:
     baseline_impact: low
     finding_class: control-not-evidenced
     description: 'This asset processes or stores PII on individuals. However, no current Privacy Impact Assessment documents what is collected, why, and how it is protected, as Section 208 of the E-Government Act of 2002 requires.'
-    impact: 'If this risk remains unmitigated, privacy risks in the system''s actual design go unreviewed until an incident, an audit, or a FOIA request forces the question. At that point, remediation is far more disruptive than a documented assessment would have been.'
+    impact: 'If this risk remains unmitigated, privacy risks in the system''s design go unreviewed until an incident, an audit, or a FOIA request forces the question, when remediation is far more disruptive than an assessment would have been.'
     asvs: V8 - Data Protection
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html
     action: 'Document a Privacy Impact Assessment for this system that covers what PII is collected, the legal authority for collecting it, how it is used and shared, its retention, and its safeguards. Additionally, reassess it whenever the handling of PII changes materially.'
@@ -2394,7 +2394,7 @@ custom_risk_definitions:
     baseline_impact: medium
     finding_class: control-not-evidenced
     description: 'This asset, in a mission-essential or mission-critical system, has no documented procedure that identifies the contract-mandated cyber incident reporting timeline, or the party responsible for carrying it out.'
-    impact: 'If this risk remains unmitigated, a genuine incident is discovered without a clear owner or timeline for DoD-mandated reporting. As a result, the 72-hour reporting window can be missed, with the contractual and legal consequences that follow.'
+    impact: 'If this risk remains unmitigated, an incident is discovered with no clear owner or timeline for DoD-mandated reporting, so the 72-hour reporting window can be missed, with its contractual and legal consequences.'
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://csrc.nist.gov/pubs/sp/800/61/r2/final
     action: 'Document the cyber incident reporting procedure that this system''s contract requires (for example, the 72-hour DIBNet reporting requirement of DFARS 252.204-7012 for a covered contractor information system), and name the party responsible for carrying it out.'
